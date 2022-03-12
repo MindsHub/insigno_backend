@@ -1,3 +1,7 @@
 from django.contrib import admin
+from app.models import *
 
-# Register your models here.
+admin.site.register(Pill)
+admin.site.register(PillQuestion)
+admin.site.register(PillAnswer)
+admin.site.register(InsignioUser)
