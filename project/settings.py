@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-tj!y6&725xf%=dvm7uv0+pja*^45g2g4rhfx*81e7sis7z8r@)
 DEBUG = True
 
 # SECURITY WARNING: TODO remove allowed hosts when in production!
-ALLOWED_HOSTS = ['10.0.2.2']
+ALLOWED_HOSTS = ['10.0.2.2', '127.0.0.1', 'insignio.mindshub.it']
 
 
 # Application definition
