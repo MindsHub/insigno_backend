@@ -114,6 +114,8 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r".*",
 ]
 
+CORS_URLS_REGEX = r".*"
+
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
