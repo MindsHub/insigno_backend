@@ -26,7 +26,11 @@ SECRET_KEY = 'django-insecure-tj!y6&725xf%=dvm7uv0+pja*^45g2g4rhfx*81e7sis7z8r@)
 DEBUG = True
 
 # SECURITY WARNING: TODO remove allowed hosts when in production!
-ALLOWED_HOSTS = ['10.0.2.2', '127.0.0.1', 'insignio.mindshub.it']
+ALLOWED_HOSTS = ['*']
+
+# TODO probably needs to be changed to only "http://insignio.mindshub.it" in production
+# currently prevents CORS error in Flutter web from all hosts
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Application definition
@@ -109,12 +113,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r".*",
-]
-
-CORS_URLS_REGEX = r".*"
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
