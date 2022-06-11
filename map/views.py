@@ -1,12 +1,3 @@
-from django.http import JsonResponse
-from rest_framework.views import APIView;
-from rest_framework.response import Response;
-from rest_framework.permissions import IsAuthenticated;
-import random
+from django.shortcuts import render
 
-class HelloView(APIView):
-    permissions_classes = [IsAuthenticated]
-
-    def get(self, request):
-        context = {"message": "Hello, World!"}
-        return Response(context)
+# Create your views here.

@@ -19,7 +19,6 @@ from rest_framework.authtoken import views as authtoken_views
 
 urlpatterns = [
     path('pills/', include('pills.urls')),
-    path('map/', include('map.urls')),
     path('admin/', admin.site.urls),
     path('auth-token/', authtoken_views.ObtainAuthToken.as_view(), name='auth-token'),
 ]
