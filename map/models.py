@@ -1,16 +1,18 @@
-from django.db import models
+from django.contrib.gis.db import models
+from django.contrib.gis.geos import Point
+
 
 class Marker(models.Model):
-    x = models.FloatField()
-    y = models.FloatField()
+    xy = models.GeometryField(default=Point(45.0, 10.0, srid=4326))
 
     class TypeClass(models.TextChoices):
-        PLASTIC = 'Plastic'
-        PAPER = 'Paper'
-        UNDIFFERENTIATED = 'Undifferentiated'
-        GLASS = "Glass"
-        COMPOST = "Compost"
-        ELECTRONICS = "Electronics"
+        UNKNOWN = 'unknown'
+        PLASTIC = 'plastic'
+        PAPER = 'paper'
+        UNDIFFERENTIATED = 'undifferentiated'
+        GLASS = "glass"
+        COMPOST = "compost"
+        ELECTRONICS = "electronics"
 
     type = models.CharField(
         max_length=20,
@@ -18,6 +20,5 @@ class Marker(models.Model):
         default=TypeClass.UNDIFFERENTIATED,
     )
 
-
     def __str__(self):
-        return f"x =\"{self.x}\" y = {self.y}"
+        return f"xy =\"{self.xy}\""

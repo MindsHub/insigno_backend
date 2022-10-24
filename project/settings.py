@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
+    'django.contrib.gis', #roba per posgis
+    #'world',#roba per posgis?
 ]
 
 MIDDLEWARE = [
@@ -88,7 +90,8 @@ WSGI_APPLICATION = 'project.wsgi.application'
 DATABASES = {
 
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        #'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'insigniodb',
         'USER': 'mindshub',
         'PASSWORD': 'Minds.100',
