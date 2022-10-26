@@ -95,7 +95,7 @@ DATABASES = {
         'NAME': 'insigniodb',
         'USER': 'mindshub',
         'PASSWORD': 'test',
-        'HOST': "52.59.220.93",
+        'HOST': "insignio.mindshub.it",
         'PORT': '5432',
 
     },
@@ -152,3 +152,5 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DEFAULT_CHARSET = "UTF-8"
+
+STATIC_ROOT = 'static/'
