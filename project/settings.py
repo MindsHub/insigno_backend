@@ -95,7 +95,7 @@ DATABASES = {
         'NAME': 'insigniodb',
         'USER': 'mindshub',
         'PASSWORD': 'Minds.100',
-        'HOST': "52.59.220.93",
+        'HOST': "https://insignio.mindshub.it/",
         'PORT': '5432',
 
     },
