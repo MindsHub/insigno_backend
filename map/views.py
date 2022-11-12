@@ -1,12 +1,16 @@
 import datetime
 import json
+from base64 import b64encode
 
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.measure import D
+from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse, HttpResponse, HttpResponseNotAllowed
-from .models import Marker, MarkerImage
+from django.views.decorators.csrf import csrf_exempt
+from psycopg2.extensions import JSON
 
+from .models import Marker, MarkerImage  # , MarkerImage
 
 # @ decorator
 def post(function):
@@ -40,18 +44,22 @@ def getNearMarkers(request, x, y):
     return JsonResponse(arr, safe=False)
 
 
-@post
-def addMarkers(jsonData):
-    cur = Marker(
-        xy=GEOSGeometry(f"POINT({jsonData['x']} {jsonData['y']})", srid=4326),
-        creationDate=datetime.timezone.now(),
-        type=jsonData['time'],
-
-    )
-    cur.save()
-    curImage = MarkerImage(
-        marker_id=cur.pk,
-        image=jsonData['image'],
-    )
-    cur.marker_id
-    return JsonResponse({}, safe=False)
+@csrf_exempt
+def addMarkers(request):
+    #print(request.body)
+    if request.method == 'POST' and request.FILES['image']:
+        data= request.POST.dict()
+        cur = Marker(
+            xy=GEOSGeometry(f"POINT({data.get('x')} {data.get('y')})", srid=4326),
+            creationDate=datetime.datetime.now(),
+            type=data.get('type'),
+        )
+        cur.save()
+        file = request.FILES.get("image")
+        mem = b64encode(file.read())
+        curImage = MarkerImage(
+            marker_id=cur,
+            image=mem,
+        )
+        curImage.save()
+        return JsonResponse({}, safe=False)

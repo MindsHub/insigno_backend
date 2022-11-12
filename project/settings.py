@@ -15,7 +15,6 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
@@ -32,7 +31,6 @@ ALLOWED_HOSTS = ['*']
 # currently prevents CORS error in Flutter web from all hosts
 CORS_ALLOW_ALL_ORIGINS = True
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -48,8 +46,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
-    'django.contrib.gis', #roba per posgis
-    #'world',#roba per posgis?
+    'django.contrib.gis',  # roba per posgis
+    # 'world',#roba per posgis?
 ]
 
 MIDDLEWARE = [
@@ -83,24 +81,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'project.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
 DATABASES = {
 
     'default': {
-        #'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        # 'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'insigniodb',
         'USER': 'mindshub',
         'PASSWORD': 'test',
-        'HOST': "https://insignio.mindshub.it/",
+        'HOST': "insignio.mindshub.it",
         'PORT': '5432',
 
     },
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -140,7 +136,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
@@ -152,3 +147,5 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DEFAULT_CHARSET = "UTF-8"
+
+STATIC_ROOT = 'static/'
