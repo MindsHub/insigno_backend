@@ -7,6 +7,10 @@ edition = "2021"
 
 [dependencies]
 diesel = "1.4.1"
+postgis_diesel = "0.4.0"
 rocket = { version = "0.5.0-rc.2", features = ["json"] }
 rocket_sync_db_pools = { version = "0.1.0-rc.2", features = ["diesel_postgres_pool"] }
+
+
 serde = "1.0.140"
+rand = "0.8.5"
