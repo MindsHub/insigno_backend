@@ -1,0 +1,13 @@
+# ./Rocket.toml
+
+[default]
+name = "raimi"
+age = 20
+
+[default.databases.db]
+url = "postgres://mindshub:Minds.100@insignio.mindshub.it:5432/insigniorocketdb"
+#"postgres://postgres:example@localhost:5432/postgres"
+
+
+[development]
+log = "debug"
