@@ -30,7 +30,7 @@ async fn get_random_pill(connection: Db) -> Json<Option<Pill>> {
     let res: Result<Vec<Pill>, _> = connection
         .run(|c| pills::table
             .order(RANDOM)
-            .limit(0)
+            .limit(1)
             .load(c))
         .await;
 
