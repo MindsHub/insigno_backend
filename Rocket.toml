@@ -1,13 +1,8 @@
 # ./Rocket.toml
 
-[default]
-name = "raimi"
-age = 20
-
 [default.databases.db]
 url = "postgres://mindshub:Minds.100@insignio.mindshub.it:5432/insigniorocketdb"
 timeout = 10
 
-
 [debug]
-log = "debug"
+log_level = "debug"
