@@ -1,9 +1,17 @@
-
-# Created by https://www.toptal.com/developers/gitignore/api/django
-# Edit at https://www.toptal.com/developers/gitignore?templates=django
+### Rocket ###
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+.env
 
 # temporaneo
 pills.json
+
+
+# Created by https://www.toptal.com/developers/gitignore/api/django
+# Edit at https://www.toptal.com/developers/gitignore?templates=django
 
 ### Django ###
 *.log
