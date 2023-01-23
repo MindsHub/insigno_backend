@@ -8,9 +8,8 @@ mod db;
 
 #[launch]
 fn rocket() -> _ {
-    let rocket= rocket::build();
-    rocket
-    .attach(db::stage())
-    .mount("/pills", pills::get_routes())
-    //.mount("/trash", trash::get_routes())
+    rocket::build()
+        .attach(db::stage())
+        .mount("/pills", pills::get_routes())
+        //.mount("/trash", trash::get_routes())
 }
