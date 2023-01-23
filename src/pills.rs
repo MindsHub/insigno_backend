@@ -35,12 +35,12 @@ async fn get_random_pill(connection: Db) -> Json<Option<Pill>> {
         .await;
 
     if let Ok(res) = res {
-        if let Some(res) = res.into_iter().nth(0) {
+        if let Some(res) = res.into_iter().next() {
             return Json(Some(res));
         }
     }
 
-    return Json(None);
+    Json(None)
 }
 
 pub fn get_routes() -> Vec<Route>{
