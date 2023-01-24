@@ -1,6 +1,6 @@
-use diesel::{RunQueryDsl, QueryDsl};
+use diesel::{QueryDsl, RunQueryDsl};
 use rocket::{serde::json::Json, Route};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::db::Db;
 
@@ -25,13 +25,15 @@ struct Pill {
 #[get("/random")]
 async fn get_random_pill(connection: Db) -> Json<Option<Pill>> {
     // this allows executing this query: SELECT * FROM pills ORDER BY RANDOM() LIMIT 1
-    no_arg_sql_function!(RANDOM, (), "Represents the sql RANDOM() function");
+    sql_function!(fn random() ->  Float);// "Represents the sql RANDOM() function"
 
     let res: Result<Vec<Pill>, _> = connection
-        .run(|c| pills::table
-            .order(RANDOM)
-            .limit(1)
-            .load(c))
+        .run(|c| {
+            pills::table
+                .order(random())
+                .limit(1)
+                .load(c)
+        })
         .await;
 
     if let Ok(res) = res {
@@ -43,6 +45,6 @@ async fn get_random_pill(connection: Db) -> Json<Option<Pill>> {
     Json(None)
 }
 
-pub fn get_routes() -> Vec<Route>{
+pub fn get_routes() -> Vec<Route> {
     routes![get_random_pill]
 }
