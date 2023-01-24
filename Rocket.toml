@@ -1,8 +1,7 @@
 # ./Rocket.toml
 
-[default.databases.db]
-url = "postgres://mindshub:Minds.100@insignio.mindshub.it:5432/insigniorocketdb"
-timeout = 10
+[default.databases]
+db = {url = "postgres://mindshub:Minds.100@insignio.mindshub.it:5432/insigniorocketdb", timeout = 10, pool_size = 5}
 
 [debug]
 log_level = "debug"
