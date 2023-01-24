@@ -11,8 +11,9 @@ mod trash;
 
 #[get("/test")]
 fn test() -> Json<String> {
-    return Json("ok".to_string());
+    Json("ok".to_string())
 }
+
 #[launch]
 fn rocket() -> _ {
     rocket::build()
