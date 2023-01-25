@@ -1,8 +1,6 @@
-use diesel::sql_types::Serial;
 use postgis_diesel::operators::*;
 use postgis_diesel::types::*;
 use rocket::Route;
-use serde::{Deserialize, Serialize};
 table! {
     marker (id) {
         id -> Int4,
@@ -10,7 +8,7 @@ table! {
     }
 }
 #[derive(Clone, Queryable, Debug, Insertable)]
-#[table_name = "marker"]
+#[diesel(table_name = marker)]
 
 struct Marker {
     id: i32,
