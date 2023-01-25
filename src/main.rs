@@ -1,9 +1,8 @@
-use rocket::serde::json::Json;
-
 #[macro_use]
 extern crate rocket;
 #[macro_use]
 extern crate diesel;
+use rocket::serde::json::Json;
 
 mod db;
 mod pills;

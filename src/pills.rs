@@ -14,7 +14,7 @@ table! {
 }
 
 #[derive(Serialize, Deserialize, Clone, Queryable, Debug, Insertable)]
-#[table_name = "pills"]
+#[diesel(table_name = pills)]
 struct Pill {
     id: i32,
     text: String,
@@ -25,15 +25,10 @@ struct Pill {
 #[get("/random")]
 async fn get_random_pill(connection: Db) -> Json<Option<Pill>> {
     // this allows executing this query: SELECT * FROM pills ORDER BY RANDOM() LIMIT 1
-    sql_function!(fn random() ->  Float);// "Represents the sql RANDOM() function"
+    sql_function!(fn random() ->  Float); // "Represents the sql RANDOM() function"
 
     let res: Result<Vec<Pill>, _> = connection
-        .run(|c| {
-            pills::table
-                .order(random())
-                .limit(1)
-                .load(c)
-        })
+        .run(|c| pills::table.order(random()).limit(1).load(c))
         .await;
 
     if let Ok(res) = res {
