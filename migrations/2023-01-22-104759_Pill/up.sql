@@ -1,5 +1,5 @@
 -- Your SQL goes here
-CREATE TABLE pills (
+CREATE TABLE IF NOT EXISTS public.pills (
   id SERIAL PRIMARY KEY,
   text TEXT NOT NULL,
   author TEXT NOT NULL,

@@ -7,6 +7,7 @@ use rocket::serde::json::Json;
 mod db;
 mod pills;
 mod trash;
+mod insigno_point;
 
 #[get("/test")]
 fn test() -> Json<String> {
@@ -19,5 +20,5 @@ fn rocket() -> _ {
         .attach(db::stage())
         .mount("/pills", pills::get_routes())
         .mount("/", routes![test])
-    //.mount("/trash", trash::get_routes())
+        .mount("/trash", trash::get_routes())
 }
