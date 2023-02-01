@@ -1,7 +1,5 @@
-use diesel::data_types::PgTimestamp;
-use postgis_diesel::{types::Point, sql_types::Geometry};
+use postgis_diesel::types::*;
 use serde::{Serialize, ser::SerializeStruct};
-use diesel::Insertable;
 
 pub struct InsignoPoint{
     point: Point,

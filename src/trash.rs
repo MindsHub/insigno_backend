@@ -1,12 +1,5 @@
-use std::error::Error;
-
 use diesel::RunQueryDsl;
-use diesel::data_types::PgTimestamp;
-use diesel::result;
-use diesel::sql_types::Serial;
-use postgis_diesel::operators::*;
 use postgis_diesel::types::*;
-use rocket::Either;
 use rocket::Route;
 use rocket::serde::json::Json;
 use serde::Serialize;
