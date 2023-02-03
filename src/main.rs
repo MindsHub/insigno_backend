@@ -8,6 +8,7 @@ mod db;
 mod pills;
 mod trash;
 mod utils;
+mod auth;
 
 #[get("/test")]
 fn test() -> Json<String> {
@@ -21,4 +22,5 @@ fn rocket() -> _ {
         .mount("/pills", pills::get_routes())
         .mount("/", routes![test])
         .mount("/trash", trash::get_routes())
+        .mount("/", auth::get_routes())
 }

@@ -5,3 +5,9 @@ db = {url = "postgres://mindshub:Minds.100@insignio.mindshub.it:5432/insignioroc
 
 [debug]
 log_level = "debug"
+secret_key = "g7sGq+u8v+u7/0NlrKPPlxDurthZKuMa+sUUt02ir4Y="
+
+[release]
+secret_key = "/ArczfDUOXuoxJwvf1BhfkPGCoaeXK5x0eblZQiCzXs="
+
+[default]
