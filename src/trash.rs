@@ -1,3 +1,4 @@
+use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use postgis_diesel::types::*;
 use rocket::Route;
@@ -5,8 +6,7 @@ use rocket::serde::json::Json;
 use serde::Serialize;
 use serde::ser::SerializeStruct;
 
-use crate::insigno_point::InsignoPoint;
-use crate::insigno_point::InsignoTimeStamp;
+use crate::utils::*;
 
 use super::db::Db;
 
@@ -22,9 +22,11 @@ table! {
         id -> Integer,
         point-> postgis_diesel::sql_types::Geometry,
         creation_date->Timestamptz,
+        trash_type_id -> Integer,
     }
 }
-
+//joinable!(marker -> trash_type (trash_type_id));
+//allow_tables_to_appear_in_same_query!(marker, trash_type);
 #[derive(Serialize, Clone, Queryable, Debug, Insertable)]
 #[diesel(table_name = trash_type)]
 struct TrashType {
@@ -34,11 +36,11 @@ struct TrashType {
 
 #[derive(Clone, Queryable, Debug)]
 #[diesel(table_name = marker)]
-#[diesel(belongs_to(TrashType))]
 struct Marker {
     id: i32,
     point: Point,
     creation_date: chrono::NaiveDateTime,
+    trash_type_id: i32,
 }
 
 impl Serialize for Marker{
@@ -49,29 +51,42 @@ impl Serialize for Marker{
             s.serialize_field("id", &self.id)?;
             s.serialize_field("point", &InsignoPoint::from(self.point))?;
             s.serialize_field("creation_date", &InsignoTimeStamp::from(self.creation_date))?;
+            s.serialize_field("trash_type_id", &self.trash_type_id)?;
             s.end()
     }
 }
 
 
-#[get("/get_near")]
-async fn get_near(connection: Db) ->Json<Result<Vec<Marker>, String>>{
+#[get("/get_near?<x>&<y>&<srid>")]
+async fn get_near(connection: Db, x: f64, y: f64, srid: Option<u32>) ->Result<Json<Vec<Marker>>, String>{
+    let cur_point = Point{
+        x, y, srid: Some(srid.unwrap_or(4326))
+    };
     connection
-        .run(|x| marker::table.load(x))
+        .run(move |conn| {
+            let t_point = st_transform(cur_point, 25832);
+            let mut query = marker::table.into_boxed();
+            query = query.filter(st_dwithin(st_transform(marker::point, 25832), t_point, 15000.0));
+            //let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
+            //println!("The insert query: {}", debug.to_string());
+            query.load(conn)
+            })
         .await
-        .map_or_else(|x| Json(Err(x.to_string())), |x| Json(Ok(x)))
+        .map_or_else(|x| Err(x.to_string()), |x| Ok(Json(x)))
 }
 
+
+
 #[get("/types")]
-async fn get_types(connection: Db)->Json<Option<Vec<TrashType>>> {
+async fn get_types(connection: Db)->Option<Json<Vec<TrashType>>> {
     let res: Result<Vec<TrashType>, _> = connection
         .run(|x| trash_type::table.load(x))
         .await;
 
     if let Ok(ret) = res{
-        Json(Some(ret))
+        Some(Json(ret))
     }else{
-        Json(None)
+        None
     }
 }
 

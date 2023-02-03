@@ -1,6 +1,7 @@
 use postgis_diesel::types::*;
 use serde::{Serialize, ser::SerializeStruct};
-
+use  postgis_diesel::sql_types::*;
+use diesel::sql_types::*;
 pub struct InsignoPoint{
     point: Point,
 }
@@ -42,3 +43,6 @@ impl Serialize for InsignoTimeStamp{
             s.end()
     }
 }
+
+sql_function!(fn st_transform(g: Geometry, srid: Integer)-> Geometry);
+sql_function!(fn st_dwithin(g1: Geometry, g2: Geometry, dist: Double) ->  Bool); // "Represents the postgis_sql distance() function"
