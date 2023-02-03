@@ -7,7 +7,7 @@ use rocket::serde::json::Json;
 mod db;
 mod pills;
 mod trash;
-mod insigno_point;
+mod utils;
 
 #[get("/test")]
 fn test() -> Json<String> {
