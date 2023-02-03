@@ -2,11 +2,16 @@ use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use postgis_diesel::*;
 use rocket::Route;
+use rocket::http::ContentType;
 use rocket::serde::json::Json;
+use rocket_auth::User;
+use rocket_multipart_form_data::MultipartFormDataField;
+use rocket_multipart_form_data::MultipartFormDataOptions;
 use serde::Serialize;
 use serde::ser::SerializeStruct;
 use postgis::ewkb::Point;
 use diesel::*;
+use rocket::Data;
 use crate::utils::*;
 
 use super::db::Db;
@@ -75,7 +80,19 @@ async fn get_near(connection: Db, x: f64, y: f64, srid: Option<i32>) ->Result<Js
         .map_or_else(|x| Err(x.to_string()), |x| Ok(Json(x)))
 }
 
+#[post("/add", data = "<data>")]
+async fn add(content_type: &ContentType, data: Data<'_>, user: User){
+   let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(
+        vec! [
+            /*MultipartFormDataField::file("photo").content_type_by_string(Some(mime::IMAGE_STAR)).unwrap(),
+            MultipartFormDataField::raw("fingerprint").size_limit(4096),
+            MultipartFormDataField::text("name"),
+            MultipartFormDataField::text("email").repetition(Repetition::fixed(3)),
+            MultipartFormDataField::text("email"),*/
+        ]
+    );
 
+}
 
 #[get("/types")]
 async fn get_types(connection: Db)->Option<Json<Vec<TrashType>>> {
@@ -91,5 +108,5 @@ async fn get_types(connection: Db)->Option<Json<Vec<TrashType>>> {
 }
 
 pub fn get_routes() -> Vec<Route> {
-    routes![get_near, get_types]
+    routes![get_near, get_types, add]
 }
