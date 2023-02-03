@@ -1,34 +1,33 @@
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
-use postgis_diesel::types::*;
+use postgis_diesel::*;
 use rocket::Route;
 use rocket::serde::json::Json;
 use serde::Serialize;
 use serde::ser::SerializeStruct;
-
+use postgis::ewkb::Point;
+use diesel::*;
 use crate::utils::*;
 
 use super::db::Db;
 
 table! {
-    trash_type{
+    trash_types (id){
         id->Integer,
         name->Text,
     }
 }
 
 table! {
-    marker {
+    marker(id) {
         id -> Integer,
         point-> postgis_diesel::sql_types::Geometry,
         creation_date->Timestamptz,
         trash_type_id -> Integer,
     }
 }
-//joinable!(marker -> trash_type (trash_type_id));
-//allow_tables_to_appear_in_same_query!(marker, trash_type);
 #[derive(Serialize, Clone, Queryable, Debug, Insertable)]
-#[diesel(table_name = trash_type)]
+#[diesel(table_name = "trash_types")]
 struct TrashType {
     id: i32,
     name: String,
@@ -38,7 +37,7 @@ struct TrashType {
 #[diesel(table_name = marker)]
 struct Marker {
     id: i32,
-    point: Point,
+    point: PointC<Point>,
     creation_date: chrono::NaiveDateTime,
     trash_type_id: i32,
 }
@@ -58,9 +57,10 @@ impl Serialize for Marker{
 
 
 #[get("/get_near?<x>&<y>&<srid>")]
-async fn get_near(connection: Db, x: f64, y: f64, srid: Option<u32>) ->Result<Json<Vec<Marker>>, String>{
-    let cur_point = Point{
-        x, y, srid: Some(srid.unwrap_or(4326))
+async fn get_near(connection: Db, x: f64, y: f64, srid: Option<i32>) ->Result<Json<Vec<Marker>>, String>{
+    let tmp_point = Point{x, y, srid: Some(srid.unwrap_or(4326))};
+    let cur_point = PointC{
+        v: tmp_point
     };
     connection
         .run(move |conn| {
@@ -80,7 +80,7 @@ async fn get_near(connection: Db, x: f64, y: f64, srid: Option<u32>) ->Result<Js
 #[get("/types")]
 async fn get_types(connection: Db)->Option<Json<Vec<TrashType>>> {
     let res: Result<Vec<TrashType>, _> = connection
-        .run(|x| trash_type::table.load(x))
+        .run(|x| trash_types::table.load(x))
         .await;
 
     if let Ok(ret) = res{

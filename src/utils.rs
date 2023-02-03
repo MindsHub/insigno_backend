@@ -1,13 +1,14 @@
-use postgis_diesel::types::*;
+use postgis::ewkb::Point;
+use postgis_diesel::*;
 use serde::{Serialize, ser::SerializeStruct};
 use  postgis_diesel::sql_types::*;
 use diesel::sql_types::*;
 pub struct InsignoPoint{
-    point: Point,
+    point: PointC<Point>,
 }
 
-impl From<Point> for InsignoPoint{
-    fn from(point: Point) -> Self {
+impl From<PointC<Point>> for InsignoPoint{
+    fn from(point: PointC<Point>) -> Self {
         InsignoPoint {point}
     }
 }
@@ -17,9 +18,9 @@ impl Serialize for InsignoPoint{
     where
         S: serde::Serializer {
             let mut s = serializer.serialize_struct("Point", 3)?;
-            s.serialize_field("x", &self.point.x)?;
-            s.serialize_field("y", &self.point.y)?;
-            s.serialize_field("srid", &self.point.srid)?;
+            s.serialize_field("x", &self.point.v.x)?;
+            s.serialize_field("y", &self.point.v.y)?;
+            s.serialize_field("srid", &self.point.v.srid)?;
             s.end()
     }
 }
