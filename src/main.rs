@@ -5,11 +5,11 @@ extern crate rocket;
 #[macro_use]
 extern crate diesel;
 
+mod auth;
 mod db;
 mod pills;
 mod trash;
 mod utils;
-mod auth;
 
 #[get("/test")]
 fn test() -> Json<String> {
@@ -18,7 +18,6 @@ fn test() -> Json<String> {
 
 #[launch]
 async fn rocket() -> _ {
-    
     rocket::build()
         .attach(db::stage())
         .attach(auth::stage().await)
@@ -26,6 +25,6 @@ async fn rocket() -> _ {
         .mount("/", routes![test])
         .mount("/trash", trash::get_routes())
         .mount("/", auth::get_routes())
-        
-        //.manage(users)
+
+    //.manage(users)
 }

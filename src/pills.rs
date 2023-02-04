@@ -1,4 +1,4 @@
-use diesel::{QueryDsl, RunQueryDsl, sql_types::Double};
+use diesel::{sql_types::Double, QueryDsl, RunQueryDsl};
 use rocket::{serde::json::Json, Route};
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +26,6 @@ no_arg_sql_function!(random, Double, "Represents the sql RANDOM() function"); //
 #[get("/random")]
 async fn get_random_pill(connection: Db) -> Json<Option<Pill>> {
     // this allows executing this query: SELECT * FROM pills ORDER BY RANDOM() LIMIT 1
-    
 
     let res: Result<Vec<Pill>, _> = connection
         .run(|c| pills::table.order(random).limit(1).load(c))
