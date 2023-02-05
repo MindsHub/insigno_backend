@@ -1,17 +1,20 @@
+
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
 use crate::utils::*;
-use diesel::QueryDsl;
+use chrono::Utc;
 use diesel::RunQueryDsl;
 use diesel::*;
+use json::object;
 use postgis::ewkb::Point;
 use postgis_diesel::*;
+
 use rocket::http::ContentType;
-use rocket::serde::json::Json;
 use rocket::Data;
 use rocket::Route;
+use rocket::http::Status;
 use rocket_auth::User;
 use rocket_multipart_form_data::mime;
 use rocket_multipart_form_data::MultipartFormData;
@@ -19,39 +22,25 @@ use rocket_multipart_form_data::MultipartFormDataField;
 use rocket_multipart_form_data::MultipartFormDataOptions;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
-
 use super::db::Db;
-
-table! {
-    trash_types (id){
-        id->Integer,
-        name->Text,
-    }
-}
-
-table! {
-    marker(id) {
-        id -> Integer,
-        point-> postgis_diesel::sql_types::Geometry,
-        creation_date->Timestamptz,
-        creation_photo_path->Text,
-        trash_type_id -> Integer,
-    }
-}
-#[derive(Serialize, Clone, Queryable, Debug, Insertable)]
+use rocket::serde::{Deserialize, json::Json};
+use super::schema::*;
+#[derive(Serialize, Clone, Queryable, Debug)]
 #[diesel(table_name = "trash_types")]
 struct TrashType {
     id: i32,
     name: String,
 }
 
-#[derive(Clone, Queryable, Debug)]
+#[derive(Clone, Queryable, Insertable,  Debug)]
 #[diesel(table_name = marker)]
 struct Marker {
-    id: i32,
+    #[diesel(deserialize_as = "i32")]
+    id: Option<i32>,
     point: PointC<Point>,
-    creation_date: chrono::NaiveDateTime,
-    creation_photo_path: String,
+    #[diesel(deserialize_as = "chrono::DateTime<Utc>")]
+    creation_date: Option<chrono::DateTime<Utc>>,
+    created_by: i32,
     trash_type_id: i32,
 }
 
@@ -60,10 +49,10 @@ impl Serialize for Marker {
     where
         S: serde::Serializer,
     {
-        let mut s = serializer.serialize_struct("Person", 3)?;
+        let mut s = serializer.serialize_struct("Marker", 4)?;
         s.serialize_field("id", &self.id)?;
         s.serialize_field("point", &InsignoPoint::from(self.point))?;
-        s.serialize_field("creation_date", &InsignoTimeStamp::from(self.creation_date))?;
+        s.serialize_field("creation_date", &self.creation_date)?;
         s.serialize_field("trash_type_id", &self.trash_type_id)?;
         s.end()
     }
@@ -85,9 +74,9 @@ async fn get_near(
     connection
         .run(move |conn| {
             let t_point = st_transform(cur_point, 25832);
-            let mut query = marker::table.into_boxed();
+            let mut query = markers::table.into_boxed();
             query = query.filter(st_dwithin(
-                st_transform(marker::point, 25832),
+                st_transform(markers::point, 25832),
                 t_point,
                 15000.0,
             ));
@@ -96,9 +85,38 @@ async fn get_near(
         .await
         .map_or_else(|x| Err(x.to_string()), |x| Ok(Json(x)))
 }
+//TODO add image (user, trashId, enum type)
+//TODO add trash (location, user, type (enum?))
 
-#[post("/add", data = "<data>")]
-async fn add(content_type: &ContentType, data: Data<'_>, _user: User) -> Result<(), String> {
+#[derive(Deserialize)]
+struct AddTrashField{
+    x: f64,
+    y: f64,
+    typeTr: String,
+}
+
+#[post("/add", format = "json", data = "<data>")]
+async fn add_trash(data: Json<AddTrashField>, user: User, connection: Db)-> Option<String>{
+    
+    let z = Marker{
+        id: None,
+        created_by: user.id(),
+        point: PointC { v: Point { x: data.x, y: data.y, srid: Some(4326) } },
+        creation_date: None,
+        trash_type_id: 1
+    };
+    use markers::dsl::markers as mrkt;
+    if let Ok(test) = connection.run(move |conn| {
+        insert_into(mrkt).values(&z).get_result::<Marker>(conn)
+    }).await{
+        return Some(test.id.unwrap().to_string());
+    }
+    None
+}
+
+#[post("/image/add", data = "<data>")]
+async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, connection: Db) -> Result<(), String> {
+    user.id();
     let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("creationPhoto")
             .content_type_by_string(Some(mime::IMAGE_PNG))
@@ -116,7 +134,8 @@ async fn add(content_type: &ContentType, data: Data<'_>, _user: User) -> Result<
         for x in tmp {
             let new_pos = unique_path(&custom, Path::new("png"));
             println!("{:?}", new_pos);
-            fs::copy(&x.path, new_pos).map_err(|x| x.to_string())?;
+            fs::copy(&x.path, &new_pos).map_err(|x| x.to_string())?;
+            let z = new_pos.strip_prefix(custom.to_str().unwrap()).unwrap();
         }
     }
     Ok(())
@@ -129,5 +148,5 @@ async fn get_types(connection: Db) -> Option<Json<Vec<TrashType>>> {
 }
 
 pub fn get_routes() -> Vec<Route> {
-    routes![get_near, get_types, add]
+    routes![get_near, get_types, add_trash, add_image]
 }
