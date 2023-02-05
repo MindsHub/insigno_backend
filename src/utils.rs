@@ -5,7 +5,7 @@ use postgis::ewkb::Point;
 use postgis_diesel::sql_types::*;
 use postgis_diesel::*;
 use rand::{distributions::Alphanumeric, Rng};
-use serde::{ser::SerializeStruct, Serialize};
+use serde::{ser::SerializeStruct, Serialize, Deserialize};
 
 pub struct InsignoPoint {
     point: PointC<Point>,
@@ -29,6 +29,16 @@ impl Serialize for InsignoPoint {
         s.end()
     }
 }
+/*
+impl<'de> Deserialize<'de> for InsignoPoint{
+    fn deserialize<'de, D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de> {
+            let d = deserializer.deserialize_struct("Point", 3)?;
+
+        todo!()
+    }
+}*/
 
 pub struct InsignoTimeStamp {
     dtm: chrono::NaiveDateTime,
@@ -55,18 +65,19 @@ sql_function!(fn st_transform(g: Geometry, srid: Integer)-> Geometry);
 sql_function!(fn st_dwithin(g1: Geometry, g2: Geometry, dist: Double) ->  Bool); // "Represents the postgis_sql distance() function"
 
 pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
-    let random_str: String = rand::thread_rng()
+    loop{
+        let random_str: String = rand::thread_rng()
         .sample_iter(&Alphanumeric)
         .take(10)
         .map(char::from)
         .collect();
 
-    let new_path = Path::new(&random_str);
-    let mut dest = prefix.join(new_path);
-    dest.set_extension(&extension);
-    if !dest.exists() {
-        return dest;
-    } else {
-        return unique_path(prefix, extension);
+        let new_path = Path::new(&random_str);
+        let mut dest = prefix.join(new_path);
+        dest.set_extension(&extension);
+        if !dest.exists() {
+            return dest;
+        }
     }
+    
 }

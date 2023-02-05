@@ -10,6 +10,7 @@ mod db;
 mod pills;
 mod trash;
 mod utils;
+mod schema;
 
 #[get("/test")]
 fn test() -> Json<String> {
