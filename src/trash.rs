@@ -7,14 +7,14 @@ use crate::utils::*;
 use chrono::Utc;
 use diesel::RunQueryDsl;
 use diesel::*;
-use json::object;
+
 use postgis::ewkb::Point;
 use postgis_diesel::*;
 
 use rocket::http::ContentType;
 use rocket::Data;
 use rocket::Route;
-use rocket::http::Status;
+
 use rocket_auth::User;
 use rocket_multipart_form_data::mime;
 use rocket_multipart_form_data::MultipartFormData;
@@ -115,7 +115,7 @@ async fn add_trash(data: Json<AddTrashField>, user: User, connection: Db)-> Opti
 }
 
 #[post("/image/add", data = "<data>")]
-async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, connection: Db) -> Result<(), String> {
+async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, _connection: Db) -> Result<(), String> {
     user.id();
     let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("creationPhoto")
@@ -135,7 +135,7 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
             let new_pos = unique_path(&custom, Path::new("png"));
             println!("{:?}", new_pos);
             fs::copy(&x.path, &new_pos).map_err(|x| x.to_string())?;
-            let z = new_pos.strip_prefix(custom.to_str().unwrap()).unwrap();
+            let _z = new_pos.strip_prefix(custom.to_str().unwrap()).unwrap();
         }
     }
     Ok(())

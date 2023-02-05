@@ -5,7 +5,7 @@ use postgis::ewkb::Point;
 use postgis_diesel::sql_types::*;
 use postgis_diesel::*;
 use rand::{distributions::Alphanumeric, Rng};
-use serde::{ser::SerializeStruct, Serialize, Deserialize};
+use serde::{ser::SerializeStruct, Serialize};
 
 pub struct InsignoPoint {
     point: PointC<Point>,
