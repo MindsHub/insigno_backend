@@ -3,6 +3,7 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
+use crate::InsignoConfig;
 use crate::utils::*;
 use chrono::Utc;
 use diesel::RunQueryDsl;
@@ -11,6 +12,9 @@ use diesel::*;
 use postgis::ewkb::Point;
 use postgis_diesel::*;
 
+use rocket::Config;
+use rocket::State;
+use rocket::fairing::AdHoc;
 use rocket::http::ContentType;
 use rocket::Data;
 use rocket::Route;
@@ -56,6 +60,14 @@ impl Serialize for Marker {
         s.serialize_field("trash_type_id", &self.trash_type_id)?;
         s.end()
     }
+}
+#[derive(Clone, Queryable, Insertable,  Debug)]
+#[diesel(table_name = image)]
+struct MarkerImage{
+    #[diesel(deserialize_as = "i32")]
+    id: Option<i32>,
+    path: String,
+    refers_to: i32,
 }
 
 #[get("/get_near?<x>&<y>&<srid>")]
@@ -115,7 +127,7 @@ async fn add_trash(data: Json<AddTrashField>, user: User, connection: Db)-> Opti
 }
 
 #[post("/image/add", data = "<data>")]
-async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, _connection: Db) -> Result<(), String> {
+async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, connection: Db, config: &State<InsignoConfig>) -> Option<String> {
     user.id();
     let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("creationPhoto")
@@ -124,22 +136,33 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, _conn
     ]);
     let mut custom = PathBuf::new();
 
-    custom.set_file_name("./test");
+    custom.set_file_name(&config.mediaFolder);
 
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         .await
         .unwrap();
     let photo = multipart_form_data.files.get("creationPhoto");
     if let Some(tmp) = photo {
-        for x in tmp {
-            let new_pos = unique_path(&custom, Path::new("png"));
-            println!("{:?}", new_pos);
-            fs::copy(&x.path, &new_pos).map_err(|x| x.to_string())?;
-            let _z = new_pos.strip_prefix(custom.to_str().unwrap()).unwrap();
+        let x =&tmp[0];
+        let new_pos = unique_path(&custom, Path::new("png"));
+        println!("{:?}", new_pos);
+        fs::copy(&x.path, &new_pos).unwrap_or_else(|x| {println!("{}", x.to_string()); 0});
+        let z = new_pos.strip_prefix(custom.to_str().unwrap()).unwrap();
+        let img = MarkerImage{
+            id: None,
+            path: z.to_str().unwrap().to_string(),
+            refers_to: 4,
+        };
+        if let Ok(z) = connection.run(move |conn|{
+            use marker_images::dsl::marker_images as mi;
+            insert_into(mi).values(&img).get_result::<MarkerImage>(conn)
+        }).await{
+            return Some(z.id.unwrap().to_string());
         }
     }
-    Ok(())
+    None
 }
+
 
 #[get("/types")]
 async fn get_types(connection: Db) -> Option<Json<Vec<TrashType>>> {
