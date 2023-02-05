@@ -11,3 +11,4 @@ secret_key = "g7sGq+u8v+u7/0NlrKPPlxDurthZKuMa+sUUt02ir4Y="
 secret_key = "/ArczfDUOXuoxJwvf1BhfkPGCoaeXK5x0eblZQiCzXs="
 
 [default]
+mediaFolder= "/home/alessio/Documents/Mindshub/insignio/insignio_backend/testi"

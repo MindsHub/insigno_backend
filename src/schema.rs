@@ -24,3 +24,11 @@ table! {
         trash_type_id -> Integer,
     }
 }
+
+table! {
+    marker_images(id){
+        id -> Integer,
+        path -> Text,
+        refers_to -> Integer,
+    }
+}
