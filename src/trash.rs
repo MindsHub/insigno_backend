@@ -12,9 +12,7 @@ use diesel::*;
 use postgis::ewkb::Point;
 use postgis_diesel::*;
 
-use rocket::Config;
 use rocket::State;
-use rocket::fairing::AdHoc;
 use rocket::http::ContentType;
 use rocket::Data;
 use rocket::Route;
@@ -97,14 +95,12 @@ async fn get_near(
         .await
         .map_or_else(|x| Err(x.to_string()), |x| Ok(Json(x)))
 }
-//TODO add image (user, trashId, enum type)
-//TODO add trash (location, user, type (enum?))
 
 #[derive(Deserialize)]
 struct AddTrashField{
     x: f64,
     y: f64,
-    typeTr: String,
+    type_tr: String,
 }
 
 #[post("/add", format = "json", data = "<data>")]
@@ -136,7 +132,7 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
     ]);
     let mut custom = PathBuf::new();
 
-    custom.set_file_name(&config.mediaFolder);
+    custom.set_file_name(&config.media_folder);
 
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         .await
@@ -145,7 +141,6 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
     if let Some(tmp) = photo {
         let x =&tmp[0];
         let new_pos = unique_path(&custom, Path::new("png"));
-        println!("{:?}", new_pos);
         fs::copy(&x.path, &new_pos).unwrap_or_else(|x| {println!("{}", x.to_string()); 0});
         let z = new_pos.strip_prefix(custom.to_str().unwrap()).unwrap();
         let img = MarkerImage{
@@ -158,6 +153,8 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
             insert_into(mi).values(&img).get_result::<MarkerImage>(conn)
         }).await{
             return Some(z.id.unwrap().to_string());
+        }else{
+            _ = fs::remove_file(new_pos);
         }
     }
     None

@@ -12,16 +12,15 @@ mod trash;
 mod utils;
 mod schema;
 
-struct MediaDir(String);
-
 #[get("/test")]
 fn test() -> Json<String> {
     Json("ok".to_string())
 }
+
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 struct InsignoConfig {
-    mediaFolder: String,
+    media_folder: String,
 }
 
 

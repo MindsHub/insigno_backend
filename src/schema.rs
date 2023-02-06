@@ -32,3 +32,11 @@ table! {
         refers_to -> Integer,
     }
 }
+table! {
+    users(id){
+        id -> Integer,
+        email -> Text,
+        password -> Text,
+        is_admin -> Bool,
+    }
+}
