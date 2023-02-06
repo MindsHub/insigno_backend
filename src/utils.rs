@@ -74,7 +74,7 @@ pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
 
         let new_path = Path::new(&random_str);
         let mut dest = prefix.join(new_path);
-        dest.set_extension(&extension);
+        dest.set_extension(extension);
         if !dest.exists() {
             return dest;
         }

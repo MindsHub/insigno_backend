@@ -141,7 +141,7 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
     if let Some(tmp) = photo {
         let x =&tmp[0];
         let new_pos = unique_path(&custom, Path::new("png"));
-        fs::copy(&x.path, &new_pos).unwrap_or_else(|x| {println!("{}", x.to_string()); 0});
+        fs::copy(&x.path, &new_pos).unwrap_or_else(|x| {println!("{x}"); 0});
         let z = new_pos.strip_prefix(custom.to_str().unwrap()).unwrap();
         let img = MarkerImage{
             id: None,
@@ -164,7 +164,7 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
 #[get("/types")]
 async fn get_types(connection: Db) -> Option<Json<Vec<TrashType>>> {
     let res: Result<Vec<TrashType>, _> = connection.run(|x| trash_types::table.load(x)).await;
-    res.map(|x| Json(x)).ok()
+    res.map(Json).ok()
 }
 
 pub fn get_routes() -> Vec<Route> {

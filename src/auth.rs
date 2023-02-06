@@ -2,6 +2,7 @@ use diesel::{PgConnection, Connection, insert_into, update, QueryDsl, RunQueryDs
 use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
 use rocket_auth::{Auth, Error, Login, Signup, Users, DBConnection, Result, User};
 use diesel::*;
+use rocket_sync_db_pools::Config;
 
 use crate::schema::users;
 
@@ -14,9 +15,9 @@ struct MyUser{
     password: String,
     is_admin: bool,
 }
-impl Into<User> for MyUser{
-    fn into(self) -> User {
-        User{id: self.id, email: self.email, password: self.password, is_admin: self.is_admin}
+impl From<MyUser> for User{
+    fn from(val: MyUser) -> Self {
+        User{id: val.id, email: val.email, password: val.password, is_admin: val.is_admin}
     }
 }
 
@@ -41,7 +42,7 @@ impl DBConnection for UserConnection{
         
         use users::dsl::users as dslUsers;
         
-        update(dslUsers.find(user.id.clone())).set(( users::email.eq( user.email().clone()), users::password.eq(user.password.clone()), users::is_admin.eq(user.is_admin))).execute(&self.0)?;
+        update(dslUsers.find(user.id)).set(( users::email.eq( user.email().to_string()), users::password.eq(user.password), users::is_admin.eq(user.is_admin))).execute(&self.0)?;
         
         Ok(())
     }
@@ -99,9 +100,9 @@ pub fn get_routes() -> Vec<Route> {
 }
 
 pub async fn stage() -> AdHoc {
-    
     AdHoc::on_ignite("Diesel Authentication Stage", |rocket| async {
-        let y = PgConnection::establish(&"postgres://mindshub:Minds.100@insignio.mindshub.it:5432/insigniorocketdb").unwrap();
+        let y = Config::from("db", &rocket).unwrap();
+        let y = PgConnection::establish(&y.url).unwrap();
         let y = UserConnection{0: y};
         let users: Users = y.into();
         rocket.manage(users)
