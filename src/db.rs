@@ -1,9 +1,11 @@
+
 use rocket::fairing::AdHoc;
+
 use rocket_sync_db_pools::database;
 
-
 #[database("db")]
-pub struct Db(diesel::PgConnection);
+pub struct Db(pub diesel::PgConnection);
+
 
 
 pub fn stage() -> AdHoc {
