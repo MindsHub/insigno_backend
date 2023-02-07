@@ -1,10 +1,12 @@
+use std::collections::BTreeMap;
+
 use diesel::{PgConnection, Connection, insert_into, update, QueryDsl, RunQueryDsl};
 use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
 use rocket_auth::{Auth, Error, Login, Signup, Users, DBConnection, Result, User};
 use diesel::*;
 use rocket_sync_db_pools::Config;
 
-use crate::schema::users;
+use crate::schema::{users, trash_types};
 
 pub struct UserConnection(pub diesel::PgConnection);
 unsafe impl Sync for UserConnection {}
@@ -99,12 +101,24 @@ pub fn get_routes() -> Vec<Route> {
     routes![signup, login, logout]
 }
 
+pub struct TrashTypeMap{
+    pub to_string: BTreeMap<i64, String>,
+    pub to_i64: BTreeMap<String, i64>
+}
+
 pub async fn stage() -> AdHoc {
     AdHoc::on_ignite("Diesel Authentication Stage", |rocket| async {
         let y = Config::from("db", &rocket).unwrap();
-        let y = PgConnection::establish(&y.url).unwrap();
-        let y = UserConnection{0: y};
-        let users: Users = y.into();
-        rocket.manage(users)
+        let conn = PgConnection::establish(&y.url).unwrap();
+
+        let sorted = trash_types::table.load::<(i64, String)>(&conn).unwrap().into_iter().collect::<BTreeMap<i64, String>>();
+        let inverted = sorted.clone().into_iter().map(|(x, y)| (y,x)).collect();
+        let trash_types_map= TrashTypeMap{to_string: sorted, to_i64: inverted};
+        let users: Users = UserConnection{0: conn}.into();
+        
+        rocket
+            .manage(users)
+            .manage(trash_types_map)
+        
     })
 }
