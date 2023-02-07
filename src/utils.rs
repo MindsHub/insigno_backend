@@ -65,12 +65,12 @@ sql_function!(fn st_transform(g: Geometry, srid: Integer)-> Geometry);
 sql_function!(fn st_dwithin(g1: Geometry, g2: Geometry, dist: Double) ->  Bool); // "Represents the postgis_sql distance() function"
 
 pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
-    loop{
+    loop {
         let random_str: String = rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(10)
-        .map(char::from)
-        .collect();
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
 
         let new_path = Path::new(&random_str);
         let mut dest = prefix.join(new_path);
@@ -79,5 +79,4 @@ pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
             return dest;
         }
     }
-    
 }
