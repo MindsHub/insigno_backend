@@ -30,20 +30,20 @@ use super::schema::*;
 #[derive(Serialize, Clone, Queryable, Debug)]
 #[diesel(table_name = "trash_types")]
 struct TrashType {
-    id: i32,
+    id: i64,
     name: String,
 }
 
 #[derive(Clone, Queryable, Insertable,  Debug)]
 #[diesel(table_name = marker)]
 struct Marker {
-    #[diesel(deserialize_as = "i32")]
-    id: Option<i32>,
+    #[diesel(deserialize_as = "i64")]
+    id: Option<i64>,
     point: PointC<Point>,
     #[diesel(deserialize_as = "chrono::DateTime<Utc>")]
     creation_date: Option<chrono::DateTime<Utc>>,
-    created_by: i32,
-    trash_type_id: i32,
+    created_by: i64,
+    trash_type_id: i64,
 }
 
 impl Serialize for Marker {
@@ -62,10 +62,10 @@ impl Serialize for Marker {
 #[derive(Clone, Queryable, Insertable,  Debug)]
 #[diesel(table_name = image)]
 struct MarkerImage{
-    #[diesel(deserialize_as = "i32")]
-    id: Option<i32>,
+    #[diesel(deserialize_as = "i64")]
+    id: Option<i64>,
     path: String,
-    refers_to: i32,
+    refers_to: i64,
 }
 
 #[get("/get_near?<x>&<y>&<srid>")]
@@ -108,7 +108,7 @@ async fn add_trash(data: Json<AddTrashField>, user: User, connection: Db)-> Opti
     
     let z = Marker{
         id: None,
-        created_by: user.id(),
+        created_by: user.id() as i64,
         point: PointC { v: Point { x: data.x, y: data.y, srid: Some(4326) } },
         creation_date: None,
         trash_type_id: 1
@@ -129,35 +129,38 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
         MultipartFormDataField::file("image")
             .content_type_by_string(Some(mime::IMAGE_PNG))
             .unwrap(),
+        MultipartFormDataField::text("refers_to_id"),
     ]);
-    let mut custom = PathBuf::new();
 
-    custom.set_file_name(&config.media_folder);
+    let mut custom_path = PathBuf::new();
+    custom_path.set_file_name(&config.media_folder);
 
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         .await
         .unwrap();
-    let photo = multipart_form_data.files.get("image");
-    if let Some(tmp) = photo {
-        let x =&tmp[0];
-        let new_pos = unique_path(&custom, Path::new("png"));
-        fs::copy(&x.path, &new_pos).unwrap_or_else(|x| {println!("{x}"); 0});
-        let z = new_pos.strip_prefix(custom.to_str().unwrap()).unwrap();
-        let img = MarkerImage{
-            id: None,
-            path: z.to_str().unwrap().to_string(),
-            refers_to: 1,
-        };
-        if let Ok(z) = connection.run(move |conn|{
-            use marker_images::dsl::marker_images as mi;
-            insert_into(mi).values(&img).get_result::<MarkerImage>(conn)
-        }).await{
-            return Some(z.id.unwrap().to_string());
-        }else{
-            _ = fs::remove_file(new_pos);
-        }
+
+    let photo_path = &multipart_form_data.files.get("image")?[0];
+    let id = &multipart_form_data.texts.get("refers_to_id")?[0];
+
+
+    let new_pos = unique_path(&custom_path, Path::new("png"));
+    fs::copy(&photo_path.path, &new_pos).unwrap_or_else(|x| {println!("{x}"); 0});
+    let z = new_pos.strip_prefix(custom_path.to_str().unwrap()).unwrap();
+    let img = MarkerImage{
+        id: None,
+        path: z.to_str().unwrap().to_string(),
+        refers_to: id.text.parse::<i64>().ok()?,
+    };
+    if let Ok(z) = connection.run(move |conn|{
+        use marker_images::dsl::marker_images as mi;
+        insert_into(mi).values(&img).get_result::<MarkerImage>(conn)
+    }).await{
+        return Some(z.id.unwrap().to_string());
     }
+    _ = fs::remove_file(new_pos);
     None
+    
+        
 }
 
 

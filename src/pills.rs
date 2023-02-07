@@ -11,7 +11,7 @@ use super::db::Db;
 #[derive(Serialize, Deserialize, Clone, Queryable, Debug, Insertable)]
 #[diesel(table_name = pills)]
 struct Pill {
-    id: i32,
+    id: i64,
     text: String,
     author: String,
     source: String,

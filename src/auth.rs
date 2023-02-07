@@ -10,14 +10,14 @@ pub struct UserConnection(pub diesel::PgConnection);
 unsafe impl Sync for UserConnection {}
 #[derive(Queryable, Clone)]
 struct MyUser{
-    id: i32,
+    id: i64,
     email: String,
     password: String,
     is_admin: bool,
 }
 impl From<MyUser> for User{
     fn from(val: MyUser) -> Self {
-        User{id: val.id, email: val.email, password: val.password, is_admin: val.is_admin}
+        User{id: val.id as i32, email: val.email, password: val.password, is_admin: val.is_admin}
     }
 }
 
@@ -42,7 +42,7 @@ impl DBConnection for UserConnection{
         
         use users::dsl::users as dslUsers;
         
-        update(dslUsers.find(user.id)).set(( users::email.eq( user.email().to_string()), users::password.eq(user.password), users::is_admin.eq(user.is_admin))).execute(&self.0)?;
+        update(dslUsers.find(user.id as i64)).set(( users::email.eq( user.email().to_string()), users::password.eq(user.password), users::is_admin.eq(user.is_admin))).execute(&self.0)?;
         
         Ok(())
     }
@@ -50,7 +50,7 @@ impl DBConnection for UserConnection{
     async fn delete_user_by_id(&self, user_id: i32) -> Result<()> {
 
         use users::dsl::users as dslUsers;
-        delete(dslUsers.find(user_id)).execute(&self.0)?;
+        delete(dslUsers.find(user_id as i64)).execute(&self.0)?;
         
         Ok(())
     }
@@ -62,7 +62,7 @@ impl DBConnection for UserConnection{
     }
     async fn get_user_by_id(&self, user_id: i32) -> Result<User> {
         use users::dsl::users as dslUsers;
-        let z = dslUsers.find(user_id).load::<MyUser>(&self.0)?[0].clone();
+        let z = dslUsers.find(user_id as i64).load::<MyUser>(&self.0)?[0].clone();
 
         Ok(z.into())
     }
