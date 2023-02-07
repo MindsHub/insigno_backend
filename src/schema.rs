@@ -1,7 +1,7 @@
 
 table! {
     pills (id) {
-        id -> Int4,
+        id -> BigInt,
         text -> Text,
         author -> Text,
         source -> Text,
@@ -10,31 +10,31 @@ table! {
 
 table! {
     trash_types (id){
-        id->Integer,
+        id->BigInt,
         name->Text,
     }
 }
 
 table! {
     markers(id) {
-        id -> Integer,
+        id -> BigInt,
         point-> postgis_diesel::sql_types::Geometry,
         creation_date->Timestamptz,
-        created_by->Integer,
-        trash_type_id -> Integer,
+        created_by->BigInt,
+        trash_type_id -> BigInt,
     }
 }
 
 table! {
     marker_images(id){
-        id -> Integer,
+        id -> BigInt,
         path -> Text,
-        refers_to -> Integer,
+        refers_to -> BigInt,
     }
 }
 table! {
     users(id){
-        id -> Integer,
+        id -> BigInt,
         email -> Text,
         password -> Text,
         is_admin -> Bool,

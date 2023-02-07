@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS public.trash_types
 (
-    id integer NOT NULL,
+    id BIGSERIAL NOT NULL,
     name text COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT trash_types_pkey PRIMARY KEY (id)
 )

@@ -4,11 +4,11 @@
 
 CREATE TABLE IF NOT EXISTS public.markers
 (
-    id SERIAL NOT NULL,
+    id BIGSERIAL NOT NULL,
     point geometry(Geometry, 4326) NOT NULL,
     creation_date timestamp with time zone DEFAULT now(),
-    trash_type_id integer NOT NULL DEFAULT '1',
-    created_by integer NOT NULL,
+    trash_type_id BIGINT NOT NULL DEFAULT '1',
+    created_by BIGINT NOT NULL,
     CONSTRAINT marker_id_pkey PRIMARY KEY (id),
     CONSTRAINT marker_id_fkey FOREIGN KEY (trash_type_id)
         REFERENCES public.trash_types (id) MATCH SIMPLE
