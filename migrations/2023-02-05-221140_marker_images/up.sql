@@ -18,8 +18,3 @@ TABLESPACE pg_default;
 
 ALTER TABLE IF EXISTS public.marker_images
     OWNER to mindshub;
-
---INSERT INTO public.markers(
---	id, point, creation_date)
---	VALUES 
---  (1, ST_GeomFromText('POINT(11.003296 45.755445)', 4326), '2014-06-04 12:00 EDT');
