@@ -2,16 +2,11 @@ use diesel::{sql_types::Double, QueryDsl, RunQueryDsl};
 use rocket::{serde::json::Json, Route};
 use serde::{Deserialize, Serialize};
 
+use crate::schema::pills;
+
 use super::db::Db;
 
-table! {
-    pills (id) {
-        id -> Int4,
-        text -> Text,
-        author -> Text,
-        source -> Text,
-    }
-}
+
 
 #[derive(Serialize, Deserialize, Clone, Queryable, Debug, Insertable)]
 #[diesel(table_name = pills)]

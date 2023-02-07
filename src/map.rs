@@ -126,7 +126,7 @@ async fn add_trash(data: Json<AddTrashField>, user: User, connection: Db)-> Opti
 async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, connection: Db, config: &State<InsignoConfig>) -> Option<String> {
     user.id();
     let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
-        MultipartFormDataField::file("creationPhoto")
+        MultipartFormDataField::file("image")
             .content_type_by_string(Some(mime::IMAGE_PNG))
             .unwrap(),
     ]);
@@ -137,7 +137,7 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         .await
         .unwrap();
-    let photo = multipart_form_data.files.get("creationPhoto");
+    let photo = multipart_form_data.files.get("image");
     if let Some(tmp) = photo {
         let x =&tmp[0];
         let new_pos = unique_path(&custom, Path::new("png"));
@@ -146,7 +146,7 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
         let img = MarkerImage{
             id: None,
             path: z.to_str().unwrap().to_string(),
-            refers_to: 4,
+            refers_to: 1,
         };
         if let Ok(z) = connection.run(move |conn|{
             use marker_images::dsl::marker_images as mi;

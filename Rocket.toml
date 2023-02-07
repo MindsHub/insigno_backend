@@ -3,12 +3,18 @@
 [default.databases]
 db = {url = "postgres://mindshub:Minds.100@insignio.mindshub.it:5432/insigniorocketdb", timeout = 10, pool_size = 5}
 
-[debug]
-log_level = "debug"
-
-[release]
-
-
-[default]
-media_folder= "/home/alessio/Documents/Mindshub/insignio/insignio_backend/testi"
+# default parameter. add only necessary ones
+[default] 
+#address = "127.0.0.1"
+#port = 8000
+#workers = 16
+#max_blocking = 512
+#keep_alive = 5
+#ident = "Rocket"
+#log_level = "normal"
+#temp_dir = "/tmp"
+#cli_colors = true
 secret_key = "/ArczfDUOXuoxJwvf1BhfkPGCoaeXK5x0eblZQiCzXs="
+
+# our custom config data
+media_folder= "./media"
