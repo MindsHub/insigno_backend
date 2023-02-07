@@ -1,9 +1,12 @@
 
+use std::collections::BTreeMap;
+
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
 use crate::InsignoConfig;
+use crate::auth::TrashTypeMap;
 use crate::utils::*;
 use chrono::Utc;
 use diesel::RunQueryDsl;
@@ -13,6 +16,7 @@ use postgis::ewkb::Point;
 use postgis_diesel::*;
 
 use rocket::State;
+use rocket::form::Form;
 use rocket::http::ContentType;
 use rocket::Data;
 use rocket::Route;
@@ -96,22 +100,22 @@ async fn get_near(
         .map_or_else(|x| Err(x.to_string()), |x| Ok(Json(x)))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, FromForm)]
 struct AddTrashField{
     x: f64,
     y: f64,
     type_tr: String,
 }
 
-#[post("/add", format = "json", data = "<data>")]
-async fn add_trash(data: Json<AddTrashField>, user: User, connection: Db)-> Option<String>{
-    
+#[post("/add", data = "<data>")]
+async fn add_trash(data: Form<AddTrashField>, user: User, connection: Db, trash_types_map: &State<TrashTypeMap>)-> Option<String>{
+    let type_int = *trash_types_map.to_i64.get(data.type_tr.to_lowercase().trim()).unwrap_or(&1);
     let z = Marker{
         id: None,
         created_by: user.id() as i64,
         point: PointC { v: Point { x: data.x, y: data.y, srid: Some(4326) } },
         creation_date: None,
-        trash_type_id: 1
+        trash_type_id: type_int
     };
     use markers::dsl::markers as mrkt;
     if let Ok(test) = connection.run(move |conn| {
@@ -124,7 +128,7 @@ async fn add_trash(data: Json<AddTrashField>, user: User, connection: Db)-> Opti
 
 #[post("/image/add", data = "<data>")]
 async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, connection: Db, config: &State<InsignoConfig>) -> Option<String> {
-    user.id();
+    // parse multipart data
     let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("image")
             .content_type_by_string(Some(mime::IMAGE_PNG))
@@ -132,24 +136,35 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
         MultipartFormDataField::text("refers_to_id"),
     ]);
 
-    let mut custom_path = PathBuf::new();
-    custom_path.set_file_name(&config.media_folder);
-
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         .await
         .unwrap();
-
+    
+    // cast data to normal values
     let photo_path = &multipart_form_data.files.get("image")?[0];
-    let id = &multipart_form_data.texts.get("refers_to_id")?[0];
+    let id = multipart_form_data.texts.get("refers_to_id")?[0].text.parse::<i64>().ok()?;
+    let user_id = user.id as i64;
 
-
+    // check if user own the marker
+    let z = connection.run(move |conn| 
+        markers::table.find(id).filter(markers::created_by.eq(user_id)).load::<Marker>(conn)
+    ).await.ok()?;
+    if z.len()==0{
+        return None;
+    }
+    
+    // find a place to save the image in memory
+    let mut custom_path = PathBuf::new();
+    custom_path.set_file_name(&config.media_folder);
     let new_pos = unique_path(&custom_path, Path::new("png"));
-    fs::copy(&photo_path.path, &new_pos).unwrap_or_else(|x| {println!("{x}"); 0});
+    fs::copy(&photo_path.path, &new_pos).map_err(|x| {println!("{x}"); 0}).ok()?;
     let z = new_pos.strip_prefix(custom_path.to_str().unwrap()).unwrap();
+
+    // try to save it in database
     let img = MarkerImage{
         id: None,
         path: z.to_str().unwrap().to_string(),
-        refers_to: id.text.parse::<i64>().ok()?,
+        refers_to: id,
     };
     if let Ok(z) = connection.run(move |conn|{
         use marker_images::dsl::marker_images as mi;
@@ -157,17 +172,16 @@ async fn add_image(content_type: &ContentType, data: Data<'_>, user: User, conne
     }).await{
         return Some(z.id.unwrap().to_string());
     }
+    
+    // remove file
     _ = fs::remove_file(new_pos);
     None
-    
-        
 }
 
 
 #[get("/types")]
-async fn get_types(connection: Db) -> Option<Json<Vec<TrashType>>> {
-    let res: Result<Vec<TrashType>, _> = connection.run(|x| trash_types::table.load(x)).await;
-    res.map(Json).ok()
+async fn get_types(trash_types_map: &State<TrashTypeMap>) -> Json<BTreeMap<i64, String>> {
+    Json(trash_types_map.to_string.clone())
 }
 
 pub fn get_routes() -> Vec<Route> {
