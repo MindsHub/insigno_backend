@@ -6,8 +6,6 @@ use crate::schema::pills;
 
 use super::db::Db;
 
-
-
 #[derive(Serialize, Deserialize, Clone, Queryable, Debug, Insertable)]
 #[diesel(table_name = pills)]
 struct Pill {

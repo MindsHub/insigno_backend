@@ -7,17 +7,16 @@ extern crate diesel;
 
 mod auth;
 mod db;
-mod pills;
 mod map;
-mod utils;
+mod pills;
 mod schema;
+mod utils;
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 struct InsignoConfig {
     media_folder: String,
 }
-
 
 #[launch]
 async fn rocket() -> _ {

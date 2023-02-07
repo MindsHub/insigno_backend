@@ -1,4 +1,3 @@
-
 table! {
     pills (id) {
         id -> BigInt,
