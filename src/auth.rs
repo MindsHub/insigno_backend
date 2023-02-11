@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use diesel::*;
 use diesel::{insert_into, update, Connection, PgConnection, QueryDsl, RunQueryDsl};
-use rocket::figment::value::Value;
 use rocket::serde::json::{Json, from_str, serde_json};
 use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
 use rocket_auth::{Auth, DBConnection, Error, Login, Result, Signup, User, Users, Session};
