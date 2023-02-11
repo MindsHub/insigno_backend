@@ -26,6 +26,7 @@ async fn get_random_pill(connection: Db) -> Option<Json<Pill>> {
 
     if let Ok(res) = res {
         if let Some(res) = res.into_iter().next() {
+            println!("{}", res.text);
             return Some(Json(res));
         }
     }
