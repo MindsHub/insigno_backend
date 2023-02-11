@@ -1,0 +1,85 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 32749e5..3b10120 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -22,7 +22,6 @@ sqlx-sqlite = ["sqlx/sqlite"]
+ sqlx-postgres = ["sqlx/postgres"]
+ sqlx-mysql = ["sqlx/mysql"]
+ 
+-
+ [dependencies.rusqlite]
+ version = "0.27.0"
+ optional = true
+@@ -41,7 +40,7 @@ fehler = "1.0.0"
+ chrono = "0.4.19"
+ validator = { version = "0.15.0", features = ["derive"] }
+ futures= "0.3.21"
+-
++diesel = { version = "1.4.8", features =["postgres"] }
+ 
+ [dependencies.sqlx]
+ version = "0.6.0"
+diff --git a/src/db/mod.rs b/src/db/mod.rs
+index ee5e935..1b4b78d 100644
+--- a/src/db/mod.rs
++++ b/src/db/mod.rs
+@@ -9,6 +9,8 @@ mod sqlite;
+ #[cfg(feature = "tokio-postgres")]
+ mod tokio_postgres;
+ 
++//#[cfg(feature = "diesel-postgres")]
++//mod diesel;
+ use crate::prelude::*;
+ 
+ #[rocket::async_trait]
+diff --git a/src/error.rs b/src/error.rs
+index cb90276..f033236 100644
+--- a/src/error.rs
++++ b/src/error.rs
+@@ -1,5 +1,6 @@
+ use std::*;
+ 
++
+ #[non_exhaustive]
+ #[derive(thiserror::Error, Debug)]
+ pub enum Error {
+@@ -72,6 +73,9 @@ pub enum Error {
+     #[cfg(feature = "tokio-postgres")]
+     #[error("TokioPostgresError: {0}")]
+     TokioPostgresError(#[from] tokio_postgres::Error),
++
++    #[error("DieselError: {0}")]
++    DieselPostgresError(#[from] diesel::result::Error),
+ }
+ 
+ /*****  CONVERSIONS  *****/
+diff --git a/src/lib.rs b/src/lib.rs
+index 33092bb..e64ca1b 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -170,10 +170,10 @@ pub use error::Error;
+ #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Hash, PartialOrd, Ord)]
+ pub struct User {
+     pub id: i32,
+-    email: String,
++    pub email: String,
+     pub is_admin: bool,
+     #[serde(skip_serializing)]
+-    password: String,
++    pub password: String,
+ }
+ 
+ /// The [`AdminUser`] guard can be used analogously to [`User`].
+diff --git a/src/prelude.rs b/src/prelude.rs
+index 07ac845..6df016a 100644
+--- a/src/prelude.rs
++++ b/src/prelude.rs
+@@ -7,7 +7,7 @@ pub use crate::{AdminUser, Auth, User, Users};
+ pub type Result<T, E = Error> = std::result::Result<T, E>;
+ 
+ pub(crate) use crate::session::SessionManager;
+-pub(crate) use crate::db::DBConnection;
++pub use crate::db::DBConnection;
+ pub(crate) use async_trait::async_trait;
+ pub(crate) use fehler::*;
+ pub(crate) use rocket::form::FromForm;
