@@ -11,7 +11,8 @@ mod map;
 mod pills;
 mod schema;
 mod utils;
-
+mod cors;
+use cors::*;
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 struct InsignoConfig {
@@ -20,6 +21,7 @@ struct InsignoConfig {
 
 #[launch]
 async fn rocket() -> _ {
+
     let rocket = rocket::build();
     rocket
         .attach(db::stage())
@@ -28,5 +30,7 @@ async fn rocket() -> _ {
         .mount("/map", map::get_routes())
         .mount("/", auth::get_routes())
         .attach(AdHoc::config::<InsignoConfig>())
+        .attach(cors::Cors)
+        .mount("/", routes![index, all_options, insert])
     //.manage(users)
 }

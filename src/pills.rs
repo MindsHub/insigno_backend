@@ -17,7 +17,7 @@ struct Pill {
 
 no_arg_sql_function!(random, Double, "Represents the sql RANDOM() function"); // "Represents the sql RANDOM() function"
 #[get("/random")]
-async fn get_random_pill(connection: Db) -> Json<Option<Pill>> {
+async fn get_random_pill(connection: Db) -> Option<Json<Pill>> {
     // this allows executing this query: SELECT * FROM pills ORDER BY RANDOM() LIMIT 1
 
     let res: Result<Vec<Pill>, _> = connection
@@ -26,11 +26,11 @@ async fn get_random_pill(connection: Db) -> Json<Option<Pill>> {
 
     if let Ok(res) = res {
         if let Some(res) = res.into_iter().next() {
-            return Json(Some(res));
+            return Some(Json(res));
         }
     }
 
-    Json(None)
+    None
 }
 
 pub fn get_routes() -> Vec<Route> {

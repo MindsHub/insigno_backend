@@ -2,12 +2,13 @@ use std::collections::BTreeMap;
 
 use diesel::*;
 use diesel::{insert_into, update, Connection, PgConnection, QueryDsl, RunQueryDsl};
+use rocket::figment::value::Value;
+use rocket::serde::json::{Json, from_str, serde_json};
 use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
-use rocket_auth::{Auth, DBConnection, Error, Login, Result, Signup, User, Users};
+use rocket_auth::{Auth, DBConnection, Error, Login, Result, Signup, User, Users, Session};
 use rocket_sync_db_pools::Config;
 
 use crate::schema::{trash_types, users};
-
 pub struct UserConnection(pub diesel::PgConnection);
 unsafe impl Sync for UserConnection {}
 #[derive(Queryable, Clone)]
@@ -103,11 +104,19 @@ async fn signup(form: Form<Signup>, auth: Auth<'_>) -> Result<&'static str, Erro
     auth.login(&form.into()).await?;
     Ok("You signed up.")
 }
-
-#[post("/login", data = "<form>")]
-async fn login(form: Form<Login>, auth: Auth<'_>) -> Result<&'static str, Error> {
+use rocket::serde::Serialize;
+#[derive(Serialize)]
+struct Token{token: String}
+#[post( "/login", data = "<form>")]
+async fn login(form: Json<Login>, auth: Auth<'_>) -> Result<Json<rocket::serde::json::Value>, Error> {
     auth.login(&form).await?;
-    Ok("You're logged in.")
+    //println!("{:?}, {:?}", &form, &form.password);
+    let session = auth.cookies.get_pending("rocket_auth").unwrap();
+    let y: Session = from_str(session.value()).ok().unwrap();
+    
+    let js = serde_json::json!(Token{token: y.auth_key});
+    println!("{:?}", js);
+    Ok(Json(js))
 }
 
 #[get("/logout")]
