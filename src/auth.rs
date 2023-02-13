@@ -3,13 +3,14 @@ use std::error::Error;
 
 use diesel::*;
 use diesel::{insert_into, update, Connection, PgConnection, QueryDsl, RunQueryDsl};
+use rocket::response::Debug;
 use rocket::serde::json::{from_str, serde_json, Json};
 use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
 use rocket_auth::{Auth, DBConnection, Login, Result, Session, Signup, User, Users};
 use rocket_sync_db_pools::Config;
-use rocket::response::Debug;
 
 use crate::schema::{trash_types, users};
+use crate::utils::*;
 pub struct UserConnection(pub diesel::PgConnection);
 unsafe impl Sync for UserConnection {}
 #[derive(Queryable, Clone)]
@@ -101,8 +102,8 @@ impl DBConnection for UserConnection {
 
 #[post("/signup", data = "<form>")]
 async fn signup(form: Form<Signup>, auth: Auth<'_>) -> Result<&'static str, Debug<Box<dyn Error>>> {
-    auth.signup(&form).await.map_err(|x| Debug(x.into()))?;
-    auth.login(&form.into()).await.map_err(|x| Debug(x.into()))?;
+    auth.signup(&form).await.map_err(to_debug)?;
+    auth.login(&form.into()).await.map_err(to_debug)?;
     Ok("You signed up.")
 }
 use rocket::serde::Serialize;
@@ -115,19 +116,22 @@ async fn login(
     form: Json<Login>,
     auth: Auth<'_>,
 ) -> Result<Json<rocket::serde::json::Value>, Debug<Box<dyn Error>>> {
-    auth.login(&form).await.map_err(|x| Debug(x.into()))?;
+    auth.login(&form).await.map_err(to_debug)?;
     //println!("{:?}, {:?}", &form, &form.password);
-    let session = auth.cookies.get_pending("rocket_auth").ok_or(Debug("failed to get cookies".into()))?;
-    let y: Session = from_str(session.value()).map_err(|x| Debug(x.into()))?;
+    let session = auth
+        .cookies
+        .get_pending("rocket_auth")
+        .ok_or(str_to_debug("failed to get cookies"))?;
+    let y: Session = from_str(session.value()).map_err(to_debug)?;
 
     let js = serde_json::json!(Token { token: y.auth_key });
-    println!("{:?}", js);
+    println!("{js:?}");
     Ok(Json(js))
 }
 
 #[get("/logout")]
 fn logout(auth: Auth<'_>) -> Result<(), Debug<Box<dyn Error>>> {
-    auth.logout().map_err(|x| Debug(x.into()))?;
+    auth.logout().map_err(to_debug)?;
     Ok(())
 }
 

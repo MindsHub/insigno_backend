@@ -23,6 +23,7 @@ use rocket::State;
 
 use super::db::Db;
 use super::schema::*;
+use rocket::response::Debug;
 use rocket::serde::{json::Json, Deserialize};
 use rocket_auth::User;
 use rocket_multipart_form_data::mime;
@@ -31,7 +32,6 @@ use rocket_multipart_form_data::MultipartFormDataField;
 use rocket_multipart_form_data::MultipartFormDataOptions;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
-use rocket::response::Debug;
 #[derive(Serialize, Clone, Queryable, Debug)]
 #[diesel(table_name = "trash_types")]
 struct TrashType {
@@ -135,10 +135,14 @@ async fn add_trash(
     use markers::dsl::markers as mrkt;
     match connection
         .run(move |conn| insert_into(mrkt).values(&z).get_result::<Marker>(conn))
-        .await{
-            Ok(x) =>{Ok(x.id.ok_or(Debug("id not found (very strange)".into()))?.to_string())},
-            Err(x) => {Err(Debug(x.into()))}
-        }
+        .await
+    {
+        Ok(x) => Ok(x
+            .id
+            .ok_or(str_to_debug("id not found (very strange)"))?
+            .to_string()),
+        Err(x) => Err(Debug(x.into())),
+    }
 }
 
 #[post("/image/add", data = "<data>")]
@@ -153,18 +157,23 @@ async fn add_image(
     let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("image")
             .content_type_by_string(Some(mime::IMAGE_PNG))
-            .map_err(|x| to_debug(x))?
-            ,
+            .map_err(to_debug)?,
         MultipartFormDataField::text("refers_to_id"),
     ]);
 
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         .await
-        .map_err(|x| to_debug(x))?;
+        .map_err(to_debug)?;
 
     // cast data to normal values
-    let photo_path = &multipart_form_data.files.get("image").ok_or(str_to_debug("photo field not found"))?[0];
-    let id = multipart_form_data.texts.get("refers_to_id").ok_or(str_to_debug("id field not found"))?[0]
+    let photo_path = &multipart_form_data
+        .files
+        .get("image")
+        .ok_or(str_to_debug("photo field not found"))?[0];
+    let id = multipart_form_data
+        .texts
+        .get("refers_to_id")
+        .ok_or(str_to_debug("id field not found"))?[0]
         .text
         .parse::<i64>()
         .map_err(to_debug)?;
@@ -179,21 +188,28 @@ async fn add_image(
                 .load::<Marker>(conn)
         })
         .await
-        .map_err(|x |to_debug(x))?;
+        .map_err(to_debug)?;
 
     // find a place to save the image in memory
     let mut custom_path = PathBuf::new();
     custom_path.set_file_name(&config.media_folder);
     let new_pos = unique_path(&custom_path, Path::new("png"));
-    fs::copy(&photo_path.path, &new_pos)
+    fs::copy(&photo_path.path, &new_pos).map_err(to_debug)?;
+    let z = new_pos
+        .strip_prefix(
+            custom_path
+                .to_str()
+                .ok_or(str_to_debug("to str doesn't work"))?,
+        )
         .map_err(to_debug)?;
-    let z = new_pos.strip_prefix(custom_path.to_str().ok_or(str_to_debug("to str doesn't work"))?)
-    .map_err(to_debug)?;
 
     // try to save it in database
     let img = MarkerImage {
         id: None,
-        path: z.to_str().ok_or(str_to_debug("to str doesn't work"))?.to_string(),
+        path: z
+            .to_str()
+            .ok_or(str_to_debug("to str doesn't work"))?
+            .to_string(),
         refers_to: id,
     };
     connection

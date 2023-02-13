@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use crate::schema::pills;
+use crate::utils::{str_to_debug, to_debug};
 use diesel::ExpressionMethods;
 use diesel::{insert_into, sql_types::Double, QueryDsl, RunQueryDsl};
 use rocket::response::Debug;
@@ -34,12 +35,12 @@ async fn get_random_pill(connection: Db) -> Result<Json<Pill>, Debug<Box<dyn Err
                 .load(c)
         })
         .await
-        .map_err(|x| Debug::from(Box::from(x)))?;
+        .map_err(to_debug)?;
 
     let pill = res
         .into_iter()
         .next()
-        .ok_or(Debug::from(Box::from("test")))?;
+        .ok_or(str_to_debug("returned 0 pills"))?;
     Ok(Json(pill))
 }
 
@@ -65,7 +66,7 @@ async fn add_pill(connection: Db, data: Json<AddPill>) -> Result<String, Debug<B
             insert_into(pi).values(&pill).execute(conn)
         })
         .await
-        .map_err(|x| Debug(x.into()))?;
+        .map_err(to_debug)?;
 
     Ok("Added".to_string())
 }
