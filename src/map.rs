@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use std::error::Error;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -30,6 +31,7 @@ use rocket_multipart_form_data::MultipartFormDataField;
 use rocket_multipart_form_data::MultipartFormDataOptions;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
+use rocket::response::Debug;
 #[derive(Serialize, Clone, Queryable, Debug)]
 #[diesel(table_name = "trash_types")]
 struct TrashType {
@@ -112,7 +114,7 @@ async fn add_trash(
     user: User,
     connection: Db,
     trash_types_map: &State<TrashTypeMap>,
-) -> Option<String> {
+) -> Result<String, Debug<Box<dyn Error>>> {
     let type_int = *trash_types_map
         .to_i64
         .get(data.type_tr.to_lowercase().trim())
@@ -131,13 +133,12 @@ async fn add_trash(
         trash_type_id: type_int,
     };
     use markers::dsl::markers as mrkt;
-    if let Ok(test) = connection
+    match connection
         .run(move |conn| insert_into(mrkt).values(&z).get_result::<Marker>(conn))
-        .await
-    {
-        return Some(test.id.unwrap().to_string());
-    }
-    None
+        .await{
+            Ok(x) =>{Ok(x.id.ok_or(Debug("id not found (very strange)".into()))?.to_string())},
+            Err(x) => {Err(Debug(x.into()))}
+        }
 }
 
 #[post("/image/add", data = "<data>")]
@@ -147,29 +148,30 @@ async fn add_image(
     user: User,
     connection: Db,
     config: &State<InsignoConfig>,
-) -> Option<String> {
+) -> Result<(), Debug<Box<dyn Error>>> {
     // parse multipart data
     let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("image")
             .content_type_by_string(Some(mime::IMAGE_PNG))
-            .unwrap(),
+            .map_err(|x| to_debug(x))?
+            ,
         MultipartFormDataField::text("refers_to_id"),
     ]);
 
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         .await
-        .unwrap();
+        .map_err(|x| to_debug(x))?;
 
     // cast data to normal values
-    let photo_path = &multipart_form_data.files.get("image")?[0];
-    let id = multipart_form_data.texts.get("refers_to_id")?[0]
+    let photo_path = &multipart_form_data.files.get("image").ok_or(str_to_debug("photo field not found"))?[0];
+    let id = multipart_form_data.texts.get("refers_to_id").ok_or(str_to_debug("id field not found"))?[0]
         .text
         .parse::<i64>()
-        .ok()?;
+        .map_err(to_debug)?;
     let user_id = user.id as i64;
 
     // check if user own the marker
-    let z = connection
+    connection
         .run(move |conn| {
             markers::table
                 .find(id)
@@ -177,42 +179,35 @@ async fn add_image(
                 .load::<Marker>(conn)
         })
         .await
-        .ok()?;
-    if z.is_empty() {
-        return None;
-    }
+        .map_err(|x |to_debug(x))?;
 
     // find a place to save the image in memory
     let mut custom_path = PathBuf::new();
     custom_path.set_file_name(&config.media_folder);
     let new_pos = unique_path(&custom_path, Path::new("png"));
     fs::copy(&photo_path.path, &new_pos)
-        .map_err(|x| {
-            println!("{x}");
-            0
-        })
-        .ok()?;
-    let z = new_pos.strip_prefix(custom_path.to_str().unwrap()).unwrap();
+        .map_err(to_debug)?;
+    let z = new_pos.strip_prefix(custom_path.to_str().ok_or(str_to_debug("to str doesn't work"))?)
+    .map_err(to_debug)?;
 
     // try to save it in database
     let img = MarkerImage {
         id: None,
-        path: z.to_str().unwrap().to_string(),
+        path: z.to_str().ok_or(str_to_debug("to str doesn't work"))?.to_string(),
         refers_to: id,
     };
-    if let Ok(z) = connection
+    connection
         .run(move |conn| {
             use marker_images::dsl::marker_images as mi;
             insert_into(mi).values(&img).get_result::<MarkerImage>(conn)
         })
         .await
-    {
-        return Some(z.id.unwrap().to_string());
-    }
+        .map_err(|x| {
+            _ = fs::remove_file(new_pos);
+            to_debug(x)
+        })?;
 
-    // remove file
-    _ = fs::remove_file(new_pos);
-    None
+    Ok(())
 }
 
 #[get("/types")]

@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::{path::{Path, PathBuf}, error::Error};
 
 use diesel::sql_types::*;
 use postgis::ewkb::Point;
@@ -6,7 +6,7 @@ use postgis_diesel::sql_types::*;
 use postgis_diesel::*;
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{ser::SerializeStruct, Serialize};
-
+use rocket::response::Debug;
 pub struct InsignoPoint {
     point: PointC<Point>,
 }
@@ -79,4 +79,13 @@ pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
             return dest;
         }
     }
+}
+
+pub fn to_debug<E: Error>(err: E)->Debug<Box<dyn Error>>{
+    //let tmp: Box<dyn Error> = err.into() 
+    Debug(err.to_string().into())
+}
+pub fn str_to_debug(s: &str)->Debug<Box<dyn Error>>{
+    //let tmp: Box<dyn Error> = err.into() 
+    Debug(s.into())
 }

@@ -4,6 +4,7 @@ table! {
         text -> Text,
         author -> Text,
         source -> Text,
+        accepted -> Bool,
     }
 }
 
