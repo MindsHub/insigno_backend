@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.marker_images
     CONSTRAINT marker_images_refers_to_fkey FOREIGN KEY (refers_to)
         REFERENCES public.markers (id) MATCH SIMPLE
         ON UPDATE cascade
-        ON DELETE NO ACTION
+        ON DELETE cascade
 )
 
 TABLESPACE pg_default;

@@ -1,26 +1,8 @@
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Header;
-use rocket::log::private::debug;
-use rocket::serde::json::Json;
 use rocket::{Request, Response};
 
 use rocket::*;
-
-
-        
-
-
-/// Some getter
-#[get("/")]
-pub fn index() -> &'static str {
-    "Hello CORS"
-}
-
-/// Some setter
-#[post("/", data = "<data>")]
-pub async fn insert(data: Json<Vec<String>>) {
-    debug!("Received data");
-}
 
 /// Catches all OPTION requests in order to get the CORS related Fairing triggered.
 #[options("/<_..>")]
@@ -48,4 +30,8 @@ impl Fairing for Cors {
         response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
     }
+}
+
+pub fn get_routes() -> Vec<Route> {
+    routes![all_options]
 }

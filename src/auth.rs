@@ -1,11 +1,13 @@
 use std::collections::BTreeMap;
+use std::error::Error;
 
 use diesel::*;
 use diesel::{insert_into, update, Connection, PgConnection, QueryDsl, RunQueryDsl};
-use rocket::serde::json::{Json, from_str, serde_json};
+use rocket::serde::json::{from_str, serde_json, Json};
 use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
-use rocket_auth::{Auth, DBConnection, Error, Login, Result, Signup, User, Users, Session};
+use rocket_auth::{Auth, DBConnection, Login, Result, Session, Signup, User, Users};
 use rocket_sync_db_pools::Config;
+use rocket::response::Debug;
 
 use crate::schema::{trash_types, users};
 pub struct UserConnection(pub diesel::PgConnection);
@@ -98,29 +100,34 @@ impl DBConnection for UserConnection {
 }
 
 #[post("/signup", data = "<form>")]
-async fn signup(form: Form<Signup>, auth: Auth<'_>) -> Result<&'static str, Error> {
-    auth.signup(&form).await?;
-    auth.login(&form.into()).await?;
+async fn signup(form: Form<Signup>, auth: Auth<'_>) -> Result<&'static str, Debug<Box<dyn Error>>> {
+    auth.signup(&form).await.map_err(|x| Debug(x.into()))?;
+    auth.login(&form.into()).await.map_err(|x| Debug(x.into()))?;
     Ok("You signed up.")
 }
 use rocket::serde::Serialize;
 #[derive(Serialize)]
-struct Token{token: String}
-#[post( "/login", data = "<form>")]
-async fn login(form: Json<Login>, auth: Auth<'_>) -> Result<Json<rocket::serde::json::Value>, Error> {
-    auth.login(&form).await?;
+struct Token {
+    token: String,
+}
+#[post("/login", data = "<form>")]
+async fn login(
+    form: Json<Login>,
+    auth: Auth<'_>,
+) -> Result<Json<rocket::serde::json::Value>, Debug<Box<dyn Error>>> {
+    auth.login(&form).await.map_err(|x| Debug(x.into()))?;
     //println!("{:?}, {:?}", &form, &form.password);
-    let session = auth.cookies.get_pending("rocket_auth").unwrap();
-    let y: Session = from_str(session.value()).ok().unwrap();
-    
-    let js = serde_json::json!(Token{token: y.auth_key});
+    let session = auth.cookies.get_pending("rocket_auth").ok_or(Debug("failed to get cookies".into()))?;
+    let y: Session = from_str(session.value()).map_err(|x| Debug(x.into()))?;
+
+    let js = serde_json::json!(Token { token: y.auth_key });
     println!("{:?}", js);
     Ok(Json(js))
 }
 
 #[get("/logout")]
-fn logout(auth: Auth<'_>) -> Result<(), Error> {
-    auth.logout()?;
+fn logout(auth: Auth<'_>) -> Result<(), Debug<Box<dyn Error>>> {
+    auth.logout().map_err(|x| Debug(x.into()))?;
     Ok(())
 }
 

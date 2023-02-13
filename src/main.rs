@@ -1,4 +1,4 @@
-use rocket::{fairing::AdHoc, serde::Deserialize};
+use rocket::{fairing::*, serde::Deserialize};
 
 #[macro_use]
 extern crate rocket;
@@ -6,13 +6,12 @@ extern crate rocket;
 extern crate diesel;
 
 mod auth;
+mod cors;
 mod db;
 mod map;
 mod pills;
 mod schema;
 mod utils;
-mod cors;
-use cors::*;
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 struct InsignoConfig {
@@ -21,7 +20,6 @@ struct InsignoConfig {
 
 #[launch]
 async fn rocket() -> _ {
-
     let rocket = rocket::build();
     rocket
         .attach(db::stage())
@@ -31,6 +29,6 @@ async fn rocket() -> _ {
         .mount("/", auth::get_routes())
         .attach(AdHoc::config::<InsignoConfig>())
         .attach(cors::Cors)
-        .mount("/", routes![index, all_options, insert])
+        .mount("/", cors::get_routes())
     //.manage(users)
 }
