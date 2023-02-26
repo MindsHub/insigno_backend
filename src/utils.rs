@@ -1,8 +1,9 @@
 use std::{
     error::Error,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, fs::{File}, io::Write, backtrace::Backtrace,
 };
 
+use chrono::Local;
 use diesel::sql_types::*;
 use postgis::ewkb::Point;
 use postgis_diesel::sql_types::*;
@@ -10,6 +11,7 @@ use postgis_diesel::*;
 use rand::{distributions::Alphanumeric, Rng};
 use rocket::response::Debug;
 use serde::{ser::SerializeStruct, Serialize};
+
 pub struct InsignoPoint {
     point: PointC<Point>,
 }
@@ -85,10 +87,16 @@ pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
 }
 
 pub fn to_debug<E: Error>(err: E) -> Debug<Box<dyn Error>> {
-    //let tmp: Box<dyn Error> = err.into()
+    let bt = Backtrace::force_capture();
+    let mut file = File::options().append(true).create(true).open("./log").unwrap();
+    let to_write =Local::now().to_string()+" "+  &err.to_string() +"\n" +&bt.to_string() + "\n";
+    file.write(to_write.as_bytes()).unwrap();
     Debug(err.to_string().into())
 }
 pub fn str_to_debug(s: &str) -> Debug<Box<dyn Error>> {
-    //let tmp: Box<dyn Error> = err.into()
+    let bt = Backtrace::force_capture();
+    let mut file = File::options().append(true).create(true).open("./log").unwrap();
+    let to_write =Local::now().to_string()+" "+  s +"\n" + &bt.to_string() + "\n";;
+    file.write(to_write.as_bytes()).unwrap();
     Debug(s.into())
 }

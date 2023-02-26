@@ -2,9 +2,15 @@
 
 [release.database]
 db = {url = "postgres://localhost:5432/insigniorocketdb", timeout = 10, pool_size = 5}
+#roba per il TLS @Mattia se non funziona guarda qui https://rocket.rs/v0.5-rc/guide/configuration/#tls
+#key = "path/to/key.pem"     # Path or bytes to DER-encoded ASN.1 PKCS#1/#8 key.
+#certs = "path/to/certs.pem" # Path or bytes to DER-encoded X.509 TLS cert chain.
 
 [default.databases]
 db = {url = "postgres://mindshub:Minds.100@insignio.mindshub.it:5432/insigniorocketdb", timeout = 10, pool_size = 5}
+
+
+
 
 # default parameter. add only necessary ones
 [default] 
