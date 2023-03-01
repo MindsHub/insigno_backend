@@ -1,6 +1,9 @@
 use std::{
+    backtrace::Backtrace,
     error::Error,
-    path::{Path, PathBuf}, fs::{File}, io::Write, backtrace::Backtrace,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
 };
 
 use chrono::Local;
@@ -88,15 +91,24 @@ pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
 
 pub fn to_debug<E: Error>(err: E) -> Debug<Box<dyn Error>> {
     let bt = Backtrace::force_capture();
-    let mut file = File::options().append(true).create(true).open("./log").unwrap();
-    let to_write =Local::now().to_string()+" "+  &err.to_string() +"\n" +&bt.to_string() + "\n";
-    file.write(to_write.as_bytes()).unwrap();
+    let mut file = File::options()
+        .append(true)
+        .create(true)
+        .open("./log")
+        .unwrap();
+    let to_write =
+        Local::now().to_string() + " " + &err.to_string() + "\n" + &bt.to_string() + "\n";
+    file.write_all(to_write.as_bytes()).unwrap();
     Debug(err.to_string().into())
 }
 pub fn str_to_debug(s: &str) -> Debug<Box<dyn Error>> {
     let bt = Backtrace::force_capture();
-    let mut file = File::options().append(true).create(true).open("./log").unwrap();
-    let to_write =Local::now().to_string()+" "+  s +"\n" + &bt.to_string() + "\n";;
-    file.write(to_write.as_bytes()).unwrap();
+    let mut file = File::options()
+        .append(true)
+        .create(true)
+        .open("./log")
+        .unwrap();
+    let to_write = Local::now().to_string() + " " + s + "\n" + &bt.to_string() + "\n";
+    file.write_all(to_write.as_bytes()).unwrap();
     Debug(s.into())
 }
