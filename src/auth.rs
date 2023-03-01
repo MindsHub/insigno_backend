@@ -9,7 +9,7 @@ use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
 use rocket_auth::{Auth, DBConnection, Login, Result, Session, Signup, User, Users};
 use rocket_sync_db_pools::Config;
 
-use crate::schema::{trash_types, users};
+use crate::schema_sql::{trash_types, users};
 use crate::utils::*;
 pub struct UserConnection(pub diesel::PgConnection);
 unsafe impl Sync for UserConnection {}

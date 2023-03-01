@@ -1,4 +1,3 @@
-
 use rocket::{fairing::*, serde::Deserialize};
 
 #[macro_use]
@@ -11,8 +10,10 @@ mod cors;
 mod db;
 mod map;
 mod pills;
-mod schema;
+mod schema_sql;
+mod schema_rs;
 mod utils;
+
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 struct InsignoConfig {
