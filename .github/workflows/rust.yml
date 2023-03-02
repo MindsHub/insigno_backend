@@ -33,7 +33,7 @@ jobs:
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
         script: |
-          killall insignio 2>/dev/null
+          if pgrep insignio; then pkill insignio; fi
     - name: Copy exec via SSH
       uses: appleboy/scp-action@master
       with:
