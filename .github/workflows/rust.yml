@@ -20,7 +20,7 @@ jobs:
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{secrets.GITHUB_TOKEN}}
-        file: target/release/insignio
+        file: target/x86_64-unknown-linux-gnu/release/insignio
         asset_name: insignio
         tag: ${{github.ref}}
         overwrite: true
@@ -32,6 +32,6 @@ jobs:
         username: ${{secrets.SSH_USER}}
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
-        source: "target/release/insignio"
+        source: "target/x86_64-unknown-linux-gnu/release/insignio"
         target: "insignio"
     
