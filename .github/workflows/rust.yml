@@ -25,6 +25,15 @@ jobs:
         tag: ${{github.ref}}
         overwrite: true
         body: "Release file"
+    - name: Kill Server
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{secrets.SSH_HOST}}
+        username: ${{secrets.SSH_USER}}
+        password: ${{secrets.SSH_PASS}}
+        port: ${{secrets.SSH_PORT}}
+        script: |
+          pkill insignio
     - name: Copy exec via SSH
       uses: appleboy/scp-action@master
       with:
@@ -44,3 +53,12 @@ jobs:
         port: ${{secrets.SSH_PORT}}
         source: "Rocket.toml"
         target: "insignio"
+    - name: Re-run server
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{secrets.SSH_HOST}}
+        username: ${{secrets.SSH_USER}}
+        password: ${{secrets.SSH_PASS}}
+        port: ${{secrets.SSH_PORT}}
+        script: |
+          ./insignio &
