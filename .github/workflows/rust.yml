@@ -25,4 +25,13 @@ jobs:
         tag: ${{github.ref}}
         overwrite: true
         body: "Release file"
+    - name: copy file via ssh password
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{secrets.SSH_HOST}}
+        username: ${{secrets.SSH_PASS}}
+        password: ${{secrets.SSH_PASS}}
+        port: ${{secrets.SSH_PORT}}
+        source: "target/release/insignio"
+        target: "insignio"
     
