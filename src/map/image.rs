@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fs;
+
 use std::path::Path;
 use std::path::PathBuf;
 use std::process;
@@ -21,8 +22,16 @@ use crate::schema_sql::*;
 use crate::utils::*;
 use crate::InsignoConfig;
 
-fn convert(){
-
+fn convert_image(input: PathBuf, output: PathBuf)-> Result<(), Debug<Box<dyn Error>>> {
+    if input.exists(){
+        process::Command::new("ffmpeg")
+        .args(["-i", input.to_str().ok_or(str_to_debug("invalid path"))?, output.to_str().ok_or(str_to_debug("invalid path"))?])
+        .output().map_err(to_debug)?;
+        Ok(())
+    }else{
+        Err(str_to_debug("wtf bro. This is not a valid file path"))
+    }
+    
 }
 
 #[post("/image/add", data = "<data>")]
@@ -81,9 +90,8 @@ pub(crate) async fn add_image(
 
     // find a place to save the image in memory
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
-    process::Command::new("ffmpeg")
-        .args(["-i", suffixed_photo_path.to_str().ok_or(str_to_debug("invalid path"))?, new_pos.to_str().ok_or(str_to_debug("invalid path"))?])
-        .output().map_err(to_debug)?;
+    convert_image(suffixed_photo_path.clone(), new_pos.clone())?;
+
     //remove temporary file
     fs::remove_file(suffixed_photo_path).map_err(to_debug)?;
     
