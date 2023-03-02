@@ -1,16 +1,16 @@
-CREATE TABLE IF NOT EXISTS public.trash_types
+CREATE TABLE IF NOT EXISTS public.marker_types
 (
     id BIGSERIAL NOT NULL,
     name text COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT trash_types_pkey PRIMARY KEY (id)
+    CONSTRAINT markers_types_pkey PRIMARY KEY (id)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS public.trash_types
+ALTER TABLE IF EXISTS public.marker_types
     OWNER to mindshub;
 
-INSERT INTO public.trash_types (
+INSERT INTO public.marker_types (
 	id, name)
 	VALUES 
   (1, 'unknown'),

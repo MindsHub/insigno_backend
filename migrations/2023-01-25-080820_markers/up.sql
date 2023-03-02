@@ -7,11 +7,11 @@ CREATE TABLE IF NOT EXISTS public.markers
     id BIGSERIAL NOT NULL,
     point geometry(Geometry, 4326) NOT NULL,
     creation_date timestamp with time zone DEFAULT now(),
-    trash_type_id BIGINT NOT NULL DEFAULT '1',
+    marker_types_id BIGINT NOT NULL DEFAULT '1',
     created_by BIGINT NOT NULL,
     CONSTRAINT marker_id_pkey PRIMARY KEY (id),
-    CONSTRAINT marker_id_fkey FOREIGN KEY (trash_type_id)
-        REFERENCES public.trash_types (id) MATCH SIMPLE
+    CONSTRAINT marker_id_fkey FOREIGN KEY (marker_types_id)
+        REFERENCES public.marker_types (id) MATCH SIMPLE
         ON UPDATE cascade
         ON DELETE NO ACTION,
     CONSTRAINT marker_created_by_fkey FOREIGN KEY (created_by)

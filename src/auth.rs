@@ -9,7 +9,7 @@ use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
 use rocket_auth::{Auth, DBConnection, Login, Result, Session, Signup, User, Users};
 use rocket_sync_db_pools::Config;
 
-use crate::schema_sql::{trash_types, users};
+use crate::schema_sql::{marker_types, users};
 use crate::utils::*;
 pub struct UserConnection(pub diesel::PgConnection);
 unsafe impl Sync for UserConnection {}
@@ -124,8 +124,8 @@ async fn login(
         .ok_or(str_to_debug("failed to get cookies"))?;
     let y: Session = from_str(session.value()).map_err(to_debug)?;
 
-    let js = serde_json::json!(Token { token: y.auth_key });
-    println!("{js:?}");
+    let js = serde_json::json!(Token { token: y.auth_key.clone() });
+    println!("{}", y.auth_key);
     Ok(Json(js))
 }
 
@@ -149,7 +149,7 @@ pub async fn stage() -> AdHoc {
         let y = Config::from("db", &rocket).unwrap();
         let conn = PgConnection::establish(&y.url).unwrap();
 
-        let sorted = trash_types::table
+        let sorted = marker_types::table
             .load::<(i64, String)>(&conn)
             .unwrap()
             .into_iter()

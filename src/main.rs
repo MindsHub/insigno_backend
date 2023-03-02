@@ -1,3 +1,5 @@
+use std::fs;
+
 use rocket::{fairing::*, serde::Deserialize};
 
 #[macro_use]
@@ -30,6 +32,12 @@ async fn rocket() -> _ {
         .mount("/map", map::get_routes())
         .mount("/", auth::get_routes())
         .attach(AdHoc::config::<InsignoConfig>())
+        .attach(AdHoc::on_ignite("checking config", |rocket| async {
+            // if media folder does not exist it creates it
+            let cfg :&InsignoConfig =rocket.state().unwrap();
+            let _ = fs::create_dir_all(cfg.media_folder.clone());
+            rocket
+        }))
         .attach(cors::Cors)
         .mount("/", cors::get_routes())
     //.manage(users)
