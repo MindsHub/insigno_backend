@@ -8,8 +8,8 @@ use crate::schema_sql::*;
 use crate::utils::*;
 
 #[derive(Serialize, Clone, Queryable, Debug)]
-#[diesel(table_name = "trash_types")]
-pub struct TrashType {
+#[diesel(table_name = "marker_types")]
+pub struct MarkerType {
     id: i64,
     name: String,
 }
@@ -23,7 +23,7 @@ pub struct Marker {
     #[diesel(deserialize_as = "chrono::DateTime<Utc>")]
     pub creation_date: Option<chrono::DateTime<Utc>>,
     pub created_by: i64,
-    pub trash_type_id: i64,
+    pub marker_types_id: i64,
 }
 
 impl Serialize for Marker {
@@ -35,7 +35,7 @@ impl Serialize for Marker {
         s.serialize_field("id", &self.id)?;
         s.serialize_field("point", &InsignoPoint::from(self.point))?;
         s.serialize_field("creation_date", &self.creation_date)?;
-        s.serialize_field("trash_type_id", &self.trash_type_id)?;
+        s.serialize_field("marker_types_id", &self.marker_types_id)?;
         s.end()
     }
 }

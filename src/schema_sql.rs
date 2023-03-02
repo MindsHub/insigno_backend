@@ -9,7 +9,7 @@ table! {
 }
 
 table! {
-    trash_types (id){
+    marker_types (id){
         id->BigInt,
         name->Text,
     }
@@ -21,7 +21,7 @@ table! {
         point-> postgis_diesel::sql_types::Geometry,
         creation_date->Timestamptz,
         created_by->BigInt,
-        trash_type_id -> BigInt,
+        marker_types_id -> BigInt,
     }
 }
 

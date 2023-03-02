@@ -83,7 +83,7 @@ async fn add_map(
             },
         },
         creation_date: None,
-        trash_type_id: type_int,
+        marker_types_id: type_int,
     };
     use markers::dsl::markers as mrkt;
     match connection
