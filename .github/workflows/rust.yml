@@ -62,4 +62,4 @@ jobs:
         port: ${{secrets.SSH_PORT}}
         script: |
           cd insignio/
-          ./insignio &
+          nohup ./insignio > nohup.out 2> nohup.err < /dev/null &
