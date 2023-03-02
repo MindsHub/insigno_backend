@@ -61,4 +61,4 @@ jobs:
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
         script: |
-          ./insignio &
+          ./insignio/insignio &
