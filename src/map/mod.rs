@@ -25,7 +25,6 @@ use crate::schema_rs::*;
 use self::image::*;
 mod image;
 
-
 #[get("/get_near?<x>&<y>&<srid>")]
 async fn get_near(
     connection: Db,
@@ -104,5 +103,5 @@ async fn get_types(trash_types_map: &State<TrashTypeMap>) -> Json<BTreeMap<i64, 
 }
 
 pub fn get_routes() -> Vec<Route> {
-    routes![get_near, get_types, add_map, add_image]
+    routes![get_near, get_types, add_map, add_image, list_image, get_image]
 }

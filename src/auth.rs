@@ -124,7 +124,9 @@ async fn login(
         .ok_or(str_to_debug("failed to get cookies"))?;
     let y: Session = from_str(session.value()).map_err(to_debug)?;
 
-    let js = serde_json::json!(Token { token: y.auth_key.clone() });
+    let js = serde_json::json!(Token {
+        token: y.auth_key.clone()
+    });
     println!("{}", y.auth_key);
     Ok(Json(js))
 }

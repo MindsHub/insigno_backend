@@ -12,8 +12,8 @@ mod cors;
 mod db;
 mod map;
 mod pills;
-mod schema_sql;
 mod schema_rs;
+mod schema_sql;
 mod utils;
 
 #[derive(Deserialize)]
@@ -34,7 +34,7 @@ async fn rocket() -> _ {
         .attach(AdHoc::config::<InsignoConfig>())
         .attach(AdHoc::on_ignite("checking config", |rocket| async {
             // if media folder does not exist it creates it
-            let cfg :&InsignoConfig =rocket.state().unwrap();
+            let cfg: &InsignoConfig = rocket.state().unwrap();
             let _ = fs::create_dir_all(cfg.media_folder.clone());
             rocket
         }))
