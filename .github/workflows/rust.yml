@@ -10,17 +10,17 @@ env:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v3
     - name: Build
-      run: cargo build --release --target x86_64-unknown-linux-gnu
+      run: cargo build --release
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{secrets.GITHUB_TOKEN}}
-        file: target/x86_64-unknown-linux-gnu/release/insignio
+        file: target/release/insignio
         asset_name: insignio
         tag: ${{github.ref}}
         overwrite: true
@@ -32,6 +32,6 @@ jobs:
         username: ${{secrets.SSH_USER}}
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
-        source: "target/x86_64-unknown-linux-gnu/release/insignio"
+        source: "target/release/insignio"
         target: "insignio"
     
