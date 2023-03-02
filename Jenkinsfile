@@ -13,7 +13,7 @@ pipeline {
         steps {
           echo 'Ciao mondo!'
         }
-      },
+      }
       stage('Remote SSH') {
         steps {}
         writeFile file: 'abc.sh', text: 'ls -lrt'
