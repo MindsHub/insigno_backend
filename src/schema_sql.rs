@@ -38,5 +38,6 @@ table! {
         email -> Text,
         password -> Text,
         is_admin -> Bool,
+        points -> BigInt,
     }
 }

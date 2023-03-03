@@ -132,7 +132,7 @@ pub(crate) async fn add_image(
         .map_err(to_debug)?;
 
     //generate names for temp files
-    let suffix = photo_path
+    /*let suffix = photo_path
         .content_type
         .as_ref()
         .ok_or(str_to_debug("no photo content type"))?
@@ -146,9 +146,12 @@ pub(crate) async fn add_image(
             .to_str()
             .ok_or(str_to_debug("no photo path available"))?,
     );
-    suffixed_photo_path.set_extension(suffix);
+    suffixed_photo_path.set_extension(suffix);*/
+    
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
-    let name = match convert_to_jpg(
+    convert_image(&photo_path.path, &new_pos)?;
+    
+    /*let name = match convert_to_jpg(
         photo_path,
         &suffixed_photo_path,
         &new_pos,
@@ -163,7 +166,13 @@ pub(crate) async fn add_image(
             let _ = fs::remove_file(new_pos.clone());
             Err(x)
         }
-    }?;
+    }?;*/
+    let name = new_pos
+        .strip_prefix(&config.media_folder)
+        .map_err(to_debug)?
+        .to_str()
+        .ok_or(str_to_debug("err"))?
+        .to_string();
 
     // try to save it in database
     save_image(connection, name.clone(), id)
@@ -177,7 +186,10 @@ pub(crate) async fn add_image(
 }
 
 #[get("/image/list/<marker_id>")]
-pub async fn list_image(marker_id: i64, connection: Db) -> Result<Json<Vec<i64>>, Debug<Box<dyn Error>>> {
+pub async fn list_image(
+    marker_id: i64,
+    connection: Db,
+) -> Result<Json<Vec<i64>>, Debug<Box<dyn Error>>> {
     let res: Vec<MarkerImage> = connection
         .run(move |conn| {
             marker_images::table
@@ -190,7 +202,11 @@ pub async fn list_image(marker_id: i64, connection: Db) -> Result<Json<Vec<i64>>
 }
 
 #[get("/image/<image_id>")]
-pub(crate) async fn get_image(image_id: i64, connection: Db, config: &State<InsignoConfig>) -> Option<NamedFile> {
+pub(crate) async fn get_image(
+    image_id: i64,
+    connection: Db,
+    config: &State<InsignoConfig>,
+) -> Option<NamedFile> {
     let res: MarkerImage = connection
         .run(move |conn| {
             marker_images::table
@@ -198,11 +214,14 @@ pub(crate) async fn get_image(image_id: i64, connection: Db, config: &State<Insi
                 .load::<MarkerImage>(conn)
         })
         .await
-        .map_err(to_debug).ok()?.get(0)?.clone();
+        .map_err(to_debug)
+        .ok()?
+        .get(0)?
+        .clone();
     let mut path = PathBuf::new();
     path.push(config.media_folder.clone());
     path.push(res.path);
 
-    print!("{:?}",  path);
+    print!("{:?}", path);
     NamedFile::open(path).await.ok()
 }

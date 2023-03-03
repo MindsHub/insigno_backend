@@ -1,35 +1,20 @@
 use std::collections::BTreeMap;
 use std::error::Error;
 
+use crate::schema_rs::*;
 use diesel::*;
 use diesel::{insert_into, update, Connection, PgConnection, QueryDsl, RunQueryDsl};
 use rocket::response::Debug;
 use rocket::serde::json::{from_str, serde_json, Json};
 use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
-use rocket_auth::{Auth, DBConnection, Login, Result, Session, Signup, User, Users};
+use rocket_auth::User as AUser;
+use rocket_auth::{Auth, DBConnection, Login, Result, Session, Signup, Users};
 use rocket_sync_db_pools::Config;
 
 use crate::schema_sql::{marker_types, users};
 use crate::utils::*;
 pub struct UserConnection(pub diesel::PgConnection);
 unsafe impl Sync for UserConnection {}
-#[derive(Queryable, Clone)]
-struct MyUser {
-    id: i64,
-    email: String,
-    password: String,
-    is_admin: bool,
-}
-impl From<MyUser> for User {
-    fn from(val: MyUser) -> Self {
-        User {
-            id: val.id as i32,
-            email: val.email,
-            password: val.password,
-            is_admin: val.is_admin,
-        }
-    }
-}
 
 #[rocket::async_trait]
 impl DBConnection for UserConnection {
@@ -53,7 +38,7 @@ impl DBConnection for UserConnection {
         Ok(())
     }
 
-    async fn update_user(&self, user: &User) -> Result<()> {
+    async fn update_user(&self, user: &AUser) -> Result<()> {
         let user = user.clone();
 
         use users::dsl::users as dslUsers;
@@ -83,18 +68,20 @@ impl DBConnection for UserConnection {
             .execute(&self.0)?;
         Ok(())
     }
-    async fn get_user_by_id(&self, user_id: i32) -> Result<User> {
+    async fn get_user_by_id(&self, user_id: i32) -> Result<AUser> {
+        println!("get user");
         use users::dsl::users as dslUsers;
-        let z = dslUsers.find(user_id as i64).load::<MyUser>(&self.0)?[0].clone();
-
+        let z = dslUsers.find(user_id as i64).load::<User>(&self.0)?[0].clone();
+        println!("{}", z.email);
         Ok(z.into())
     }
-    async fn get_user_by_email(&self, email: &str) -> Result<User> {
+    async fn get_user_by_email(&self, email: &str) -> Result<AUser> {
+        println!("get user by email /{email}/");
         let email = email.to_string();
         use users::dsl::users as dslUsers;
         let z = dslUsers
             .filter(users::email.eq(email))
-            .first::<MyUser>(&self.0)?;
+            .first::<User>(&self.0)?;
 
         Ok(z.into())
     }

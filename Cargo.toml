@@ -18,5 +18,5 @@ serde = "1.0.140"
 rand = "0.8.5"
 chrono= {version = "0.4.23", features= ["clock", "serde"]}
 json = "0.12.4"
-#image = "0.24.5"
-#ac-ffmpeg = "0.18.1"
+#apt install -y clang libavcodec-dev libavformat-dev libavutil-dev pkg-config libadevice-dev libavfilter-dev
+#ffmpeg-next = {version="5.1.1", features=["codec", "format"]}
