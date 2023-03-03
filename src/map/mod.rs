@@ -57,7 +57,7 @@ async fn get_near(
 struct AddTrashField {
     x: f64,
     y: f64,
-    type_tr: String,
+    marker_types_id: i64,
 }
 
 #[post("/add", data = "<data>")]
@@ -67,10 +67,13 @@ async fn add_map(
     connection: Db,
     trash_types_map: &State<TrashTypeMap>,
 ) -> Result<String, Debug<Box<dyn Error>>> {
-    let type_int = *trash_types_map
-        .to_i64
-        .get(data.type_tr.to_lowercase().trim())
-        .unwrap_or(&1);
+
+    let type_int = if trash_types_map.to_string.contains_key(&data.marker_types_id) {
+        data.marker_types_id
+    } else {
+        1
+    };
+
     let z = Marker {
         id: None,
         created_by: user.id() as i64,
