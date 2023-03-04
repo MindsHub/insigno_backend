@@ -12,6 +12,7 @@ table! {
     marker_types (id){
         id->BigInt,
         name->Text,
+        points->Float,
     }
 }
 
@@ -20,7 +21,9 @@ table! {
         id -> BigInt,
         point-> postgis_diesel::sql_types::Geometry,
         creation_date->Timestamptz,
+        resolution_date->Nullable<Timestamptz>,
         created_by->BigInt,
+        solved_by->Nullable<BigInt>,
         marker_types_id -> BigInt,
     }
 }

@@ -6,6 +6,7 @@ use diesel::ExpressionMethods;
 use diesel::{insert_into, sql_types::Double, QueryDsl, RunQueryDsl};
 use rocket::response::Debug;
 use rocket::{serde::json::Json, Route};
+use rocket_auth::{User};
 use serde::{Deserialize, Serialize};
 
 use super::db::Db;
@@ -53,7 +54,7 @@ struct AddPill {
 }
 
 #[post("/add", data = "<data>")]
-async fn add_pill(connection: Db, data: Json<AddPill>) -> Result<String, Debug<Box<dyn Error>>> {
+async fn add_pill(connection: Db, data: Json<AddPill>, _user: User) -> Result<String, Debug<Box<dyn Error>>> {
     let pill = Pill {
         id: None,
         text: data.text.clone(),
@@ -74,4 +75,19 @@ async fn add_pill(connection: Db, data: Json<AddPill>) -> Result<String, Debug<B
 
 pub fn get_routes() -> Vec<Route> {
     routes![get_random_pill, add_pill]
+}
+
+#[cfg(test)]
+mod test {
+    use crate::rocket;
+    use rocket::local::blocking::Client;
+    use rocket::http::Status;
+
+    #[test]
+    fn empty_pills() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let  response = client.get(uri!(super::add_pill)).dispatch();
+        assert_eq!(response.status(), Status::NotFound);
+        //assert_eq!(response.into_string().unwrap(), "Hello, world!");
+    }
 }

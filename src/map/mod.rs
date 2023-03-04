@@ -31,14 +31,14 @@ async fn get_near(
     x: f64,
     y: f64,
     srid: Option<i32>,
-) -> Result<Json<Vec<Marker>>, String> {
+) -> Result<Json<Vec<Marker>>, Debug<Box<dyn Error>>> {
     let tmp_point = Point {
         x,
         y,
         srid: Some(srid.unwrap_or(4326)),
     };
     let cur_point = PointC { v: tmp_point };
-    connection
+    let res: Vec<Marker> = connection
         .run(move |conn| {
             let t_point = st_transform(cur_point, 25832);
             let mut query = markers::table.into_boxed();
@@ -50,7 +50,8 @@ async fn get_near(
             query.load(conn)
         })
         .await
-        .map_or_else(|x| Err(x.to_string()), |x| Ok(Json(x)))
+        .map_err(to_debug)?;
+    Ok(Json(res))
 }
 
 #[derive(Deserialize, FromForm)]
@@ -67,7 +68,7 @@ async fn add_map(
     connection: Db,
     trash_types_map: &State<TrashTypeMap>,
 ) -> Result<String, Debug<Box<dyn Error>>> {
-
+    
     let type_int = if trash_types_map.to_string.contains_key(&data.marker_types_id) {
         data.marker_types_id
     } else {
@@ -77,6 +78,7 @@ async fn add_map(
     let z = Marker {
         id: None,
         created_by: user.id() as i64,
+        solved_by: None,
         point: PointC {
             v: Point {
                 x: data.x,
@@ -85,18 +87,29 @@ async fn add_map(
             },
         },
         creation_date: None,
+        resolution_date: None,
         marker_types_id: type_int,
     };
     use markers::dsl::markers as mrkt;
-    match connection
-        .run(move |conn| insert_into(mrkt).values(&z).get_result::<Marker>(conn))
-        .await
+    let y = connection
+    .run(move |conn| insert_into(mrkt).values(&z).get_result::<Marker>(conn))
+    .await;
+    println!("{:?}", y);
+    
+    match y
     {
-        Ok(x) => Ok(x
+        Ok(x) => {
+            println!("fanculo");
+            Ok(
+            
+            x
             .id
             .ok_or(str_to_debug("id not found (very strange)"))?
-            .to_string()),
-        Err(x) => Err(Debug(x.into())),
+            .to_string())},
+            //todo!()),
+        Err(x) => {
+            println!("stronzo");
+            Err(to_debug(x))},
     }
 }
 
@@ -105,6 +118,22 @@ async fn get_types(trash_types_map: &State<TrashTypeMap>) -> Json<BTreeMap<i64, 
     Json(trash_types_map.to_string.clone())
 }
 
+#[get("/<marker_id>")]
+async fn get_marker_from_id(marker_id: i64, connection: Db) -> Result<Json<Marker>, Debug<Box<dyn Error>>>{
+    
+    let m: Marker = connection
+        .run(move |conn| {
+            markers::table
+                .find(marker_id)
+                .load::<Marker>(conn)
+        })
+        .await
+        .map_err(to_debug)?
+        .get(0)
+        .ok_or(str_to_debug("not found"))?.clone();
+    Ok(Json(m))
+}
+
 pub fn get_routes() -> Vec<Route> {
-    routes![get_near, get_types, add_map, add_image, list_image, get_image]
+    routes![get_near, get_types, add_map, add_image, get_marker_from_id, list_image, get_image]
 }

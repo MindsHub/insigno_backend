@@ -72,8 +72,9 @@ impl DBConnection for UserConnection {
         println!("get user");
         use users::dsl::users as dslUsers;
         let z = dslUsers.find(user_id as i64).load::<User>(&self.0)?[0].clone();
-        println!("{}", z.email);
-        Ok(z.into())
+        let y: Result<AUser> = Ok(z.clone().into());
+        println!("{y:?}");
+        y
     }
     async fn get_user_by_email(&self, email: &str) -> Result<AUser> {
         println!("get user by email /{email}/");
@@ -81,9 +82,9 @@ impl DBConnection for UserConnection {
         use users::dsl::users as dslUsers;
         let z = dslUsers
             .filter(users::email.eq(email))
-            .first::<User>(&self.0)?;
-
-        Ok(z.into())
+            .first::<User>(&self.0);
+        println!("{}", z.is_err());
+        Ok(z?.into())
     }
 }
 
@@ -133,15 +134,20 @@ pub struct TrashTypeMap {
     pub to_i64: BTreeMap<String, i64>,
 }
 
-pub async fn stage() -> AdHoc {
+pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Diesel Authentication Stage", |rocket| async {
-        let y = Config::from("db", &rocket).unwrap();
-        let conn = PgConnection::establish(&y.url).unwrap();
+        let config = Config::from("db", &rocket).unwrap();
+        let conn = PgConnection::establish(&config.url).unwrap();
+        println!("{}", config.url);
+        let tmp = marker_types::table
+        .load::<(i64, String, f32)>(&conn);
 
+        println!("{:?}", tmp);
         let sorted = marker_types::table
-            .load::<(i64, String)>(&conn)
+            .load::<(i64, String, f32)>(&conn)
             .unwrap()
             .into_iter()
+            .map(|(x, y, ..)| (x, y))
             .collect::<BTreeMap<i64, String>>();
         let inverted = sorted.clone().into_iter().map(|(x, y)| (y, x)).collect();
         let trash_types_map = TrashTypeMap {

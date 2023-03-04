@@ -23,11 +23,11 @@ struct InsignoConfig {
 }
 
 #[launch]
-async fn rocket() -> _ {
+fn rocket() -> _ {
     let rocket = rocket::build();
     rocket
         .attach(db::stage())
-        .attach(auth::stage().await)
+        .attach(auth::stage())
         .mount("/pills", pills::get_routes())
         .mount("/map", map::get_routes())
         .mount("/", auth::get_routes())

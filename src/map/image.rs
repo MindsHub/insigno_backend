@@ -40,30 +40,6 @@ fn convert_image(input: &PathBuf, output: &PathBuf) -> Result<(), Debug<Box<dyn 
     }
 }
 
-fn convert_to_jpg(
-    inp: &FileField,
-    suffixed_photo_path: &PathBuf,
-    new_pos: &PathBuf,
-    folder: &str,
-) -> Result<String, Debug<Box<dyn Error>>> {
-    fs::rename(&inp.path, &suffixed_photo_path).map_err(to_debug)?;
-
-    // find a place to save the image in memory
-
-    convert_image(&suffixed_photo_path, &new_pos)?;
-
-    //remove temporary file
-    fs::remove_file(suffixed_photo_path).map_err(to_debug)?;
-
-    Ok(new_pos
-        .strip_prefix(&folder)
-        .map_err(to_debug)?
-        .to_str()
-        .ok_or(str_to_debug("err"))?
-        .to_string())
-    //todo!()
-}
-
 async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Debug<Box<dyn Error>>> {
     let img = MarkerImage {
         id: None,
@@ -131,42 +107,10 @@ pub(crate) async fn add_image(
         .await
         .map_err(to_debug)?;
 
-    //generate names for temp files
-    /*let suffix = photo_path
-        .content_type
-        .as_ref()
-        .ok_or(str_to_debug("no photo content type"))?
-        .subtype()
-        .to_string()
-        .to_ascii_lowercase();
-    let mut suffixed_photo_path = PathBuf::new();
-    suffixed_photo_path.set_file_name(
-        photo_path
-            .path
-            .to_str()
-            .ok_or(str_to_debug("no photo path available"))?,
-    );
-    suffixed_photo_path.set_extension(suffix);*/
-    
+    //generate unique name and 
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
     convert_image(&photo_path.path, &new_pos)?;
     
-    /*let name = match convert_to_jpg(
-        photo_path,
-        &suffixed_photo_path,
-        &new_pos,
-        &config.media_folder,
-    ) {
-        Ok(x) => {
-            let _ = fs::remove_file(suffixed_photo_path);
-            Ok(x)
-        }
-        Err(x) => {
-            let _ = fs::remove_file(suffixed_photo_path);
-            let _ = fs::remove_file(new_pos.clone());
-            Err(x)
-        }
-    }?;*/
     let name = new_pos
         .strip_prefix(&config.media_folder)
         .map_err(to_debug)?

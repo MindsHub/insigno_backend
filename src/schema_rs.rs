@@ -1,7 +1,7 @@
 use chrono::Utc;
 use postgis::ewkb::Point;
 use postgis_diesel::PointC;
-use rocket::serde::Serialize;
+use rocket::serde::{Serialize, Deserialize};
 use serde::ser::SerializeStruct;
 
 use crate::schema_sql::*;
@@ -13,7 +13,9 @@ use rocket_auth::User as AUser;
 pub struct MarkerType {
     id: i64,
     name: String,
+    points: f32,
 }
+
 
 #[derive(Clone, Queryable, Insertable, Debug)]
 #[diesel(table_name = marker)]
@@ -23,7 +25,12 @@ pub struct Marker {
     pub point: PointC<Point>,
     #[diesel(deserialize_as = "chrono::DateTime<Utc>")]
     pub creation_date: Option<chrono::DateTime<Utc>>,
+
+    //#[diesel(deserialize_as = "chrono::DateTime<Utc>")]
+    pub resolution_date: Option<chrono::DateTime<Utc>>,
+    
     pub created_by: i64,
+    pub solved_by: Option<i64>,
     pub marker_types_id: i64,
 }
 
@@ -36,6 +43,8 @@ impl Serialize for Marker {
         s.serialize_field("id", &self.id)?;
         s.serialize_field("point", &InsignoPoint::from(self.point))?;
         s.serialize_field("creation_date", &self.creation_date)?;
+        s.serialize_field("resolution_date", &self.resolution_date)?;
+        s.serialize_field("created_by", &self.created_by)?;
         s.serialize_field("marker_types_id", &self.marker_types_id)?;
         s.end()
     }
@@ -50,7 +59,7 @@ pub struct MarkerImage {
     pub refers_to: i64,
 }
 
-#[derive(Queryable, Clone)]
+#[derive(Queryable, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: i64,
     pub email: String,
