@@ -25,6 +25,7 @@ use crate::utils::*;
 use crate::InsignoConfig;
 
 fn convert_image(input: &PathBuf, output: &PathBuf) -> Result<(), Debug<Box<dyn Error>>> {
+    println!("{input:?} {output:?}");
     if input.exists() {
         process::Command::new("ffmpeg")
             .args([
@@ -107,7 +108,7 @@ pub(crate) async fn add_image(
         .await
         .map_err(to_debug)?;
 
-    //generate unique name and 
+    //generate unique name and convert
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
     convert_image(&photo_path.path, &new_pos)?;
     

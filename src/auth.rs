@@ -94,6 +94,7 @@ async fn signup(form: Form<Signup>, auth: Auth<'_>) -> Result<&'static str, Debu
     auth.login(&form.into()).await.map_err(to_debug)?;
     Ok("You signed up.")
 }
+
 use rocket::serde::Serialize;
 #[derive(Serialize)]
 struct Token {
@@ -159,3 +160,4 @@ pub fn stage() -> AdHoc {
         rocket.manage(users).manage(trash_types_map)
     })
 }
+

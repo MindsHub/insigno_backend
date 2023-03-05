@@ -20,7 +20,7 @@ pub struct Signup {
         custom = "has_lowercase",
         custom = "has_uppercase"
     )]
-    pub(crate) password: String,
+    pub password: String,
 }
 impl Debug for Signup {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

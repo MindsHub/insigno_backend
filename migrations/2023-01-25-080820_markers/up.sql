@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.markers
     resolution_date timestamp with time zone DEFAULT NULL,
     marker_types_id BIGINT NOT NULL DEFAULT '1',
     created_by BIGINT NOT NULL,
-    solved_by BIGINT NOT NULL,
+    solved_by BIGINT,
     CONSTRAINT marker_id_pkey PRIMARY KEY (id),
     CONSTRAINT marker_id_fkey FOREIGN KEY (marker_types_id)
         REFERENCES public.marker_types (id) MATCH SIMPLE

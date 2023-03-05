@@ -101,6 +101,7 @@ pub fn to_debug<E: Error>(err: E) -> Debug<Box<dyn Error>> {
     file.write_all(to_write.as_bytes()).unwrap();
     Debug(err.to_string().into())
 }
+
 pub fn str_to_debug(s: &str) -> Debug<Box<dyn Error>> {
     let bt = Backtrace::force_capture();
     let mut file = File::options()
