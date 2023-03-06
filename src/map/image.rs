@@ -68,14 +68,16 @@ pub(crate) async fn add_image(
     config: &State<InsignoConfig>,
 ) -> Result<(), Debug<Box<dyn Error>>> {
     // parse multipart data
-    let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
+    let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("image")
+            .size_limit(64_000_000)
             .content_type_by_string(Some(mime::IMAGE_STAR))
             .map_err(to_debug)?,
         MultipartFormDataField::text("refers_to_id"),
     ]);
-
+    options.max_data_bytes=64_000_000;
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
+        
         .await
         .map_err(to_debug)?;
 
