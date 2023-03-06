@@ -170,3 +170,19 @@ pub(crate) async fn get_image(
     //print!("{:?}", path);
     NamedFile::open(path).await.ok()
 }
+/* 
+#[cfg(test)]
+mod test {
+    use rocket::local::asynchronous::Client;
+    use crate::rocket;
+    
+    #[rocket::async_test]
+    async fn test_marker_add_image() {
+        let client = Client::tracked(rocket())
+            .await
+            .expect("valid rocket instance");
+        // try to get types list
+        let response = client.post("/map/image/add").dispatch().await;
+
+    }
+}*/
