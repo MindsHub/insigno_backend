@@ -15,6 +15,7 @@ mod pills;
 mod schema_rs;
 mod schema_sql;
 mod utils;
+mod test;
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]

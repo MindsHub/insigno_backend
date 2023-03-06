@@ -22,7 +22,7 @@ use rocket::serde::{json::Json, Deserialize};
 use rocket_auth::User;
 
 use crate::schema_rs::*;
-
+use rocket::http::Status;
 use self::image::*;
 mod image;
 
@@ -41,12 +41,11 @@ async fn get_near(
     let cur_point = PointC { v: tmp_point };
     let res: Vec<Marker> = connection
         .run(move |conn| {
-            let t_point = st_transform(cur_point, 25832);
             let mut query = markers::table.into_boxed();
             query = query.filter(st_dwithin(
-                st_transform(markers::point, 25832),
-                t_point,
-                15000.0,
+                markers::point,
+                cur_point,
+                0.135, // 15km/(6371 km *2pi)*360= 0.135 raggio di 15 km
             ));
             query.load(conn)
         })
@@ -62,7 +61,7 @@ struct AddTrashField {
     marker_types_id: i64,
 }
 
-#[post("/add", data = "<data>")]
+#[post("/add", data = "<data>")] 
 async fn add_map(
     data: Form<AddTrashField>,
     user: User,
@@ -97,18 +96,14 @@ async fn add_map(
     let y = connection
         .run(move |conn| insert_into(mrkt).values(&z).get_result::<Marker>(conn))
         .await;
-    println!("{:?}", y);
 
     match y {
         Ok(x) => {
-            println!("fanculo");
             Ok(x.id
                 .ok_or(str_to_debug("id not found (very strange)"))?
                 .to_string())
         }
-        //todo!()),
         Err(x) => {
-            println!("stronzo");
             Err(to_debug(x))
         }
     }
@@ -124,15 +119,14 @@ async fn get_types(trash_types_map: &State<TrashTypeMap>) -> Json<BTreeMap<i64, 
 async fn get_marker_from_id(
     marker_id: i64,
     connection: Db,
-) -> Result<Json<Marker>, Debug<Box<dyn Error>>> {
+) -> Option<Json<Marker>> {
     let m: Marker = connection
         .run(move |conn| markers::table.find(marker_id).load::<Marker>(conn))
         .await
-        .map_err(to_debug)?
-        .get(0)
-        .ok_or(str_to_debug("not found"))?
+        .ok()?
+        .get(0)?
         .clone();
-    Ok(Json(m))
+    Some(Json(m))
 }
 
 sql_function!(fn resolve_marker(marker_id: BigInt, user_id: BigInt));
@@ -142,16 +136,20 @@ async fn resolve_marker_from_id(
     marker_id: i64,
     user: User,
     connection: Db,
-) -> Result<(), Debug<Box<dyn Error>>>{
-    connection
+) -> Status{
+    let y = connection
         .run(move |conn|{
-            select(resolve_marker(marker_id as i64, user.id as i64)).execute(conn)
-        }).await
-        .map_err(to_debug)?;
-    //let query = select(resolve_marker(marker_id as i64, user.id as i64));
-    //let y = debug_query::<Pg, _>(&query);
-    //println!("{y} {:?}", ret);
-    Ok(())
+            select(resolve_marker(marker_id, user.id as i64)).execute(conn)
+        }).await;
+    if let Err(tmp) = y{
+        match tmp.to_string().as_str(){
+            "marker_non_trovato"=>Status::NotFound,
+            "marker_risolto"=>Status::BadRequest,
+            _ => Status::InternalServerError,
+        }
+    }else{
+        Status::Ok
+    }
 }
 
 pub fn get_routes() -> Vec<Route> {
@@ -166,3 +164,88 @@ pub fn get_routes() -> Vec<Route> {
         resolve_marker_from_id
     ]
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{test::{test_reset_db, test_signup}};
+    use rocket::{local::asynchronous::Client, http::{Status, ContentType}, serde::json::{serde_json, Value}};
+    use crate::rocket;
+
+    #[rocket::async_test]
+    async fn test_marker_get_types() {
+        let client = Client::tracked(rocket())
+            .await
+            .expect("valid rocket instance");
+        // try to get types list
+        let response = client.get("/map/types").dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.into_string().await.unwrap(), r#"{"1":"unknown","2":"plastic","3":"paper","4":"undifferentiated","5":"glass","6":"compost","7":"electronics"}"#);
+    }
+
+    #[rocket::async_test]
+    async fn test_marker_get(){
+        test_reset_db();
+        let client = Client::tracked(rocket())
+            .await
+            .expect("valid rocket instance");
+
+         //get inexistent file
+         let response = client.get("/map/1").dispatch().await;
+         assert_eq!(response.status(), Status::NotFound);
+         //assert_eq!(response.into_string().await.unwrap() , "[]");
+    }
+
+    #[rocket::async_test]
+    async fn test_marker_get_near() {
+        test_reset_db();
+        
+        let client = Client::tracked(rocket())
+            .await
+            .expect("valid rocket instance");
+
+        // try to get a malformed query
+        let response = client.get("/map/get_near").dispatch();
+        assert_eq!(response.await.status(), Status::NotFound);
+
+        //empty query
+        let response = client.get("/map/get_near?x=0.0&y=0.0").dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.into_string().await.unwrap() , "[]");
+
+        //signup
+        test_signup(&client).await;
+
+        //add point
+        let response = client.post("/map/add")
+        .header(ContentType::Form)
+        .body("x=0.0&y=0.0&marker_types_id=2")
+        .dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.into_string().await.unwrap() , "1");
+
+        //1 point query
+        let response = client.get("/map/get_near?x=0.0&y=0.0").dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+
+        //println!("{}", response.into_string().await.unwrap());
+        let js: Value = serde_json::from_str(&response.into_string().await.unwrap()).expect("not a json");
+        let arr = js.as_array().expect("not an array");
+        let first = arr.get(0).expect("empty array").as_object().expect("not a valid object");
+        assert_eq!(first.get("id").unwrap(), 1);
+        assert_eq!(first.get("resolution_date").unwrap(), &Value::Null);
+        assert_eq!(first.get("created_by").unwrap(), 1);
+        assert_eq!(first.get("marker_types_id").unwrap(), 2);
+        let point = first.get("point").unwrap();
+        assert_eq!(point.get("x").unwrap(), 0.0);
+        assert_eq!(point.get("y").unwrap(), 0.0);
+        assert_eq!(point.get("srid").unwrap(), 4326);
+
+        let response = client.get("/map/get_near?x=0.136&y=0.0").dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.into_string().await.unwrap() , "[]");
+    }
+
+    
+}
+/*Se un utente si iscrive a un gruppo, i marker che ha raccolto nel periodo di attività del gruppo vengono sommati ai punti del gruppo? (per me si)
+oppure la relazione utente-gruppo o gruppo-gruppo ha una data di inizio e una di fine? */

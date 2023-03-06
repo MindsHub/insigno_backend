@@ -167,6 +167,6 @@ pub(crate) async fn get_image(
     path.push(config.media_folder.clone());
     path.push(res.path);
 
-    print!("{:?}", path);
+    //print!("{:?}", path);
     NamedFile::open(path).await.ok()
 }

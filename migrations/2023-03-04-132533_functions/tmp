@@ -1,9 +1,0 @@
-DELETE FROM user_groups_join;
-DELETE FROM groups;
-DELETE FROM groups_groups_join;
-
-INSERT INTO groups (id, name)
-VALUES (1, 'le pippe', 2, 'le pippe supreme');
-
-INSERT INTO user_groups_join (id, user_id, group_id)
-VALUES (1, 1, 1);

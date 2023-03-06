@@ -45,3 +45,12 @@ table! {
         points -> Double,
     }
 }
+/*
+table!{
+    groups(id){
+        id->BigInt,
+        points->Double,
+        creation_date->Timestamptz,
+        end_date->Nullable<Timestamptz>,
+    }
+}*/

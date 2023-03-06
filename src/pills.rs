@@ -83,25 +83,18 @@ pub fn get_routes() -> Vec<Route> {
 
 #[cfg(test)]
 mod test {
-    use std::process::*;
-
     use crate::db::Db;
     use crate::diesel::ExpressionMethods;
     use crate::diesel::RunQueryDsl;
     use crate::pills::AddPill;
     use crate::rocket;
+    use crate::test::*;
     use rocket::http::{ContentType, Status};
     use rocket::serde::json::serde_json;
 
     #[rocket::async_test]
     async fn test_pills() {
-        let success = Command::new("diesel")
-            .args(["database", "reset"])
-            .output()
-            .unwrap()
-            .status
-            .success();
-        assert!(success);
+        test_reset_db();
         use rocket::local::asynchronous::Client;
         let client = Client::tracked(rocket())
             .await
@@ -125,13 +118,7 @@ mod test {
         assert_eq!(response.await.status(), Status::Unauthorized);
 
         //signup
-        let data = "email=test@gmail.com&password=Testtes1";
-        let response = client
-            .post("/signup")
-            .header(ContentType::Form)
-            .body(data)
-            .dispatch();
-        assert_eq!(response.await.status(), Status::Ok);
+        test_signup(&client).await;
 
         // add
         let response = client
@@ -146,19 +133,15 @@ mod test {
         assert_eq!(response.await.status(), Status::NotFound);
 
         //update pill state
-        //println!("{:?}", client.rocket().
         let connection = &Db::get_one(client.rocket()).await.unwrap();
-        //let conn = PgConnection::establish(&config.url).unwrap();
-
-        //let connection = client.rocket().state::<Db>().unwrap();
-        let y = connection
+        let rows = connection
             .run(|c| {
                 use crate::schema_sql::pills::dsl::*;
                 diesel::update(pills).set(accepted.eq(true)).execute(c)
             })
             .await
             .expect("unable to modify db");
-        if y != 1 {
+        if rows != 1 {
             panic!("row not modified");
         }
 
@@ -169,7 +152,5 @@ mod test {
             r#"{"id":1,"text":"test","author":"test@gmail.com","source":"test","accepted":true}"#,
             response.into_string().await.unwrap()
         );
-        //
-        //assert_eq!(response.into_string().unwrap(), "Hello, world!");
     }
 }

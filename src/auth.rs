@@ -69,22 +69,20 @@ impl DBConnection for UserConnection {
         Ok(())
     }
     async fn get_user_by_id(&self, user_id: i32) -> Result<AUser> {
-        println!("get user");
+        //println!("get user");
         use users::dsl::users as dslUsers;
         let z = dslUsers.find(user_id as i64).load::<User>(&self.0)?[0].clone();
-        let y: Result<AUser> = Ok(z.clone().into());
-        println!("{y:?}");
-        y
+        Ok(z.into())
     }
     async fn get_user_by_email(&self, email: &str) -> Result<AUser> {
-        println!("get user by email /{email}/");
+        //println!("get user by email /{email}/");
         let email = email.to_string();
         use users::dsl::users as dslUsers;
         let z = dslUsers
             .filter(users::email.eq(email))
-            .first::<User>(&self.0);
-        println!("{}", z.is_err());
-        Ok(z?.into())
+            .first::<User>(&self.0)?;
+        //println!("{}", z.is_err());
+        Ok(z.into())
     }
 }
 
@@ -139,10 +137,7 @@ pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Diesel Authentication Stage", |rocket| async {
         let config = Config::from("db", &rocket).unwrap();
         let conn = PgConnection::establish(&config.url).unwrap();
-        println!("{}", config.url);
-        let tmp = marker_types::table.load::<(i64, String, f64)>(&conn);
 
-        println!("{:?}", tmp);
         let sorted = marker_types::table
             .load::<(i64, String, f64)>(&conn)
             .unwrap()

@@ -4,5 +4,5 @@ docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=test -e POSTGRES_US
 sleep 5
 #diesel database reset
 
-cargo test -- --test-threads=1
-#cargo tarpaulin --skip-clean
+#cargo test -- --test-threads=1
+cargo tarpaulin --skip-clean -- --test-threads=1

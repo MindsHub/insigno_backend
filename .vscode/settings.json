@@ -1,1 +1,8 @@
-{ "rust-analyzer.server.extraEnv": { "RUSTUP_TOOLCHAIN": "stable" } }
+{
+    "rust-analyzer.server.extraEnv": {
+        "RUSTUP_TOOLCHAIN": "stable"
+    },
+    "rust-analyzer.diagnostics.disabled": [
+        "unresolved-method"
+    ]
+}
