@@ -12,7 +12,7 @@ table! {
     marker_types (id){
         id->BigInt,
         name->Text,
-        points->Float,
+        points->Double,
     }
 }
 
@@ -35,12 +35,13 @@ table! {
         refers_to -> BigInt,
     }
 }
+
 table! {
     users(id){
         id -> BigInt,
         email -> Text,
         password -> Text,
         is_admin -> Bool,
-        points -> BigInt,
+        points -> Double,
     }
 }

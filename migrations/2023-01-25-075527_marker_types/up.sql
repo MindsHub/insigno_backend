@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS public.marker_types
 (
     id BIGSERIAL NOT NULL,
     name TEXT COLLATE pg_catalog."default" NOT NULL,
-    points FLOAT NOT NULL,
+    points DOUBLE PRECISION NOT NULL,
     CONSTRAINT markers_types_pkey PRIMARY KEY (id)
 )
 

@@ -6,7 +6,7 @@ use diesel::ExpressionMethods;
 use diesel::{insert_into, sql_types::Double, QueryDsl, RunQueryDsl};
 use rocket::response::Debug;
 use rocket::{serde::json::Json, Route};
-use rocket_auth::{User};
+use rocket_auth::User;
 use serde::{Deserialize, Serialize};
 
 use super::db::Db;
@@ -39,15 +39,12 @@ async fn get_random_pill(connection: Db) -> Result<Option<Json<Pill>>, Debug<Box
         .await
         .map_err(to_debug)?;
 
-    let pill = res
-        .into_iter()
-        .next();
-    if let Some(p) = pill{
+    let pill = res.into_iter().next();
+    if let Some(p) = pill {
         Ok(Some(Json(p)))
-    }else{
+    } else {
         Ok(None)
     }
-    
 }
 
 #[derive(Deserialize, Serialize)]
@@ -57,7 +54,11 @@ struct AddPill {
 }
 
 #[post("/add", data = "<data>")]
-async fn add_pill(connection: Db, data: Json<AddPill>, user: User) -> Result<String, Debug<Box<dyn Error>>> {
+async fn add_pill(
+    connection: Db,
+    data: Json<AddPill>,
+    user: User,
+) -> Result<String, Debug<Box<dyn Error>>> {
     let pill = Pill {
         id: None,
         text: data.text.clone(),
@@ -82,81 +83,92 @@ pub fn get_routes() -> Vec<Route> {
 
 #[cfg(test)]
 mod test {
-    use std::process;
+    use std::process::*;
 
     use crate::db::Db;
-    use crate::pills::AddPill;
-    use crate::rocket;
-    use rocket::http::{Status, ContentType};
-    use rocket::serde::json::serde_json;
     use crate::diesel::ExpressionMethods;
     use crate::diesel::RunQueryDsl;
+    use crate::pills::AddPill;
+    use crate::rocket;
+    use rocket::http::{ContentType, Status};
+    use rocket::serde::json::serde_json;
 
     #[rocket::async_test]
     async fn test_pills() {
-        process::Command::new("diesel")
-        .args([
-            "database", "reset"
-        ])
-        .output()
-        .unwrap();
-
+        let success = Command::new("diesel")
+            .args(["database", "reset"])
+            .output()
+            .unwrap()
+            .status
+            .success();
+        assert!(success);
         use rocket::local::asynchronous::Client;
-        let client = Client::tracked(rocket()).await.expect("valid rocket instance");
-
-        
+        let client = Client::tracked(rocket())
+            .await
+            .expect("valid rocket instance");
 
         // try to get a pill with an empty database
-        let  response = client.get("/pills/random").dispatch();
+        let response = client.get("/pills/random").dispatch();
         assert_eq!(response.await.status(), Status::NotFound);
 
-
         // unautenticate add
-        let new_pill = AddPill{text: "test".to_string(), source: "test".to_string()};
+        let new_pill = AddPill {
+            text: "test".to_string(),
+            source: "test".to_string(),
+        };
         let input: String = serde_json::to_string(&new_pill).unwrap();
-        let  response = client.post("/pills/add")
-        .header(ContentType::JSON)
-        .body(input.clone())
-        .dispatch();
+        let response = client
+            .post("/pills/add")
+            .header(ContentType::JSON)
+            .body(input.clone())
+            .dispatch();
         assert_eq!(response.await.status(), Status::Unauthorized);
 
         //signup
         let data = "email=test@gmail.com&password=Testtes1";
-        let  response = client.post("/signup")
-        .header(ContentType::Form)
-        .body(data)
-        .dispatch();
+        let response = client
+            .post("/signup")
+            .header(ContentType::Form)
+            .body(data)
+            .dispatch();
         assert_eq!(response.await.status(), Status::Ok);
 
         // add
-        let  response = client.post("/pills/add")
-        .header(ContentType::JSON)
-        .body(input)
-        .dispatch();
+        let response = client
+            .post("/pills/add")
+            .header(ContentType::JSON)
+            .body(input)
+            .dispatch();
         assert_eq!(response.await.status(), Status::Ok);
 
         // try to get a pill with a pill not reviewed in Database
-        let  response = client.get("/pills/random").dispatch();
+        let response = client.get("/pills/random").dispatch();
         assert_eq!(response.await.status(), Status::NotFound);
 
         //update pill state
         //println!("{:?}", client.rocket().
-        let  connection = &Db::get_one(client.rocket()).await.unwrap();
+        let connection = &Db::get_one(client.rocket()).await.unwrap();
         //let conn = PgConnection::establish(&config.url).unwrap();
 
         //let connection = client.rocket().state::<Db>().unwrap();
-        let y = connection.run(|c| {
-            use crate::schema_sql::pills::dsl::*;
-            diesel::update(pills).set(accepted.eq(true)).execute(c)
-        }).await.expect("unable to modify db");
-        if y!=1 {
+        let y = connection
+            .run(|c| {
+                use crate::schema_sql::pills::dsl::*;
+                diesel::update(pills).set(accepted.eq(true)).execute(c)
+            })
+            .await
+            .expect("unable to modify db");
+        if y != 1 {
             panic!("row not modified");
         }
 
-        let  response = client.get("/pills/random").dispatch().await;
+        let response = client.get("/pills/random").dispatch().await;
 
         assert_eq!(response.status(), Status::Ok);
-        assert_eq!(r#"{"id":1,"text":"test","author":"test@gmail.com","source":"test","accepted":true}"#, response.into_string().await.unwrap());
+        assert_eq!(
+            r#"{"id":1,"text":"test","author":"test@gmail.com","source":"test","accepted":true}"#,
+            response.into_string().await.unwrap()
+        );
         //
         //assert_eq!(response.into_string().unwrap(), "Hello, world!");
     }

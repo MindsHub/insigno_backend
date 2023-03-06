@@ -7,6 +7,7 @@ use crate::utils::*;
 use diesel::RunQueryDsl;
 use diesel::*;
 
+use diesel::sql_types::BigInt;
 use postgis::ewkb::Point;
 use postgis_diesel::*;
 
@@ -68,8 +69,10 @@ async fn add_map(
     connection: Db,
     trash_types_map: &State<TrashTypeMap>,
 ) -> Result<String, Debug<Box<dyn Error>>> {
-    
-    let type_int = if trash_types_map.to_string.contains_key(&data.marker_types_id) {
+    let type_int = if trash_types_map
+        .to_string
+        .contains_key(&data.marker_types_id)
+    {
         data.marker_types_id
     } else {
         1
@@ -92,24 +95,22 @@ async fn add_map(
     };
     use markers::dsl::markers as mrkt;
     let y = connection
-    .run(move |conn| insert_into(mrkt).values(&z).get_result::<Marker>(conn))
-    .await;
+        .run(move |conn| insert_into(mrkt).values(&z).get_result::<Marker>(conn))
+        .await;
     println!("{:?}", y);
-    
-    match y
-    {
+
+    match y {
         Ok(x) => {
             println!("fanculo");
-            Ok(
-            
-            x
-            .id
-            .ok_or(str_to_debug("id not found (very strange)"))?
-            .to_string())},
-            //todo!()),
+            Ok(x.id
+                .ok_or(str_to_debug("id not found (very strange)"))?
+                .to_string())
+        }
+        //todo!()),
         Err(x) => {
             println!("stronzo");
-            Err(to_debug(x))},
+            Err(to_debug(x))
+        }
     }
 }
 
@@ -118,22 +119,50 @@ async fn get_types(trash_types_map: &State<TrashTypeMap>) -> Json<BTreeMap<i64, 
     Json(trash_types_map.to_string.clone())
 }
 
+
 #[get("/<marker_id>")]
-async fn get_marker_from_id(marker_id: i64, connection: Db) -> Result<Json<Marker>, Debug<Box<dyn Error>>>{
-    
+async fn get_marker_from_id(
+    marker_id: i64,
+    connection: Db,
+) -> Result<Json<Marker>, Debug<Box<dyn Error>>> {
     let m: Marker = connection
-        .run(move |conn| {
-            markers::table
-                .find(marker_id)
-                .load::<Marker>(conn)
-        })
+        .run(move |conn| markers::table.find(marker_id).load::<Marker>(conn))
         .await
         .map_err(to_debug)?
         .get(0)
-        .ok_or(str_to_debug("not found"))?.clone();
+        .ok_or(str_to_debug("not found"))?
+        .clone();
     Ok(Json(m))
 }
 
+sql_function!(fn resolve_marker(marker_id: BigInt, user_id: BigInt));
+
+#[post("/resolve/<marker_id>")]
+async fn resolve_marker_from_id(
+    marker_id: i64,
+    user: User,
+    connection: Db,
+) -> Result<(), Debug<Box<dyn Error>>>{
+    connection
+        .run(move |conn|{
+            select(resolve_marker(marker_id as i64, user.id as i64)).execute(conn)
+        }).await
+        .map_err(to_debug)?;
+    //let query = select(resolve_marker(marker_id as i64, user.id as i64));
+    //let y = debug_query::<Pg, _>(&query);
+    //println!("{y} {:?}", ret);
+    Ok(())
+}
+
 pub fn get_routes() -> Vec<Route> {
-    routes![get_near, get_types, add_map, add_image, get_marker_from_id, list_image, get_image]
+    routes![
+        get_near,
+        get_types,
+        add_map,
+        add_image,
+        get_marker_from_id,
+        list_image,
+        get_image,
+        resolve_marker_from_id
+    ]
 }

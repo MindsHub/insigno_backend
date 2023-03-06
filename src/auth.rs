@@ -140,12 +140,11 @@ pub fn stage() -> AdHoc {
         let config = Config::from("db", &rocket).unwrap();
         let conn = PgConnection::establish(&config.url).unwrap();
         println!("{}", config.url);
-        let tmp = marker_types::table
-        .load::<(i64, String, f32)>(&conn);
+        let tmp = marker_types::table.load::<(i64, String, f64)>(&conn);
 
         println!("{:?}", tmp);
         let sorted = marker_types::table
-            .load::<(i64, String, f32)>(&conn)
+            .load::<(i64, String, f64)>(&conn)
             .unwrap()
             .into_iter()
             .map(|(x, y, ..)| (x, y))
@@ -160,4 +159,3 @@ pub fn stage() -> AdHoc {
         rocket.manage(users).manage(trash_types_map)
     })
 }
-

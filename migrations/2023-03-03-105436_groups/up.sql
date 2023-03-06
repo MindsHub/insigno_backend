@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS public.groups
 (
     id BIGSERIAL NOT NULL,
     name TEXT NOT NULL,
+    points DOUBLE PRECISION DEFAULT 0.0,
     CONSTRAINT groups_id_pkey PRIMARY KEY (id)
 )
 

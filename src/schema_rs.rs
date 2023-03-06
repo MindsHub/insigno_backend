@@ -1,7 +1,7 @@
 use chrono::Utc;
 use postgis::ewkb::Point;
 use postgis_diesel::PointC;
-use rocket::serde::{Serialize, Deserialize};
+use rocket::serde::{Deserialize, Serialize};
 use serde::ser::SerializeStruct;
 
 use crate::schema_sql::*;
@@ -13,9 +13,8 @@ use rocket_auth::User as AUser;
 pub struct MarkerType {
     id: i64,
     name: String,
-    points: f32,
+    points: f64,
 }
-
 
 #[derive(Clone, Queryable, Insertable, Debug)]
 #[diesel(table_name = marker)]
@@ -28,7 +27,7 @@ pub struct Marker {
 
     //#[diesel(deserialize_as = "chrono::DateTime<Utc>")]
     pub resolution_date: Option<chrono::DateTime<Utc>>,
-    
+
     pub created_by: i64,
     pub solved_by: Option<i64>,
     pub marker_types_id: i64,
@@ -65,7 +64,7 @@ pub struct User {
     pub email: String,
     password: String,
     pub is_admin: bool,
-    pub points: i64,
+    pub points: f64,
 }
 
 impl From<User> for AUser {

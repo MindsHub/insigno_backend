@@ -111,7 +111,7 @@ pub(crate) async fn add_image(
     //generate unique name and convert
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
     convert_image(&photo_path.path, &new_pos)?;
-    
+
     let name = new_pos
         .strip_prefix(&config.media_folder)
         .map_err(to_debug)?
