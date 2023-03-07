@@ -9,6 +9,7 @@ use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
 use diesel::insert_into;
 use diesel::QueryDsl;
+use rocket::data::Limits;
 use rocket::fs::NamedFile;
 use rocket::futures::TryFutureExt;
 use rocket::response::Debug;
@@ -66,16 +67,18 @@ pub(crate) async fn add_image(
     user: User,
     connection: Db,
     config: &State<InsignoConfig>,
+    limits: &Limits,
 ) -> Result<(), Debug<Box<dyn Error>>> {
+    
     // parse multipart data
     let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("image")
-            .size_limit(64_000_000)
+            .size_limit(limits.get("data-form").unwrap().as_u64())
             .content_type_by_string(Some(mime::IMAGE_STAR))
             .map_err(to_debug)?,
         MultipartFormDataField::text("refers_to_id"),
     ]);
-    options.max_data_bytes=64_000_000;
+    options.max_data_bytes=limits.get("data-form").unwrap().as_u64();
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         
         .await
