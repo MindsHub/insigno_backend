@@ -38,11 +38,19 @@ table! {
 
 table! {
     users(id){
-        id -> BigInt,
+        id -> Nullable<BigInt>,
         email -> Text,
         password -> Text,
         is_admin -> Bool,
         points -> Double,
+    }
+}
+
+table! {
+    user_sessions(user_id){
+        user_id -> BigInt,
+        token -> Text,
+        refresh_date -> Timestamptz,
     }
 }
 /*

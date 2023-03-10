@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use std::error::Error;
 
-use crate::auth::TrashTypeMap;
+use crate::TrashTypeMap;
 use crate::utils::*;
 use diesel::RunQueryDsl;
 use diesel::*;
@@ -19,7 +19,6 @@ use super::db::Db;
 use super::schema_sql::*;
 use rocket::response::Debug;
 use rocket::serde::{json::Json, Deserialize};
-use rocket_auth::User;
 
 use self::image::*;
 use crate::schema_rs::*;
@@ -79,7 +78,7 @@ async fn add_map(
 
     let z = Marker {
         id: None,
-        created_by: user.id() as i64,
+        created_by: user.id.unwrap() as i64,
         solved_by: None,
         point: PointC {
             v: Point {
@@ -127,7 +126,7 @@ sql_function!(fn resolve_marker(marker_id: BigInt, user_id: BigInt));
 #[post("/resolve/<marker_id>")]
 async fn resolve_marker_from_id(marker_id: i64, user: User, connection: Db) -> Status {
     let y = connection
-        .run(move |conn| select(resolve_marker(marker_id, user.id as i64)).execute(conn))
+        .run(move |conn| select(resolve_marker(marker_id, user.id.unwrap() as i64)).execute(conn))
         .await;
     if let Err(tmp) = y {
         match tmp.to_string().as_str() {

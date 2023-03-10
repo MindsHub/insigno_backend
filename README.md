@@ -23,7 +23,7 @@ cargo watch -x run
 
 Aprire shell di `psql`:
 ```sh
-psql -h insignio.mindshub.it -U mindshub insigniorocketdb
+psql -h insigno.mindshub.it -U mindshub insignorocketdb
 ```
 
 Numero connessioni attive al momento:

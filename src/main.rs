@@ -1,7 +1,9 @@
-use std::fs;
+use std::{fs, collections::BTreeMap};
 
+use diesel::{PgConnection, Connection, RunQueryDsl};
 use rocket::{fairing::*, serde::Deserialize};
-
+use schema_sql::marker_types;
+use rocket_sync_db_pools::Config;
 #[macro_use]
 extern crate rocket;
 #[macro_use]
@@ -22,13 +24,40 @@ mod utils;
 struct InsignoConfig {
     media_folder: String,
 }
+pub struct TrashTypeMap {
+    pub to_string: BTreeMap<i64, String>,
+    pub to_i64: BTreeMap<String, i64>,
+}
+
+pub fn stage() -> AdHoc {
+    AdHoc::on_ignite("Insigno config", |rocket| async {
+
+
+        //generate trash_types_map
+        let config = Config::from("db", &rocket).unwrap();
+        let conn = PgConnection::establish(&config.url).unwrap();
+
+        let sorted = marker_types::table
+            .load::<(i64, String, f64)>(&conn)
+            .unwrap()
+            .into_iter()
+            .map(|(x, y, ..)| (x, y))
+            .collect::<BTreeMap<i64, String>>();
+        let inverted = sorted.clone().into_iter().map(|(x, y)| (y, x)).collect();
+        let trash_types_map = TrashTypeMap {
+            to_string: sorted,
+            to_i64: inverted,
+        };
+
+        rocket.manage(trash_types_map)
+    })
+}
 
 #[launch]
 fn rocket() -> _ {
     let rocket = rocket::build();
     rocket
         .attach(db::stage())
-        .attach(auth::stage())
         .mount("/pills", pills::get_routes())
         .mount("/map", map::get_routes())
         .mount("/", auth::get_routes())
@@ -39,6 +68,7 @@ fn rocket() -> _ {
             let _ = fs::create_dir_all(cfg.media_folder.clone());
             rocket
         }))
+        .attach(stage())
         .attach(cors::Cors)
         .mount("/", cors::get_routes())
     //.manage(users)

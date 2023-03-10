@@ -20,8 +20,8 @@ jobs:
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{secrets.GITHUB_TOKEN}}
-        file: target/release/insignio
-        asset_name: insignio
+        file: target/release/insigno
+        asset_name: insigno
         tag: ${{github.ref}}
         overwrite: true
         body: "Release file"
@@ -33,7 +33,7 @@ jobs:
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
         script: |
-          if pgrep insignio; then pkill insignio; fi
+          if pgrep insigno; then pkill insigno; fi
     - name: Copy exec via SSH
       uses: appleboy/scp-action@master
       with:
@@ -41,8 +41,8 @@ jobs:
         username: ${{secrets.SSH_USER}}
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
-        source: "target/release/insignio"
-        target: "insignio"
+        source: "target/release/insigno"
+        target: "insigno"
         strip_components: 2
     - name: Copy Rocket.toml via SSH
       uses: appleboy/scp-action@master
@@ -52,7 +52,7 @@ jobs:
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
         source: "Rocket.toml"
-        target: "insignio"
+        target: "insigno"
     - name: Re-run server
       uses: appleboy/ssh-action@v0.1.8
       with:
@@ -61,5 +61,5 @@ jobs:
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
         script: |
-          cd insignio/
-          nohup ./insignio > nohup.out 2> nohup.err < /dev/null &
+          cd insigno/
+          nohup ./insigno > nohup.out 2> nohup.err < /dev/null &

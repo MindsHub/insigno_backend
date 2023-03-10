@@ -6,7 +6,6 @@ use serde::ser::SerializeStruct;
 
 use crate::schema_sql::*;
 use crate::utils::*;
-use rocket_auth::User as AUser;
 
 #[derive(Serialize, Clone, Queryable, Debug)]
 #[diesel(table_name = "marker_types")]
@@ -57,23 +56,25 @@ pub struct MarkerImage {
     pub path: String,
     pub refers_to: i64,
 }
-
-#[derive(Queryable, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, QueryId, Serialize, Deserialize, Insertable, Queryable, QueryableByName)]
+#[table_name = "users"]
+//#[derive(Queryable, Clone,  SqlType)]
 pub struct User {
-    pub id: i64,
+    
+    pub id: Option<i64>,
     pub email: String,
-    password: String,
+    pub password: String,
     pub is_admin: bool,
     pub points: f64,
 }
+/*id-> Nullable<BigInt>,
+        user_id -> BigInt,
+        token -> Text,
+        date -> Timestamptz, */
 
-impl From<User> for AUser {
-    fn from(val: User) -> Self {
-        AUser {
-            id: val.id as i32,
-            email: val.email,
-            password: val.password,
-            is_admin: val.is_admin,
-        }
-    }
+#[derive(Clone, Queryable, Insertable, Debug)]
+pub struct UserSession{
+    pub user_id: i64,
+    pub token: String,
+    pub refresh_date: chrono::DateTime<Utc>,
 }

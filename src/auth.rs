@@ -1,156 +1,185 @@
-use std::collections::BTreeMap;
 use std::error::Error;
-
-use crate::schema_rs::*;
-use diesel::*;
-use diesel::{insert_into, update, Connection, PgConnection, QueryDsl, RunQueryDsl};
+//use rocket::form::prelude::Entity::Form;
+use crypto::digest::Digest;
+use crypto::sha3::Sha3;
+use diesel::sql_query;
+use diesel::sql_types::BigInt;
+use diesel::sql_types::Text;
+use diesel::dsl::now;
+use rand::Rng;
+use rand::distributions::Alphanumeric;
+use rocket::Route;
+use rocket::request::{FromRequest, self};
+use rocket::form::Form;
+use rocket::http::{CookieJar, Cookie, Status};
+use rocket::serde::json::Json;
+use serde::Deserialize;
 use rocket::response::Debug;
-use rocket::serde::json::{from_str, serde_json, Json};
-use rocket::{fairing::AdHoc, form::Form, get, post, routes, Route};
-use rocket_auth::User as AUser;
-use rocket_auth::{Auth, DBConnection, Login, Result, Session, Signup, Users};
-use rocket_sync_db_pools::Config;
 
-use crate::schema_sql::{marker_types, users};
-use crate::utils::*;
-pub struct UserConnection(pub diesel::PgConnection);
-unsafe impl Sync for UserConnection {}
+use crate::diesel::ExpressionMethods;
+use crate::diesel::QueryDsl;
+use crate::schema_sql::user_sessions::{user_id, token, refresh_date};
+use crate::schema_sql::users;
+use crate::schema_sql::user_sessions::dsl::user_sessions;
+use crate::utils::to_debug;
+use crate::{db::Db, schema_rs::User};
+use crate::diesel::RunQueryDsl;
+
+#[derive(FromForm, Deserialize)]
+struct CreateInfo {
+    email: String,
+    password: String
+}
+/*
+#[derive(FromForm, Deserialize)]
+struct LoginInfo {
+    email: String,
+    password: String,
+}*/
+
+fn hash_password(password: &String) -> String {
+    let mut hasher = Sha3::sha3_256();
+    hasher.input_str(password);
+    hasher.result_str()
+}
+
+fn generate_token()->String{
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(10)
+        .map(char::from)
+        .collect()
+}
+
+async fn get_user_by_email(db: &Db, email: String)->Result<User, diesel::result::Error>{
+    let users: Vec<User> = db.run(|conn| {
+        users::table.filter(users::email.eq(email)).get_results(conn)
+        
+    }).await?;
+    //.map_err(to_debug)?;
+    let user= users.get(0).ok_or(diesel::result::Error::NotFound)?;
+    Ok(user.clone())
+}
+
+sql_function!{fn autenticate(id_inp: BigInt, tok: Text)->(BigInt, Text, Text, Bool, Double)}
+
+#[derive(Responder, Debug)]
+pub enum AuthError<T> {
+    #[response(status = 401)]
+    Unauthorized(T),
+}
+fn auth_fail(inp: &str)->request::Outcome<User, AuthError<String>>{
+    return request::Outcome::Failure((Status::Unauthorized, AuthError::Unauthorized(inp.to_string())));
+}
 
 #[rocket::async_trait]
-impl DBConnection for UserConnection {
-    async fn init(&self) -> Result<()> {
-        Ok(())
-    }
+impl<'r> FromRequest<'r> for User {
+    type Error=AuthError<String>;
 
-    async fn create_user(&self, email: &str, hash: &str, is_admin: bool) -> Result<()> {
-        let email = email.to_string();
-        let hash = hash.to_string();
+    async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
+        let connection =  request.guard::<Db>().await.unwrap();
+        let cookie = request.cookies();
+        let id: i64 = match cookie.get_private("user_id"){
+            Some(a) => {println!("{:?}", a.value()); a},
+            None => {return auth_fail("user_id cookie not found");}
+        }.value().parse().unwrap();
 
-        use crate::diesel::ExpressionMethods;
-        use users::dsl::users as dslUsers;
-        insert_into(dslUsers)
-            .values((
-                users::email.eq(email),
-                users::password.eq(hash),
-                users::is_admin.eq(is_admin),
-            ))
-            .execute(&self.0)?;
-        Ok(())
-    }
+        let tok = match cookie.get_private("token"){
+            Some(a) => {println!("{:?}", a.value()); a},
+            None => {return auth_fail("token cookie not found");}
+        }.value().to_string();
 
-    async fn update_user(&self, user: &AUser) -> Result<()> {
-        let user = user.clone();
+        //let tmpTok = tok.clone();
 
-        use users::dsl::users as dslUsers;
-
-        update(dslUsers.find(user.id as i64))
-            .set((
-                users::email.eq(user.email().to_string()),
-                users::password.eq(user.password),
-                users::is_admin.eq(user.is_admin),
-            ))
-            .execute(&self.0)?;
-
-        Ok(())
-    }
-
-    async fn delete_user_by_id(&self, user_id: i32) -> Result<()> {
-        use users::dsl::users as dslUsers;
-        delete(dslUsers.find(user_id as i64)).execute(&self.0)?;
-
-        Ok(())
-    }
-    async fn delete_user_by_email(&self, email: &str) -> Result<()> {
-        let email = email.to_string();
-        use users::dsl::users as dslUsers;
-        delete(dslUsers)
-            .filter(users::email.eq(email))
-            .execute(&self.0)?;
-        Ok(())
-    }
-    async fn get_user_by_id(&self, user_id: i32) -> Result<AUser> {
-        //println!("get user");
-        use users::dsl::users as dslUsers;
-        let z = dslUsers.find(user_id as i64).load::<User>(&self.0)?[0].clone();
-        Ok(z.into())
-    }
-    async fn get_user_by_email(&self, email: &str) -> Result<AUser> {
-        //println!("get user by email /{email}/");
-        let email = email.to_string();
-        use users::dsl::users as dslUsers;
-        let z = dslUsers
-            .filter(users::email.eq(email))
-            .first::<User>(&self.0)?;
-        //println!("{}", z.is_err());
-        Ok(z.into())
+        let auth: Result<User, _>  = connection.run(move |conn|{
+            sql_query(&format!("SELECT * FROM autenticate({id}, '{tok}');", ))
+            .get_result(conn)
+        }).await;
+        //println!("{auth:?} {}", format!("SELECT * FROM autenticate({id}, '{tmpTok}');"));
+        //todo!();
+        match auth{
+            Ok(a) => {return request::Outcome::Success(a);},
+            Err(_) => {return  auth_fail("errore nell'autenticazione");},
+        }
     }
 }
 
-#[post("/signup", data = "<form>")]
-async fn signup(form: Form<Signup>, auth: Auth<'_>) -> Result<&'static str, Debug<Box<dyn Error>>> {
-    auth.signup(&form).await.map_err(to_debug)?;
-    auth.login(&form.into()).await.map_err(to_debug)?;
-    Ok("You signed up.")
+#[post("/signup", format="form", data="<create_info>")]
+async fn signup(db: Db, create_info: Form<CreateInfo>, cookies: &CookieJar<'_>)
+  -> Result<Json<i64>, Debug<Box<dyn Error>>> {
+    let user: User = User{
+        id: None,
+        email: create_info.email.clone(),
+        password: hash_password(&create_info.password.clone()),
+        points: 0.0,
+        is_admin: false,
+    };
+    let user: User = db.run(|conn| {
+        diesel::insert_into(users::table)
+        .values(user)
+        .get_result(conn)
+    }).await
+        .map_err(to_debug)?;
+    login(db, create_info, cookies).await?;
+    Ok(Json(user.id.unwrap()))
 }
 
-use rocket::serde::Serialize;
-#[derive(Serialize)]
-struct Token {
-    token: String,
-}
-#[post("/login", data = "<form>")]
-async fn login(
-    form: Json<Login>,
-    auth: Auth<'_>,
-) -> Result<Json<rocket::serde::json::Value>, Debug<Box<dyn Error>>> {
-    auth.login(&form).await.map_err(to_debug)?;
-    //println!("{:?}, {:?}", &form, &form.password);
-    let session = auth
-        .cookies
-        .get_pending("rocket_auth")
-        .ok_or(str_to_debug("failed to get cookies"))?;
-    let y: Session = from_str(session.value()).map_err(to_debug)?;
-
-    let js = serde_json::json!(Token {
-        token: y.auth_key.clone()
-    });
-    println!("{}", y.auth_key);
-    Ok(Json(js))
-}
-
-#[get("/logout")]
-fn logout(auth: Auth<'_>) -> Result<(), Debug<Box<dyn Error>>> {
-    auth.logout().map_err(to_debug)?;
-    Ok(())
-}
-
-pub fn get_routes() -> Vec<Route> {
-    routes![signup, login, logout]
+#[post("/login", format="form", data="<login_info>")]
+async fn login(db:Db, login_info: Form<CreateInfo>, cookies: &CookieJar<'_>)-> Result<Option<()>, Debug<Box<dyn Error>>>{
+    let user = get_user_by_email(&db, login_info.email.clone())
+        .await;
+    let user = match user{
+        Ok(a) => {a},
+        Err(_) => {return Ok(None);}
+    };
+    let hash = hash_password(&login_info.password);
+    if user.password==hash{
+        let cur_user_id = user.id.unwrap().clone();
+        
+        let token_str= generate_token();
+        cookies.add_private(Cookie::new("user_id", user.id.unwrap().to_string()));
+        cookies.add_private(Cookie::new("token", token_str.clone()));
+        // update token on login
+        db.run(move |conn| {
+            diesel::insert_into(user_sessions)
+                .values((user_id.eq(cur_user_id), token.eq(token_str.clone()), refresh_date.eq(now)))
+                .on_conflict(user_id)
+                .do_update()
+                .set((token.eq(token_str), refresh_date.eq(now)))
+                .execute(conn)
+        }).await
+        .map_err(to_debug)?;
+        Ok(Some(()))
+    }else{
+        Ok(None)
+    }
 }
 
-pub struct TrashTypeMap {
-    pub to_string: BTreeMap<i64, String>,
-    pub to_i64: BTreeMap<String, i64>,
+#[post("/logout")]
+async fn logout(db: Db, cookies: &CookieJar<'_>, user: User)->Option<()>{
+    cookies.remove_private(Cookie::named("user_id"));
+    cookies.remove_private(Cookie::named("token"));
+    let id = user.id.unwrap();
+    if db.run(move |conn| {
+        let tmp =diesel::delete(user_sessions.filter(user_id.eq(id))).execute(conn);
+        tmp
+    }).await.is_ok(){
+        Some(())
+    }else{
+        None
+    }
 }
 
-pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("Diesel Authentication Stage", |rocket| async {
-        let config = Config::from("db", &rocket).unwrap();
-        let conn = PgConnection::establish(&config.url).unwrap();
+#[post("/session")]
+async fn refresh_session(_user: User)->Option<()>{
+    Some(())
+}
 
-        let sorted = marker_types::table
-            .load::<(i64, String, f64)>(&conn)
-            .unwrap()
-            .into_iter()
-            .map(|(x, y, ..)| (x, y))
-            .collect::<BTreeMap<i64, String>>();
-        let inverted = sorted.clone().into_iter().map(|(x, y)| (y, x)).collect();
-        let trash_types_map = TrashTypeMap {
-            to_string: sorted,
-            to_i64: inverted,
-        };
-        let users: Users = UserConnection { 0: conn }.into();
-
-        rocket.manage(users).manage(trash_types_map)
-    })
+pub fn get_routes()-> Vec<Route>{
+    routes![
+        login,
+        signup,
+        logout,
+        refresh_session,
+    ]
 }

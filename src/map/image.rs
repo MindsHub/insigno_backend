@@ -16,7 +16,6 @@ use rocket::response::Debug;
 use rocket::serde::json::Json;
 use rocket::Data;
 use rocket::{http::ContentType, State};
-use rocket_auth::User;
 use rocket_multipart_form_data::*;
 
 use crate::db::*;
@@ -24,22 +23,29 @@ use crate::schema_rs::*;
 use crate::schema_sql::*;
 use crate::utils::*;
 use crate::InsignoConfig;
+use std::str;
 
 fn convert_image(input: &PathBuf, output: &PathBuf) -> Result<(), Debug<Box<dyn Error>>> {
-    println!("{input:?} {output:?}");
+    println!("out={}", output.to_str().unwrap());
     if input.exists() {
-        process::Command::new("ffmpeg")
+        let raw_out = process::Command::new("ffmpeg")
             .args([
                 "-i",
                 input.to_str().ok_or(str_to_debug("invalid path"))?,
+                "-vf",
+                "scale=w=2500:h=2500:force_original_aspect_ratio=decrease",
                 output.to_str().ok_or(str_to_debug("invalid path"))?,
             ])
             .output()
             .map_err(to_debug)?;
+        if !raw_out.status.success(){
+            return Err(str_to_debug(str::from_utf8(&raw_out.stderr).unwrap()));
+        }
         Ok(())
     } else {
         Err(str_to_debug("wtf bro. This is not a valid file path"))
     }
+    
 }
 
 async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Debug<Box<dyn Error>>> {
@@ -100,7 +106,7 @@ pub(crate) async fn add_image(
         .parse::<i64>()
         .map_err(to_debug)?;
 
-    let user_id = user.id as i64;
+    let user_id = user.id.unwrap() as i64;
 
     // check if user own the marker
     connection

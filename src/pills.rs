@@ -1,12 +1,12 @@
 use std::error::Error;
 
+use crate::schema_rs::User;
 use crate::schema_sql::pills;
 use crate::utils::to_debug;
 use diesel::ExpressionMethods;
 use diesel::{insert_into, sql_types::Double, QueryDsl, RunQueryDsl};
 use rocket::response::Debug;
 use rocket::{serde::json::Json, Route};
-use rocket_auth::User;
 use serde::{Deserialize, Serialize};
 
 use super::db::Db;
