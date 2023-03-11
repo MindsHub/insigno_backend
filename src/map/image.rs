@@ -25,7 +25,7 @@ use crate::utils::*;
 use crate::InsignoConfig;
 use std::str;
 
-fn convert_image(input: &PathBuf, output: &PathBuf) -> Result<(), Debug<Box<dyn Error>>> {
+fn convert_image(input: &Path, output: &Path) -> Result<(), Debug<Box<dyn Error>>> {
     println!("out={}", output.to_str().unwrap());
     if input.exists() {
         let raw_out = process::Command::new("ffmpeg")
@@ -106,7 +106,7 @@ pub(crate) async fn add_image(
         .parse::<i64>()
         .map_err(to_debug)?;
 
-    let user_id = user.id.unwrap() as i64;
+    let user_id = user.id.unwrap();
 
     // check if user own the marker
     connection

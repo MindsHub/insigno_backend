@@ -5,7 +5,7 @@ use diesel::sql_types::BigInt;
 use diesel::sql_types::Text;
 use diesel::dsl::now;
 
-use pbkdf2::pbkdf2_hmac;
+
 use pbkdf2::pbkdf2_hmac_array;
 use sha2::Sha256;
 
@@ -75,7 +75,7 @@ pub enum AuthError<T> {
     Unauthorized(T),
 }
 fn auth_fail(inp: &str)->request::Outcome<User, AuthError<String>>{
-    return request::Outcome::Failure((Status::Unauthorized, AuthError::Unauthorized(inp.to_string())));
+    request::Outcome::Failure((Status::Unauthorized, AuthError::Unauthorized(inp.to_string())))
 }
 
 #[rocket::async_trait]
@@ -98,7 +98,7 @@ impl<'r> FromRequest<'r> for User {
         //let tmpTok = tok.clone();
 
         let auth: Result<User, _>  = connection.run(move |conn|{
-            sql_query(&format!("SELECT * FROM autenticate({id}, '{tok}');", ))
+            sql_query(format!("SELECT * FROM autenticate({id}, '{tok}');"))
             .get_result(conn)
         }).await;
         //println!("{auth:?} {}", format!("SELECT * FROM autenticate({id}, '{tmpTok}');"));
@@ -140,7 +140,7 @@ async fn login(db:Db, login_info: Form<CreateInfo>, cookies: &CookieJar<'_>)-> R
     };
     let hash = hash_password(&login_info.password);
     if user.password==hash{
-        let cur_user_id = user.id.unwrap().clone();
+        let cur_user_id = user.id.unwrap();
         
         let token_str= generate_token();
         cookies.add_private(Cookie::new("user_id", user.id.unwrap().to_string()));
@@ -167,8 +167,7 @@ async fn logout(db: Db, cookies: &CookieJar<'_>, user: User)->Option<()>{
     cookies.remove_private(Cookie::named("token"));
     let id = user.id.unwrap();
     if db.run(move |conn| {
-        let tmp =diesel::delete(user_sessions.filter(user_id.eq(id))).execute(conn);
-        tmp
+        diesel::delete(user_sessions.filter(user_id.eq(id))).execute(conn)
     }).await.is_ok(){
         Some(())
     }else{
