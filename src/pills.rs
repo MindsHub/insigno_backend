@@ -62,7 +62,7 @@ async fn add_pill(
     let pill = Pill {
         id: None,
         text: data.text.clone(),
-        author: user.email,
+        author: user.name,
         source: data.source.clone(),
         accepted: false,
     };

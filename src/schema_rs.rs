@@ -62,7 +62,7 @@ pub struct MarkerImage {
 pub struct User {
     
     pub id: Option<i64>,
-    pub email: String,
+    pub name: String,
     pub password: String,
     pub is_admin: bool,
     pub points: f64,

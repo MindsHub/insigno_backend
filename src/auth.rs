@@ -7,6 +7,7 @@ use diesel::dsl::now;
 
 
 use pbkdf2::pbkdf2_hmac_array;
+use serde::Serialize;
 use sha2::Sha256;
 
 use rand::Rng;
@@ -30,21 +31,11 @@ use crate::diesel::RunQueryDsl;
 
 #[derive(FromForm, Deserialize)]
 struct CreateInfo {
-    email: String,
+    name: String,
     password: String
 }
-/*
-#[derive(FromForm, Deserialize)]
-struct LoginInfo {
-    email: String,
-    password: String,
-}*/
 
 fn hash_password(password: &String) -> String {
-    //let mut hasher = Sha3::sha3_256();
-    
-    //hasher.input_str(password+"");
-    //hasher.result_str()
     let key = pbkdf2_hmac_array::<Sha256, 20>(password.as_bytes(), "test".as_bytes(), 4096);
     hex::encode(key)
 }
@@ -59,7 +50,17 @@ fn generate_token()->String{
 
 async fn get_user_by_email(db: &Db, email: String)->Result<User, diesel::result::Error>{
     let users: Vec<User> = db.run(|conn| {
-        users::table.filter(users::email.eq(email)).get_results(conn)
+        users::table.filter(users::name.eq(email)).get_results(conn)
+        
+    }).await?;
+    //.map_err(to_debug)?;
+    let user= users.get(0).ok_or(diesel::result::Error::NotFound)?;
+    Ok(user.clone())
+}
+
+async fn get_user_by_id(db: &Db, id: i64)->Result<User, diesel::result::Error>{
+    let users: Vec<User> = db.run(move |conn| {
+        users::table.find(id).get_results(conn)
         
     }).await?;
     //.map_err(to_debug)?;
@@ -115,7 +116,7 @@ async fn signup(db: Db, create_info: Form<CreateInfo>, cookies: &CookieJar<'_>)
   -> Result<Json<i64>, Debug<Box<dyn Error>>> {
     let user: User = User{
         id: None,
-        email: create_info.email.clone(),
+        name: create_info.name.clone(),
         password: hash_password(&create_info.password.clone()),
         points: 0.0,
         is_admin: false,
@@ -132,7 +133,7 @@ async fn signup(db: Db, create_info: Form<CreateInfo>, cookies: &CookieJar<'_>)
 
 #[post("/login", format="form", data="<login_info>")]
 async fn login(db:Db, login_info: Form<CreateInfo>, cookies: &CookieJar<'_>)-> Result<Status, Debug<Box<dyn Error>>>{
-    let user = get_user_by_email(&db, login_info.email.clone())
+    let user = get_user_by_email(&db, login_info.name.clone())
         .await;
     let user = match user{
         Ok(a) => {a},
@@ -180,15 +181,43 @@ async fn refresh_session(_user: User)->Option<()>{
     Some(())
 }
 
+
+
+#[derive(Serialize)]
+struct UnautenticatedUser{
+    name: String,
+    points: f64,
+}
+
+#[derive(Serialize)]
+pub struct AutenticateUser{
+    name: String,
+    points: f64,
+}
+
+#[get("/user")] //, format="form", data="<login_info>"
+fn get_auth_user(user: User)->Json<AutenticateUser>{
+    Json(AutenticateUser{name: user.name, points: user.points})
+}
+#[get("/user/<id>")] //, format="form", data="<login_info>"
+async fn get_user(db: Db, id: i64)->Option<Json<UnautenticatedUser>>{
+    let user = match get_user_by_id(&db, id).await{
+        Ok(a) => {a},
+        Err(_) => {return None},
+    };
+    Some(Json(UnautenticatedUser{name: user.name, points: user.points}))
+}
+
 pub fn get_routes()-> Vec<Route>{
     routes![
         login,
         signup,
         logout,
         refresh_session,
+        get_auth_user,
+        get_user,
     ]
 }
-
 #[cfg(test)]
 mod test {
     use rocket::{local::asynchronous::Client, http::{Status, ContentType}};
@@ -200,7 +229,7 @@ mod test {
             .await
             .expect("valid rocket instance");
         // try to get types list
-        let data = "email=test@gmail.com&password=Testtes1";
+        let data = "name=test@gmail.com&password=Testtes1";
         let response = client
             .post("/login")
             .header(ContentType::Form)

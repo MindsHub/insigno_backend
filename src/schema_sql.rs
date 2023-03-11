@@ -39,7 +39,7 @@ table! {
 table! {
     users(id){
         id -> Nullable<BigInt>,
-        email -> Text,
+        name -> Text,
         password -> Text,
         is_admin -> Bool,
         points -> Double,
