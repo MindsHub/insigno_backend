@@ -27,10 +27,9 @@ CREATE OR REPLACE FUNCTION is_session_valid(inp_date TIMESTAMP WITH TIME ZONE) R
 	END;
 $$ LANGUAGE plpgsql;
 
-CREATE TYPE user_ret AS (id BigInt, email Text, password Text, is_admin Bool, points DOUBLE PRECISION);
 
-CREATE OR REPLACE FUNCTION autenticate(id_inp BIGINT, tok TEXT) RETURNS user_ret AS $$
-	DECLARE ret user_ret;
+CREATE OR REPLACE FUNCTION autenticate(id_inp BIGINT, tok TEXT) RETURNS users AS $$
+	DECLARE ret users;
 	DECLARE ret_row BigInt;
 	BEGIN
 		--check if token is valid

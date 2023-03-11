@@ -1,11 +1,14 @@
 use std::error::Error;
 //use rocket::form::prelude::Entity::Form;
-use crypto::digest::Digest;
-use crypto::sha3::Sha3;
 use diesel::sql_query;
 use diesel::sql_types::BigInt;
 use diesel::sql_types::Text;
 use diesel::dsl::now;
+
+use pbkdf2::pbkdf2_hmac;
+use pbkdf2::pbkdf2_hmac_array;
+use sha2::Sha256;
+
 use rand::Rng;
 use rand::distributions::Alphanumeric;
 use rocket::Route;
@@ -38,9 +41,12 @@ struct LoginInfo {
 }*/
 
 fn hash_password(password: &String) -> String {
-    let mut hasher = Sha3::sha3_256();
-    hasher.input_str(password);
-    hasher.result_str()
+    //let mut hasher = Sha3::sha3_256();
+    
+    //hasher.input_str(password+"");
+    //hasher.result_str()
+    let key = pbkdf2_hmac_array::<Sha256, 20>(password.as_bytes(), "test".as_bytes(), 4096);
+    hex::encode(key)
 }
 
 fn generate_token()->String{
@@ -125,12 +131,12 @@ async fn signup(db: Db, create_info: Form<CreateInfo>, cookies: &CookieJar<'_>)
 }
 
 #[post("/login", format="form", data="<login_info>")]
-async fn login(db:Db, login_info: Form<CreateInfo>, cookies: &CookieJar<'_>)-> Result<Option<()>, Debug<Box<dyn Error>>>{
+async fn login(db:Db, login_info: Form<CreateInfo>, cookies: &CookieJar<'_>)-> Result<Status, Debug<Box<dyn Error>>>{
     let user = get_user_by_email(&db, login_info.email.clone())
         .await;
     let user = match user{
         Ok(a) => {a},
-        Err(_) => {return Ok(None);}
+        Err(_) => {return Ok(Status { code: 401 });}
     };
     let hash = hash_password(&login_info.password);
     if user.password==hash{
@@ -149,9 +155,9 @@ async fn login(db:Db, login_info: Form<CreateInfo>, cookies: &CookieJar<'_>)-> R
                 .execute(conn)
         }).await
         .map_err(to_debug)?;
-        Ok(Some(()))
+        Ok(Status { code: 200 })
     }else{
-        Ok(None)
+        Ok(Status { code: 401 })
     }
 }
 
@@ -182,4 +188,49 @@ pub fn get_routes()-> Vec<Route>{
         logout,
         refresh_session,
     ]
+}
+
+#[cfg(test)]
+mod test {
+    use rocket::{local::asynchronous::Client, http::{Status, ContentType}};
+    use crate::{rocket, test::{test_reset_db, test_signup}};
+    #[rocket::async_test]
+    async fn test_autentication() {
+        test_reset_db();
+        let client = Client::tracked(rocket())
+            .await
+            .expect("valid rocket instance");
+        // try to get types list
+        let data = "email=test@gmail.com&password=Testtes1";
+        let response = client
+            .post("/login")
+            .header(ContentType::Form)
+            .body(data)
+            .dispatch();
+        assert_eq!(response.await.status(), Status::Unauthorized);
+
+        test_signup(&client).await;
+
+        let response = client
+            .post("/session")
+            .header(ContentType::Form)
+            .body(data)
+            .dispatch();
+        assert_eq!(response.await.status(), Status::Ok);
+
+        let response = client
+            .post("/login")
+            .header(ContentType::Form)
+            .body(data)
+            .dispatch();
+        assert_eq!(response.await.status(), Status::Ok);
+
+        let response = client
+            .post("/logout")
+            //.header(ContentType::Form)
+            .body(data)
+            .dispatch();
+        assert_eq!(response.await.status(), Status::Ok);
+
+    }
 }
