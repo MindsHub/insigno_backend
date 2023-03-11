@@ -86,17 +86,14 @@ impl<'r> FromRequest<'r> for User {
     async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
         let connection =  request.guard::<Db>().await.unwrap();
         let cookie = request.cookies();
-        let id: i64 = match cookie.get_private("user_id"){
-            Some(a) => {println!("{:?}", a.value()); a},
-            None => {return auth_fail("user_id cookie not found");}
-        }.value().parse().unwrap();
-
-        let tok = match cookie.get_private("token"){
-            Some(a) => {println!("{:?}", a.value()); a},
-            None => {return auth_fail("token cookie not found");}
+        let insigno_auth = match cookie.get_private("insigno_auth"){
+            Some(a) => {a},
+            None => {return auth_fail("insigno_auth cookie not found");}
         }.value().to_string();
+        let vec: Vec<&str> = insigno_auth.split(" ").collect();
 
-        //let tmpTok = tok.clone();
+        let id: i64 = vec[0].parse().unwrap();
+        let tok = vec[1].to_string();
 
         let auth: Result<User, _>  = connection.run(move |conn|{
             sql_query(format!("SELECT * FROM autenticate({id}, '{tok}');"))
@@ -144,8 +141,10 @@ async fn login(db:Db, login_info: Form<CreateInfo>, cookies: &CookieJar<'_>)-> R
         let cur_user_id = user.id.unwrap();
         
         let token_str= generate_token();
-        cookies.add_private(Cookie::new("user_id", user.id.unwrap().to_string()));
-        cookies.add_private(Cookie::new("token", token_str.clone()));
+        let insigno_auth = format!("{cur_user_id} {token_str}");
+
+        cookies.add_private(Cookie::new("insigno_auth", insigno_auth));
+
         // update token on login
         db.run(move |conn| {
             diesel::insert_into(user_sessions)
