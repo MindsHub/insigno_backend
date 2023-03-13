@@ -18,9 +18,9 @@ table! {
 
 table! {
     markers(id) {
-        id -> BigInt,
+        id -> Nullable<BigInt>,
         point-> postgis_diesel::sql_types::Geometry,
-        creation_date->Timestamptz,
+        creation_date->Nullable<Timestamptz>,
         resolution_date->Nullable<Timestamptz>,
         created_by->BigInt,
         solved_by->Nullable<BigInt>,
@@ -53,6 +53,15 @@ table! {
         refresh_date -> Timestamptz,
     }
 }
+
+table! {
+    marker_reports(id){
+        id -> BigInt,
+        from -> BigInt,
+        reported_marker -> BigInt,
+    }
+}
+
 /*
 table!{
     groups(id){

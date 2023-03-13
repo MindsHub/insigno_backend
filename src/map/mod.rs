@@ -8,9 +8,11 @@ use diesel::RunQueryDsl;
 use diesel::*;
 
 use diesel::sql_types::BigInt;
+use diesel::sql_types::Bool;
 use postgis::ewkb::Point;
 use postgis_diesel::*;
 
+use postgis_diesel::sql_types::Geometry;
 use rocket::form::Form;
 use rocket::Route;
 use rocket::State;
@@ -41,16 +43,17 @@ async fn get_near(
     let cur_point = PointC { v: tmp_point };
     let res: Vec<Marker> = connection
         .run(move |conn| {
-            let mut query = markers::table.into_boxed();
-            query = query.filter(st_dwithin(
-                markers::point,
-                cur_point,
-                0.135, // 15km/(6371 km *2pi)*360= 0.135 raggio di 15 km
-            ));
-            if !include_resolved.unwrap_or(false) {
-                query = query.filter(markers::resolution_date.is_null());
-            }
-            query.load(conn)
+            let query = sql_query(
+                "SELECT *
+            FROM markers 
+                WHERE ST_DWITHIN(point, $1, 0.135) 
+                AND (resolution_date IS NULL OR $2) 
+                AND (SELECT COUNT (*) FROM markers_reports WHERE markers.id = reported_marker)<3",
+            )
+            .bind::<Geometry, _>(cur_point)
+            .bind::<Bool, _>(include_resolved.unwrap_or(true));
+
+            query.get_results(conn)
         })
         .await
         .map_err(to_debug)?;

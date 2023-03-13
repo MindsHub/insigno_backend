@@ -104,8 +104,7 @@ impl<'r> FromRequest<'r> for User {
                 sql_query(format!("SELECT * FROM autenticate({id}, '{tok}');")).get_result(conn)
             })
             .await;
-        //println!("{auth:?} {}", format!("SELECT * FROM autenticate({id}, '{tmpTok}');"));
-        //todo!();
+
         match auth {
             Ok(a) => {
                 return request::Outcome::Success(a);
@@ -187,8 +186,7 @@ async fn login(
 
 #[post("/logout")]
 async fn logout(db: Db, cookies: &CookieJar<'_>, user: User) -> Option<()> {
-    cookies.remove_private(Cookie::named("user_id"));
-    cookies.remove_private(Cookie::named("token"));
+    cookies.remove_private(Cookie::named("insigno_auth"));
     let id = user.id.unwrap();
     if db
         .run(move |conn| diesel::delete(user_sessions.filter(user_id.eq(id))).execute(conn))

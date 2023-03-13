@@ -75,39 +75,27 @@ impl InsignoPoint {
     }
 }
 
-#[derive(Clone, Queryable, Debug, Serialize, Insertable)]
-#[diesel(table_name = marker)]
+#[derive(Clone, Queryable, Debug, Serialize, Insertable, QueryableByName)]
+#[diesel(table_name = "markers")]
 pub struct Marker {
-    #[diesel(deserialize_as = "i64")]
+    #[sql_type = "Nullable<BigInt>"]
     pub id: Option<i64>,
-
+    #[sql_type = "Geometry"]
     pub point: InsignoPoint,
 
-    #[diesel(deserialize_as = "chrono::DateTime<Utc>")]
+    #[sql_type = "Nullable<Timestamptz>"]
     pub creation_date: Option<chrono::DateTime<Utc>>,
 
+    #[sql_type = "Nullable<Timestamptz>"]
     pub resolution_date: Option<chrono::DateTime<Utc>>,
 
+    #[sql_type = "BigInt"]
     pub created_by: i64,
+    #[sql_type = "Nullable<BigInt>"]
     pub solved_by: Option<i64>,
+    #[sql_type = "BigInt"]
     pub marker_types_id: i64,
 }
-/*
-impl Serialize for Marker {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut s = serializer.serialize_struct("Marker", 4)?;
-        s.serialize_field("id", &self.id)?;
-        s.serialize_field("point", &InsignoPoint::from(self.point))?;
-        s.serialize_field("creation_date", &self.creation_date)?;
-        s.serialize_field("resolution_date", &self.resolution_date)?;
-        s.serialize_field("created_by", &self.created_by)?;
-        s.serialize_field("marker_types_id", &self.marker_types_id)?;
-        s.end()
-    }
-}*/
 
 #[derive(Clone, Queryable, Insertable, Debug)]
 #[diesel(table_name = image)]
