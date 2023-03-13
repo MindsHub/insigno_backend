@@ -4,6 +4,7 @@ use std::error::Error;
 
 use crate::TrashTypeMap;
 use crate::utils::*;
+use chrono::Utc;
 use diesel::RunQueryDsl;
 use diesel::*;
 
@@ -25,12 +26,13 @@ use crate::schema_rs::*;
 use rocket::http::Status;
 mod image;
 
-#[get("/get_near?<x>&<y>&<srid>")]
+#[get("/get_near?<x>&<y>&<srid>&<include_resolved>")]
 async fn get_near(
     connection: Db,
     x: f64,
     y: f64,
     srid: Option<i32>,
+    include_resolved: Option<bool>,
 ) -> Result<Json<Vec<Marker>>, Debug<Box<dyn Error>>> {
     let tmp_point = Point {
         x,
@@ -46,6 +48,11 @@ async fn get_near(
                 cur_point,
                 0.135, // 15km/(6371 km *2pi)*360= 0.135 raggio di 15 km
             ));
+            if !include_resolved.unwrap_or(false) {
+                query=query
+                .filter(
+                    markers::resolution_date.is_null());
+            }
             query.load(conn)
         })
         .await
@@ -80,13 +87,7 @@ async fn add_map(
         id: None,
         created_by: user.id.unwrap(),
         solved_by: None,
-        point: PointC {
-            v: Point {
-                x: data.x,
-                y: data.y,
-                srid: Some(4326),
-            },
-        },
+        point: InsignoPoint::new(data.x, data.y),
         creation_date: None,
         resolution_date: None,
         marker_types_id: type_int,
