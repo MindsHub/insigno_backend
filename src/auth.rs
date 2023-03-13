@@ -90,7 +90,7 @@ impl<'r> FromRequest<'r> for User {
             Some(a) => {a},
             None => {return auth_fail("insigno_auth cookie not found");}
         }.value().to_string();
-        let vec: Vec<&str> = insigno_auth.split(" ").collect();
+        let vec: Vec<&str> = insigno_auth.split(' ').collect();
 
         let id: i64 = vec[0].parse().unwrap();
         let tok = vec[1].to_string();

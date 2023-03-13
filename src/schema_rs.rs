@@ -6,8 +6,8 @@ use diesel::deserialize;
 use diesel::pg::Pg;
 use diesel::serialize;
 use diesel::serialize::Output;
-use diesel::types::FromSql;
-use diesel::types::ToSql;
+use diesel::sql_types::*;
+use diesel::types::{ToSql, FromSql};
 use postgis::ewkb::Point;
 use postgis_diesel::PointC;
 use postgis_diesel::sql_types::Geometry;
@@ -15,7 +15,9 @@ use rocket::serde::{Deserialize, Serialize};
 use serde::ser::SerializeStruct;
 
 use crate::schema_sql::*;
-use crate::utils::*;
+
+sql_function!(fn st_transform(g: Geometry, srid: BigInt)-> Geometry);
+sql_function!(fn st_dwithin(g1: Geometry, g2: Geometry, dist: Double) ->  Bool); // "Represents the postgis_sql distance() function"
 
 #[derive(Serialize, Clone, Queryable, Debug)]
 #[diesel(table_name = "marker_types")]
@@ -63,8 +65,8 @@ impl InsignoPoint{
     pub fn new(x: f64, y: f64)-> Self{
         InsignoPoint{point: PointC {
             v: Point {
-                x: x,
-                y: y,
+                x,
+                y,
                 srid: Some(4326),
             },
         },}
