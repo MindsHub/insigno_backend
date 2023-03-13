@@ -11,8 +11,6 @@ use chrono::Local;
 use rand::{distributions::Alphanumeric, Rng};
 use rocket::response::Debug;
 
-
-
 pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
     loop {
         let random_str: String = rand::thread_rng()

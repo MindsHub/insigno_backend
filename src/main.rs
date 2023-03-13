@@ -1,9 +1,9 @@
-use std::{fs, collections::BTreeMap};
+use std::{collections::BTreeMap, fs};
 
-use diesel::{PgConnection, Connection, RunQueryDsl};
+use diesel::{Connection, PgConnection, RunQueryDsl};
 use rocket::{fairing::*, serde::Deserialize};
-use schema_sql::marker_types;
 use rocket_sync_db_pools::Config;
+use schema_sql::marker_types;
 #[macro_use]
 extern crate rocket;
 #[macro_use]
@@ -31,8 +31,6 @@ pub struct TrashTypeMap {
 
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Insigno config", |rocket| async {
-
-
         //generate trash_types_map
         let config = Config::from("db", &rocket).unwrap();
         let conn = PgConnection::establish(&config.url).unwrap();

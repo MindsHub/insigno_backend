@@ -38,14 +38,13 @@ fn convert_image(input: &Path, output: &Path) -> Result<(), Debug<Box<dyn Error>
             ])
             .output()
             .map_err(to_debug)?;
-        if !raw_out.status.success(){
+        if !raw_out.status.success() {
             return Err(str_to_debug(str::from_utf8(&raw_out.stderr).unwrap()));
         }
         Ok(())
     } else {
         Err(str_to_debug("wtf bro. This is not a valid file path"))
     }
-    
 }
 
 async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Debug<Box<dyn Error>>> {
@@ -75,7 +74,6 @@ pub(crate) async fn add_image(
     config: &State<InsignoConfig>,
     limits: &Limits,
 ) -> Result<(), Debug<Box<dyn Error>>> {
-    
     // parse multipart data
     let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("image")
@@ -84,9 +82,8 @@ pub(crate) async fn add_image(
             .map_err(to_debug)?,
         MultipartFormDataField::text("refers_to_id"),
     ]);
-    options.max_data_bytes=limits.get("data-form").unwrap().as_u64();
+    options.max_data_bytes = limits.get("data-form").unwrap().as_u64();
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
-        
         .await
         .map_err(to_debug)?;
 
@@ -186,7 +183,7 @@ pub(crate) async fn get_image(
 mod test {
     use rocket::{local::asynchronous::Client, Data};
     use crate::{rocket, test::test_reset_db};
-    
+
     #[rocket::async_test]
     async fn test_marker_add_image() {
 

@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use std::error::Error;
 
-use crate::TrashTypeMap;
 use crate::utils::*;
+use crate::TrashTypeMap;
 use diesel::RunQueryDsl;
 use diesel::*;
 
@@ -48,9 +48,7 @@ async fn get_near(
                 0.135, // 15km/(6371 km *2pi)*360= 0.135 raggio di 15 km
             ));
             if !include_resolved.unwrap_or(false) {
-                query=query
-                .filter(
-                    markers::resolution_date.is_null());
+                query = query.filter(markers::resolution_date.is_null());
             }
             query.load(conn)
         })
