@@ -56,7 +56,7 @@ table! {
 
 table! {
     marker_reports(id){
-        id -> BigInt,
+        id -> Nullable<BigInt>,
         from -> BigInt,
         reported_marker -> BigInt,
     }

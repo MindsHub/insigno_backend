@@ -140,6 +140,24 @@ async fn resolve_marker_from_id(marker_id: i64, user: User, connection: Db) -> S
     }
 }
 
+#[post("/report/<marker_id>")]
+async fn report_marker(marker_id: i64, user: User, connection: Db) -> Status {
+    let m = MarkerReport {
+        id: None,
+        from: user.id.unwrap(),
+        reported_marker: marker_id,
+    };
+    use crate::schema_sql::marker_reports::dsl::marker_reports;
+    let y = connection
+        .run(move |conn| insert_into(marker_reports).values(m).execute(conn))
+        .await;
+    if let Err(_) = y {
+        Status::NotFound
+    } else {
+        Status::Ok
+    }
+}
+
 pub fn get_routes() -> Vec<Route> {
     routes![
         get_near,
@@ -149,7 +167,8 @@ pub fn get_routes() -> Vec<Route> {
         get_marker_from_id,
         list_image,
         get_image,
-        resolve_marker_from_id
+        resolve_marker_from_id,
+        report_marker,
     ]
 }
 
@@ -247,5 +266,3 @@ mod test {
         assert_eq!(response.into_string().await.unwrap(), "[]");
     }
 }
-/*Se un utente si iscrive a un gruppo, i marker che ha raccolto nel periodo di attività del gruppo vengono sommati ai punti del gruppo? (per me si)
-oppure la relazione utente-gruppo o gruppo-gruppo ha una data di inizio e una di fine? */

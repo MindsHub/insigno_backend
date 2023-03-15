@@ -1,4 +1,4 @@
-use std::error::Error;
+
 //use rocket::form::prelude::Entity::Form;
 use diesel::dsl::now;
 use diesel::sql_query;
@@ -14,7 +14,6 @@ use rand::Rng;
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar, Status};
 use rocket::request::{self, FromRequest};
-use rocket::response::Debug;
 use rocket::serde::json::Json;
 use rocket::Route;
 use serde::Deserialize;
@@ -25,7 +24,7 @@ use crate::diesel::RunQueryDsl;
 use crate::schema_sql::user_sessions::dsl::user_sessions;
 use crate::schema_sql::user_sessions::{refresh_date, token, user_id};
 use crate::schema_sql::users;
-use crate::utils::to_debug;
+use crate::utils::InsignoError;
 use crate::{db::Db, schema_rs::User};
 
 #[derive(FromForm, Deserialize)]
@@ -98,10 +97,16 @@ impl<'r> FromRequest<'r> for User {
 
         let id: i64 = vec[0].parse().unwrap();
         let tok = vec[1].to_string();
+        if !tok.chars().all(|x| x.is_ascii_alphanumeric()) {
+            return auth_fail("sql ignection?");
+        }
 
         let auth: Result<User, _> = connection
             .run(move |conn| {
-                sql_query(format!("SELECT * FROM autenticate({id}, '{tok}');")).get_result(conn)
+                sql_query("SELECT * FROM autenticate($1, $2);")
+                    .bind::<BigInt, _>(id)
+                    .bind::<Text, _>(tok)
+                    .get_result(conn)
             })
             .await;
 
@@ -121,7 +126,7 @@ async fn signup(
     db: Db,
     create_info: Form<CreateInfo>,
     cookies: &CookieJar<'_>,
-) -> Result<Json<i64>, Debug<Box<dyn Error>>> {
+) -> Result<Json<i64>, InsignoError> {
     let user: User = User {
         id: None,
         name: create_info.name.clone(),
@@ -136,7 +141,7 @@ async fn signup(
                 .get_result(conn)
         })
         .await
-        .map_err(to_debug)?;
+        .map_err(|x| InsignoError::new(404, "User not found", &format!("{x:?}")))?;
     login(db, create_info, cookies).await?;
     Ok(Json(user.id.unwrap()))
 }
@@ -146,7 +151,7 @@ async fn login(
     db: Db,
     login_info: Form<CreateInfo>,
     cookies: &CookieJar<'_>,
-) -> Result<Status, Debug<Box<dyn Error>>> {
+) -> Result<Status, InsignoError> {
     let user = get_user_by_email(&db, login_info.name.clone()).await;
     let user = match user {
         Ok(a) => a,
@@ -177,7 +182,7 @@ async fn login(
                 .execute(conn)
         })
         .await
-        .map_err(to_debug)?;
+        .map_err(|x| InsignoError::new(500, "Db Error", &x.to_string()))?;
         Ok(Status { code: 200 })
     } else {
         Ok(Status { code: 401 })

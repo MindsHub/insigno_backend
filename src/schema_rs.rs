@@ -124,3 +124,14 @@ pub struct UserSession {
     pub token: String,
     pub refresh_date: chrono::DateTime<Utc>,
 }
+/*marker_reports(id){
+    id -> BigInt,
+    from -> BigInt,
+    reported_marker -> BigInt,
+} */
+#[derive(Clone, Queryable, Insertable, Debug)]
+pub struct MarkerReport {
+    pub id: Option<i64>,
+    pub from: i64,
+    pub reported_marker: i64,
+}
