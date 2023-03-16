@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.marker_reports
 
 TABLESPACE pg_default;
 
-ALTER TABLE IF EXISTS public.markers_reports
+ALTER TABLE IF EXISTS public.marker_reports
     OWNER to mindshub;
 /*
 CREATE OR REPLACE FUNCTION is_appropriate(inp_user_id BIGINT, pt FLOAT, res_date timestamp with time zone) RETURNS bool AS $$
