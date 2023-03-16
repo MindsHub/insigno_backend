@@ -4,11 +4,12 @@ use std::error::Error;
 
 use crate::utils::*;
 use crate::TrashTypeMap;
+use chrono::Utc;
 use diesel::RunQueryDsl;
 use diesel::*;
 
-use diesel::sql_types::BigInt;
 use diesel::sql_types::Bool;
+use diesel::sql_types::BigInt;
 use postgis::ewkb::Point;
 use postgis_diesel::*;
 
@@ -16,6 +17,7 @@ use postgis_diesel::sql_types::Geometry;
 use rocket::form::Form;
 use rocket::Route;
 use rocket::State;
+use serde::Serialize;
 
 use super::db::Db;
 use super::schema_sql::*;
@@ -45,10 +47,10 @@ async fn get_near(
         .run(move |conn| {
             let query = sql_query(
                 "SELECT *
-            FROM markers 
+                FROM markers 
                 WHERE ST_DWITHIN(point, $1, 0.135) 
                 AND (resolution_date IS NULL OR $2) 
-                AND (SELECT COUNT (*) FROM markers_reports WHERE markers.id = reported_marker)<3",
+                AND (SELECT COUNT (*) FROM marker_reports WHERE markers.id = reported_marker)<3",
             )
             .bind::<Geometry, _>(cur_point)
             .bind::<Bool, _>(include_resolved.unwrap_or(true));
@@ -111,18 +113,67 @@ async fn get_types(trash_types_map: &State<TrashTypeMap>) -> Json<BTreeMap<i64, 
     Json(trash_types_map.to_string.clone())
 }
 
+#[derive(Serialize)]
+pub struct MarkerInfo {
+    id: i64,
+    point: InsignoPoint,
+    creation_date: chrono::DateTime<Utc>,
+    resolution_date: Option<chrono::DateTime<Utc>>,
+    created_by: i64,
+    solved_by: Option<i64>,
+    marker_types_id: i64,
+    can_report: bool,
+}
+
+impl From<Marker> for MarkerInfo {
+    fn from(value: Marker) -> Self {
+        MarkerInfo {
+            id: value.id.unwrap(),
+            point: value.point,
+            creation_date: value.creation_date.unwrap(),
+            resolution_date: value.resolution_date,
+            created_by: value.created_by,
+            solved_by: value.solved_by,
+            marker_types_id: value.marker_types_id,
+            can_report: false,
+        }
+    }
+}
+
 #[get("/<marker_id>")]
-async fn get_marker_from_id(marker_id: i64, connection: Db) -> Option<Json<Marker>> {
+async fn get_marker_from_id(
+    marker_id: i64,
+    connection: Db,
+    user: Option<User>,
+) -> Result<Json<MarkerInfo>, InsignoError> {
     let m: Marker = connection
         .run(move |conn| markers::table.find(marker_id).load::<Marker>(conn))
         .await
-        .ok()?
-        .get(0)?
+        .map_err(|x| InsignoError::new_debug(404, &x.to_string()))?
+        .get(0)
+        .ok_or(InsignoError::new(
+            404,
+            "marker not found",
+            "marker not found",
+        ))?
         .clone();
-    Some(Json(m))
+    let mut m: MarkerInfo = m.into();
+    let v: Vec<MarkerReport> = connection
+        .run(move |conn| {
+            marker_reports::table
+                .filter(marker_reports::reported_marker.eq(marker_id))
+                .filter(marker_reports::user_f.eq(user.unwrap().id.unwrap()))
+                .get_results(conn)
+        })
+        .await
+        .map_err(|x| InsignoError::new(404, "", &x.to_string()))?;
+    if v.len() == 0 {
+        m.can_report = true;
+    }
+    Ok(Json(m.into()))
 }
 
-sql_function!(fn resolve_marker(marker_id: BigInt, user_id: BigInt));
+
 
 #[post("/resolve/<marker_id>")]
 async fn resolve_marker_from_id(marker_id: i64, user: User, connection: Db) -> Status {
@@ -141,21 +192,26 @@ async fn resolve_marker_from_id(marker_id: i64, user: User, connection: Db) -> S
 }
 
 #[post("/report/<marker_id>")]
-async fn report_marker(marker_id: i64, user: User, connection: Db) -> Status {
-    let m = MarkerReport {
-        id: None,
-        from: user.id.unwrap(),
-        reported_marker: marker_id,
-    };
-    use crate::schema_sql::marker_reports::dsl::marker_reports;
-    let y = connection
-        .run(move |conn| insert_into(marker_reports).values(m).execute(conn))
-        .await;
-    if let Err(_) = y {
-        Status::NotFound
-    } else {
-        Status::Ok
-    }
+async fn report_marker(marker_id: i64, user: User, connection: Db) -> Result<(), InsignoError> {
+    connection
+        .run(move |conn| {
+                let query = sql_query(
+                "INSERT INTO marker_reports(user_f, reported_marker)
+                SELECT $1, $2
+                WHERE NOT EXISTS (SELECT *
+                        FROM marker_reports
+                        WHERE user_f=$1 AND reported_marker=$2)
+                returning *;",
+            )
+            .bind::<BigInt, _>(user.id.unwrap())
+            .bind::<BigInt, _>(marker_id);
+
+            query.get_result::<MarkerReport>(conn)
+        }
+    ).await
+    .map_err(|x| InsignoError::new( 422, "Impossible to report. Maybe you already reported", &x.to_string()))?;
+    
+    Ok(())
 }
 
 pub fn get_routes() -> Vec<Route> {
@@ -164,11 +220,11 @@ pub fn get_routes() -> Vec<Route> {
         get_types,
         add_map,
         add_image,
-        get_marker_from_id,
         list_image,
         get_image,
         resolve_marker_from_id,
         report_marker,
+        get_marker_from_id,
     ]
 }
 
@@ -183,6 +239,39 @@ mod test {
     };
 
     #[rocket::async_test]
+    async fn test_marker_report() {
+        test_reset_db();
+        let client = Client::tracked(rocket())
+            .await
+            .expect("valid rocket instance");
+
+        //signup
+        test_signup(&client).await;
+
+        //test without markers
+        let response = client.post("/map/report/1").dispatch().await;
+        assert_eq!(response.status(), Status::UnprocessableEntity);
+
+        //add marker
+        let response = client
+            .post("/map/add")
+            .header(ContentType::Form)
+            .body("x=0.0&y=0.0&marker_types_id=2")
+            .dispatch()
+            .await;
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.into_string().await.unwrap(), "1");
+
+        //test with marker
+        let response = client.post("/map/report/1").dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+
+        //test report again
+        let response = client.post("/map/report/1").dispatch().await;
+        assert_eq!(response.status(), Status::UnprocessableEntity);
+    }
+
+    #[rocket::async_test]
     async fn test_marker_get_types() {
         let client = Client::tracked(rocket())
             .await
@@ -194,6 +283,8 @@ mod test {
             response.into_string().await.unwrap(),
             r#"{"1":"unknown","2":"plastic","3":"paper","4":"undifferentiated","5":"glass","6":"compost","7":"electronics"}"#
         );
+
+
     }
 
     #[rocket::async_test]
@@ -206,6 +297,22 @@ mod test {
         //get inexistent file
         let response = client.get("/map/1").dispatch().await;
         assert_eq!(response.status(), Status::NotFound);
+
+        //signup
+        test_signup(&client).await;
+
+        let response = client
+            .post("/map/add")
+            .header(ContentType::Form)
+            .body("x=0.0&y=0.0&marker_types_id=2")
+            .dispatch()
+            .await;
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.into_string().await.unwrap(), "1");
+
+        let response = client.get("/map/1").dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+
         //assert_eq!(response.into_string().await.unwrap() , "[]");
     }
 

@@ -5,4 +5,4 @@ sleep 5
 #diesel database reset
 
 #cargo test -- --test-threads=1
-cargo tarpaulin --skip-clean -- --test-threads=1
+cargo watch -x "tarpaulin --target-dir=target/tarpaulin --skip-clean -- --test-threads=1"

@@ -1,6 +1,6 @@
 -- Table: public.marker
 
-CREATE TABLE IF NOT EXISTS public.markers_reports
+CREATE TABLE IF NOT EXISTS public.marker_reports
 (
     id BIGSERIAL NOT NULL,
     user_f BIGINT NOT NULL,

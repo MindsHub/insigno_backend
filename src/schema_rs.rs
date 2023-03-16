@@ -18,6 +18,7 @@ use crate::schema_sql::*;
 
 sql_function!(fn st_transform(g: Geometry, srid: BigInt)-> Geometry);
 sql_function!(fn st_dwithin(g1: Geometry, g2: Geometry, dist: Double) ->  Bool); // "Represents the postgis_sql distance() function"
+sql_function!(fn resolve_marker(marker_id: BigInt, user_id: BigInt));
 
 #[derive(Serialize, Clone, Queryable, Debug)]
 #[diesel(table_name = "marker_types")]
@@ -129,9 +130,10 @@ pub struct UserSession {
     from -> BigInt,
     reported_marker -> BigInt,
 } */
-#[derive(Clone, Queryable, Insertable, Debug)]
+#[derive(Clone, Queryable, Insertable, Debug, QueryableByName)]
+#[table_name = "marker_reports"]
 pub struct MarkerReport {
     pub id: Option<i64>,
-    pub from: i64,
+    pub user_f: i64,
     pub reported_marker: i64,
 }

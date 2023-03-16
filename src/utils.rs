@@ -58,44 +58,12 @@ pub fn str_to_debug(s: &str) -> Debug<Box<dyn Error>> {
     Debug(s.into())
 }
 
-/*
-pub trait to_insigno_error<'a, 'b>{
-    fn print_debug(&self);
-    fn consume(self)->Box<dyn Responder<'a, 'b>>;
-}
-
-
-impl<T: std::error::Error> to_insigno_error<Status> for (i32, T) {
-    fn print_debug(&self) {
-        todo!()
-    }
-
-    fn get_response(self)->Status {
-        todo!()
-    }
-}<
-
-
-// If the response contains no borrowed data.
-impl<'r> Responder<'r, 'static> for A {
-    fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
-        todo!()
-    }
-}
-
-impl<'a> to_insigno_error<'a, 'static> for i32{
-    fn print_debug(&self) {}
-
-    fn consume(self)->Box<dyn Responder<'a, 'static>>{
-        Box::new(Status::from_code(self as u16).unwrap_or(Status::InternalServerError))
-    }
-}*/
-
 pub struct InsignoError {
     debug: Option<String>,
     client: Option<String>,
     code: Status,
 }
+
 #[allow(dead_code)]
 impl InsignoError {
     pub fn new_code(v: i32) -> Self {
@@ -105,10 +73,10 @@ impl InsignoError {
             code: Status { code: v as u16 },
         }
     }
-    pub fn new_client(v: i32, s: &str) -> Self {
+    pub fn new_debug(v: i32, s: &str) -> Self {
         InsignoError {
-            debug: None,
-            client: Some(s.to_string()),
+            debug: Some(s.to_string()),
+            client: None,
             code: Status { code: v as u16 },
         }
     }

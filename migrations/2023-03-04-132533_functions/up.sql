@@ -82,3 +82,4 @@ CREATE OR REPLACE FUNCTION resolve_marker(marker_id BIGINT, user_id BIGINT) RETU
 		PERFORM assign_point(user_id, points, res_date);
 	END;
 $$ LANGUAGE plpgsql;
+

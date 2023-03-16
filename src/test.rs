@@ -4,7 +4,7 @@ use rocket::{
     http::{ContentType, Status},
     local::asynchronous::Client,
 };
-#[allow(dead_code)]
+
 pub fn test_reset_db() {
     let success = Command::new("diesel")
         .args(["database", "reset"])
@@ -14,7 +14,7 @@ pub fn test_reset_db() {
         .success();
     assert!(success);
 }
-#[allow(dead_code)]
+
 pub async fn test_signup(client: &Client) {
     let data = "name=test@gmail.com&password=Testtes1";
     let response = client

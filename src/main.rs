@@ -16,6 +16,7 @@ mod map;
 mod pills;
 mod schema_rs;
 mod schema_sql;
+#[cfg(test)]
 mod test;
 mod utils;
 

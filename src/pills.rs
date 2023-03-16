@@ -6,7 +6,7 @@ use crate::utils::to_debug;
 use diesel::ExpressionMethods;
 use diesel::{insert_into, sql_types::Double, QueryDsl, RunQueryDsl};
 use rocket::response::Debug;
-use rocket::{serde::json::Json, Route};
+use rocket::{form::Form, serde::json::Json, Route};
 use serde::{Deserialize, Serialize};
 
 use super::db::Db;
@@ -47,7 +47,7 @@ async fn get_random_pill(connection: Db) -> Result<Option<Json<Pill>>, Debug<Box
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, FromForm)]
 struct AddPill {
     text: String,
     source: String,
@@ -56,7 +56,7 @@ struct AddPill {
 #[post("/add", data = "<data>")]
 async fn add_pill(
     connection: Db,
-    data: Json<AddPill>,
+    data: Form<AddPill>,
     user: User,
 ) -> Result<String, Debug<Box<dyn Error>>> {
     let pill = Pill {
@@ -120,10 +120,11 @@ mod test {
         //signup
         test_signup(&client).await;
 
+        let input = "text=test&source=test";
         // add
         let response = client
             .post("/pills/add")
-            .header(ContentType::JSON)
+            .header(ContentType::Form)
             .body(input)
             .dispatch();
         assert_eq!(response.await.status(), Status::Ok);
