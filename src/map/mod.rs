@@ -181,17 +181,22 @@ async fn get_marker_from_id(
 
     let v: Vec<MarkerReport> = connection
         .run(move |conn| {
-            marker_reports::table
-                .filter(marker_reports::reported_marker.eq(marker_id))
-                .filter(marker_reports::user_f.eq(user.unwrap().id.unwrap()))
-                .get_results(conn)
+            let query = marker_reports::table
+                .filter(marker_reports::reported_marker.eq(marker_id));
+                if let Some(user) = user {
+                    query
+                    .filter(marker_reports::user_f.eq(user.id.unwrap()))
+                    .get_results(conn)
+                }else{
+                    query.get_results(conn)
+                }
         })
         .await
         .map_err(|x| InsignoError::new(404, "", &x.to_string()))?;
-    if v.len() == 0 {
+    if v.is_empty() {
         m.can_report = true;
     }
-    Ok(Json(m.into()))
+    Ok(Json(m))
 }
 
 #[post("/resolve/<marker_id>")]
@@ -332,6 +337,13 @@ mod test {
             .await;
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(response.into_string().await.unwrap(), "1");
+
+        let response = client
+            .post("/map/resolve/1")
+            .dispatch()
+            .await;
+        assert_eq!(response.status(), Status::Ok);
+
 
         let response = client.get("/map/1").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
