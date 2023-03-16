@@ -2,14 +2,16 @@ use std::collections::BTreeMap;
 
 use std::error::Error;
 
+use crate::auth::UnautenticatedUser;
+use crate::auth::get_user_by_id;
 use crate::utils::*;
 use crate::TrashTypeMap;
 use chrono::Utc;
 use diesel::RunQueryDsl;
 use diesel::*;
 
-use diesel::sql_types::Bool;
 use diesel::sql_types::BigInt;
+use diesel::sql_types::Bool;
 use postgis::ewkb::Point;
 use postgis_diesel::*;
 
@@ -119,23 +121,26 @@ pub struct MarkerInfo {
     point: InsignoPoint,
     creation_date: chrono::DateTime<Utc>,
     resolution_date: Option<chrono::DateTime<Utc>>,
-    created_by: i64,
-    solved_by: Option<i64>,
+    created_by: Option<UnautenticatedUser>,
+    solved_by: Option<UnautenticatedUser>,
     marker_types_id: i64,
     can_report: bool,
+    images_id: Option<Vec<i64>>
 }
 
 impl From<Marker> for MarkerInfo {
     fn from(value: Marker) -> Self {
+
         MarkerInfo {
             id: value.id.unwrap(),
             point: value.point,
             creation_date: value.creation_date.unwrap(),
             resolution_date: value.resolution_date,
-            created_by: value.created_by,
-            solved_by: value.solved_by,
+            created_by: None ,
+            solved_by: None,
             marker_types_id: value.marker_types_id,
             can_report: false,
+            images_id: None,
         }
     }
 }
@@ -157,7 +162,17 @@ async fn get_marker_from_id(
             "marker not found",
         ))?
         .clone();
+    let creation_user = get_user_by_id(&connection, m.created_by).await.map_err(|x| InsignoError::new_debug(404, &x.to_string()))?;
+    let solved_by_user = if let Some(s) = m.solved_by{
+            Some(get_user_by_id(&connection, s).await.map_err(|x| InsignoError::new_debug(404, &x.to_string()))?.into())
+        }else{
+            None
+        };
     let mut m: MarkerInfo = m.into();
+    m.created_by=Some(creation_user.into());
+    m.solved_by=solved_by_user;
+    m.images_id = Some(_list_image(marker_id, &connection).await?);
+
     let v: Vec<MarkerReport> = connection
         .run(move |conn| {
             marker_reports::table
@@ -172,8 +187,6 @@ async fn get_marker_from_id(
     }
     Ok(Json(m.into()))
 }
-
-
 
 #[post("/resolve/<marker_id>")]
 async fn resolve_marker_from_id(marker_id: i64, user: User, connection: Db) -> Status {
@@ -195,7 +208,7 @@ async fn resolve_marker_from_id(marker_id: i64, user: User, connection: Db) -> S
 async fn report_marker(marker_id: i64, user: User, connection: Db) -> Result<(), InsignoError> {
     connection
         .run(move |conn| {
-                let query = sql_query(
+            let query = sql_query(
                 "INSERT INTO marker_reports(user_f, reported_marker)
                 SELECT $1, $2
                 WHERE NOT EXISTS (SELECT *
@@ -207,10 +220,16 @@ async fn report_marker(marker_id: i64, user: User, connection: Db) -> Result<(),
             .bind::<BigInt, _>(marker_id);
 
             query.get_result::<MarkerReport>(conn)
-        }
-    ).await
-    .map_err(|x| InsignoError::new( 422, "Impossible to report. Maybe you already reported", &x.to_string()))?;
-    
+        })
+        .await
+        .map_err(|x| {
+            InsignoError::new(
+                422,
+                "Impossible to report. Maybe you already reported",
+                &x.to_string(),
+            )
+        })?;
+
     Ok(())
 }
 
@@ -283,8 +302,6 @@ mod test {
             response.into_string().await.unwrap(),
             r#"{"1":"unknown","2":"plastic","3":"paper","4":"undifferentiated","5":"glass","6":"compost","7":"electronics"}"#
         );
-
-
     }
 
     #[rocket::async_test]

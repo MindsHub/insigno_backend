@@ -138,11 +138,10 @@ pub(crate) async fn add_image(
     Ok(())
 }
 
-#[get("/image/list/<marker_id>")]
-pub async fn list_image(
+pub async fn _list_image(
     marker_id: i64,
-    connection: Db,
-) -> Result<Json<Vec<i64>>, Debug<Box<dyn Error>>> {
+    connection: &Db,
+) -> Result<Vec<i64>, InsignoError> {
     let res: Vec<MarkerImage> = connection
         .run(move |conn| {
             marker_images::table
@@ -150,8 +149,16 @@ pub async fn list_image(
                 .load::<MarkerImage>(conn)
         })
         .await
-        .map_err(to_debug)?;
-    Ok(Json(res.iter().map(|x| x.id.unwrap()).collect()))
+        .map_err(|x| InsignoError::new_debug(404, &x.to_string()))?;
+    Ok(res.iter().map(|x| x.id.unwrap()).collect())
+}
+
+#[get("/image/list/<marker_id>")]
+pub async fn list_image(
+    marker_id: i64,
+    connection: Db,
+) -> Result<Json<Vec<i64>>, InsignoError> {
+    Ok(Json(_list_image(marker_id, &connection).await?))
 }
 
 #[get("/image/<image_id>")]

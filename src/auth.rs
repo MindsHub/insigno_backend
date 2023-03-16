@@ -54,7 +54,7 @@ async fn get_user_by_email(db: &Db, email: String) -> Result<User, diesel::resul
     Ok(user.clone())
 }
 
-async fn get_user_by_id(db: &Db, id: i64) -> Result<User, diesel::result::Error> {
+pub async fn get_user_by_id(db: &Db, id: i64) -> Result<User, diesel::result::Error> {
     let users: Vec<User> = db
         .run(move |conn| users::table.find(id).get_results(conn))
         .await?;
@@ -150,14 +150,8 @@ async fn login(
     db: Db,
     login_info: Form<CreateInfo>,
     cookies: &CookieJar<'_>,
-) -> Result<Status, InsignoError> {
-    let user = get_user_by_email(&db, login_info.name.clone()).await;
-    let user = match user {
-        Ok(a) => a,
-        Err(_) => {
-            return Ok(Status { code: 401 });
-        }
-    };
+) -> Result<Json<i64>, InsignoError> {
+    let user = get_user_by_email(&db, login_info.name.clone()).await.map_err(|x| InsignoError::new(401, "email not found", &x.to_string()))?;
     let hash = hash_password(&login_info.password);
     if user.password == hash {
         let cur_user_id = user.id.unwrap();
@@ -182,9 +176,9 @@ async fn login(
         })
         .await
         .map_err(|x| InsignoError::new(500, "Db Error", &x.to_string()))?;
-        Ok(Status { code: 200 })
+        Ok(Json(user.id.unwrap()))
     } else {
-        Ok(Status { code: 401 })
+        Err(InsignoError::new(401, "wrong username or password", "wrong username or password"))
     }
 }
 
@@ -209,16 +203,22 @@ async fn refresh_session(_user: User) -> Option<()> {
 }
 
 #[derive(Serialize)]
-struct UnautenticatedUser {
+pub struct UnautenticatedUser {
     name: String,
     points: f64,
 }
 
+impl From<User> for UnautenticatedUser{
+    fn from(value: User) -> Self {
+        UnautenticatedUser { name: value.name, points: value.points }
+    }
+}
 #[derive(Serialize)]
 pub struct AutenticateUser {
     name: String,
     points: f64,
 }
+
 
 #[get("/user")] //, format="form", data="<login_info>"
 fn get_auth_user(user: User) -> Json<AutenticateUser> {
@@ -227,13 +227,14 @@ fn get_auth_user(user: User) -> Json<AutenticateUser> {
         points: user.points,
     })
 }
+
 #[get("/user/<id>")] //, format="form", data="<login_info>"
-async fn get_user(db: Db, id: i64) -> Option<Json<UnautenticatedUser>> {
+pub async fn get_user(db:  Db, id: i64) -> Result<Json<UnautenticatedUser>, InsignoError> {
     let user = match get_user_by_id(&db, id).await {
         Ok(a) => a,
-        Err(_) => return None,
+        Err(e) => return Err(InsignoError::new(404, "user not found", &e.to_string())),
     };
-    Some(Json(UnautenticatedUser {
+    Ok(Json(UnautenticatedUser {
         name: user.name,
         points: user.points,
     }))

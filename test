@@ -1,7 +1,10 @@
 docker stop postgres
 docker container rm -f postgres
 docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=test -e POSTGRES_USER=mindshub -d postgis/postgis
-sleep 5
+sleep 5 #& $($(echo "$(cargo tarpaulin --print-rust-flags --target-dir=target/tarpaulin)" | grep -v INFO)) cargo build 
+#$(cargo tarpaulin  --print-rust-flags | grep -v INFO)
+#cargo tarpaulin --command build --skip-clean --target-dir=target/tarpaulin
+
 #diesel database reset
 
 #cargo test -- --test-threads=1
