@@ -123,9 +123,37 @@ impl<'r> FromRequest<'r> for User {
 #[post("/signup", format = "form", data = "<create_info>")]
 async fn signup(
     db: Db,
-    create_info: Form<CreateInfo>,
+    mut create_info: Form<CreateInfo>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<i64>, InsignoError> {
+    create_info.name=create_info.name.trim().to_string();
+    let name_len = create_info.name.len();
+    if name_len<3 && 20<name_len {
+        let message = "Nome utente invalido. Deve essere lungo tra 3 e 20 caratteri (e possibilmente simile al nome)";
+        return Err(InsignoError::new(401, message, message));
+    }
+    if !create_info.name.chars().all(|x| x.is_alphanumeric()||x=='_'||x==' '){
+        let message = "Nome utente invalido. Un nome corretto può contenere lettere, numeri, spazi e _";
+        return Err(InsignoError::new(401, message, message));
+    }
+    if create_info.password.len()<8{
+        let message = "Password troppo breve, deve essere lunga almeno 8 caratteri";
+        return Err(InsignoError::new(401, message, message));
+    }
+    if !create_info.password.chars().any(|x| x.is_ascii_uppercase()){
+        let message = "La password deve contenere almeno una maiuscola";
+        return Err(InsignoError::new(401, message, message));
+    }
+    if !create_info.password.chars().any(|x| x.is_ascii_lowercase()){
+        let message = "La password deve contenere almeno una minuscola";
+        return Err(InsignoError::new(401, message, message));
+    }
+
+    if !create_info.password.chars().any(|x| !x.is_ascii_alphanumeric()){
+        let message = "La password deve contenere almeno un carattere speciale";
+        return Err(InsignoError::new(401, message, message));
+    }
+
     let user: User = User {
         id: None,
         name: create_info.name.clone(),
@@ -133,6 +161,7 @@ async fn signup(
         points: 0.0,
         is_admin: false,
     };
+
     let user: User = db
         .run(|conn| {
             diesel::insert_into(users::table)
@@ -140,7 +169,7 @@ async fn signup(
                 .get_result(conn)
         })
         .await
-        .map_err(|x| InsignoError::new(404, "User not found", &format!("{x:?}")))?;
+        .map_err(|x| InsignoError::new(401, "Nome utente usato", &format!("{x:?}")))?;
     login(db, create_info, cookies).await?;
     Ok(Json(user.id.unwrap()))
 }
@@ -309,7 +338,7 @@ mod test {
             .await
             .expect("valid rocket instance");
         // try to get types list
-        let data = "name=test@gmail.com&password=Testtes1";
+        let data = "name=IlMagicoTester&password=Testtes1!";
         let response = client
             .post("/login")
             .header(ContentType::Form)

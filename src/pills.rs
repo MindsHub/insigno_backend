@@ -150,7 +150,7 @@ mod test {
 
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(
-            r#"{"id":1,"text":"test","author":"test@gmail.com","source":"test","accepted":true}"#,
+            r#"{"id":1,"text":"test","author":"IlMagicoTester","source":"test","accepted":true}"#,
             response.into_string().await.unwrap()
         );
     }

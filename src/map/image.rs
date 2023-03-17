@@ -208,7 +208,7 @@ mod test {
 
         test_signup(&client).await;
         test_add_point(&client).await;
-        test_add_image(1, "./media/4sxUSP4vWT.jpg", &client).await;
+        test_add_image(1, "./test_data/add_image.jpg", &client).await;
 
         let response = client.get("/map/image/list/1").dispatch().await;
 

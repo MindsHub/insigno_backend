@@ -16,7 +16,7 @@ pub fn test_reset_db() {
 }
 
 pub async fn test_signup(client: &Client) {
-    let data = "name=test@gmail.com&password=Testtes1";
+    let data = "name=IlMagicoTester&password=Testtes1!";
     let response = client
         .post("/signup")
         .header(ContentType::Form)

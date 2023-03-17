@@ -9,7 +9,7 @@ use std::{
 use chrono::Local;
 
 use rand::{distributions::Alphanumeric, Rng};
-use rocket::response::Responder;
+use rocket::{response::Responder, http::ContentType};
 use rocket::{
     http::Status,
     response::{self, Debug},
@@ -67,10 +67,11 @@ pub struct InsignoError {
 #[allow(dead_code)]
 impl InsignoError {
     pub fn new_code(v: i32) -> Self {
+        
         InsignoError {
             debug: None,
             client: None,
-            code: Status { code: v as u16 },
+            code: Status::from_code(v as u16).unwrap(),
         }
     }
     pub fn new_debug(v: i32, s: &str) -> Self {
@@ -105,18 +106,11 @@ impl<'r> Responder<'r, 'static> for InsignoError {
         let to_write = Local::now().to_string() + " " + &deb_str + "\n" + &bt.to_string() + "\n";
         file.write_all(to_write.as_bytes()).unwrap();
 
+        use rocket::response::{content, status};
         if let Some(v) = self.client {
-            Response::build_from(self.code.respond_to(req)?)
-                .sized_body(v.len(), Cursor::new(v))
-                .ok()
+            status::Custom(self.code, content::RawText(v)).respond_to(req)
         } else {
-            Response::build_from(self.code.respond_to(req)?).ok()
+            self.code.respond_to(req)
         }
-        /*Response::build_from(string.respond_to(req)?)
-        //.raw_header("X-Person-Name", self.name)
-        //.raw_header("X-Person-Age", self.age.to_string())
-        //.header(ContentType::new("application", "x-person"))
-        .status(self.code)
-        .ok()*/
     }
 }
