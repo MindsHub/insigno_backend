@@ -182,24 +182,40 @@ pub(crate) async fn get_image(
     NamedFile::open(path).await.ok()
 }
 
-
-
 #[cfg(test)]
 mod test {
-    use rocket::{local::asynchronous::Client};
-    use crate::{rocket, test::{test_reset_db, test_signup, test_add_point, test_add_image}};
+    use crate::{
+        rocket,
+        test::{test_add_image, test_add_point, test_reset_db, test_signup},
+    };
+    use rocket::{http::Status, local::asynchronous::Client};
 
     #[rocket::async_test]
     async fn test_marker_add_image() {
-
         test_reset_db();
 
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
+
+        let response = client.get("/map/image/list/1").dispatch().await;
+
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.into_string().await.unwrap(), "[]".to_string());
+
+        let response = client.get("/map/image/1").dispatch().await;
+        assert_eq!(response.status(), Status::NotFound);
+
         test_signup(&client).await;
         test_add_point(&client).await;
         test_add_image(1, "./media/4sxUSP4vWT.jpg", &client).await;
 
+        let response = client.get("/map/image/list/1").dispatch().await;
+
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.into_string().await.unwrap(), "[1]".to_string());
+
+        let response = client.get("/map/image/1").dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
     }
 }

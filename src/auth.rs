@@ -242,8 +242,9 @@ fn get_auth_user(user: User) -> Json<AutenticateUser> {
 
 #[get("/user/<id>")] //, format="form", data="<login_info>"
 pub async fn get_user(db: Db, id: i64) -> Result<Json<UnautenticatedUser>, InsignoError> {
-    let user = get_user_by_id(&db, id).await
-        .map_err(|e| InsignoError::new(404, "user not found", &e.to_string()))?;    
+    let user = get_user_by_id(&db, id)
+        .await
+        .map_err(|e| InsignoError::new(404, "user not found", &e.to_string()))?;
     Ok(Json(UnautenticatedUser {
         id: user.id.unwrap(),
         name: user.name,
@@ -278,18 +279,12 @@ mod test {
             .await
             .expect("valid rocket instance");
 
-        let response = client
-            .get("/user/1")
-            .dispatch()
-            .await;
+        let response = client.get("/user/1").dispatch().await;
         assert_eq!(response.status(), Status::NotFound);
         test_signup(&client).await;
 
         // try to get types list
-        let response = client
-            .get("/user/1")
-            .dispatch()
-            .await;
+        let response = client.get("/user/1").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
     }
     #[rocket::async_test]
@@ -299,18 +294,12 @@ mod test {
             .await
             .expect("valid rocket instance");
 
-        let response = client
-            .get("/user")
-            .dispatch()
-            .await;
+        let response = client.get("/user").dispatch().await;
         assert_eq!(response.status(), Status::Unauthorized);
         test_signup(&client).await;
 
         // try to get types list
-        let response = client
-            .get("/user")
-            .dispatch()
-            .await;
+        let response = client.get("/user").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
     }
     #[rocket::async_test]

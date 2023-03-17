@@ -181,15 +181,14 @@ async fn get_marker_from_id(
 
     let v: Vec<MarkerReport> = connection
         .run(move |conn| {
-            let query = marker_reports::table
-                .filter(marker_reports::reported_marker.eq(marker_id));
-                if let Some(user) = user {
-                    query
+            let query = marker_reports::table.filter(marker_reports::reported_marker.eq(marker_id));
+            if let Some(user) = user {
+                query
                     .filter(marker_reports::user_f.eq(user.id.unwrap()))
                     .get_results(conn)
-                }else{
-                    query.get_results(conn)
-                }
+            } else {
+                query.get_results(conn)
+            }
         })
         .await
         .map_err(|x| InsignoError::new(404, "", &x.to_string()))?;
@@ -261,7 +260,7 @@ pub fn get_routes() -> Vec<Route> {
 #[cfg(test)]
 mod test {
     use crate::rocket;
-    use crate::test::{test_reset_db, test_signup, test_add_point};
+    use crate::test::{test_add_point, test_reset_db, test_signup};
     use rocket::{
         http::{ContentType, Status},
         local::asynchronous::Client,
@@ -331,12 +330,8 @@ mod test {
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(response.into_string().await.unwrap(), "1");
 
-        let response = client
-            .post("/map/resolve/1")
-            .dispatch()
-            .await;
+        let response = client.post("/map/resolve/1").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
-
 
         let response = client.get("/map/1").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
