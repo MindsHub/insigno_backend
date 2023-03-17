@@ -261,7 +261,7 @@ pub fn get_routes() -> Vec<Route> {
 #[cfg(test)]
 mod test {
     use crate::rocket;
-    use crate::test::{test_reset_db, test_signup};
+    use crate::test::{test_reset_db, test_signup, test_add_point};
     use rocket::{
         http::{ContentType, Status},
         local::asynchronous::Client,
@@ -283,14 +283,7 @@ mod test {
         assert_eq!(response.status(), Status::UnprocessableEntity);
 
         //add marker
-        let response = client
-            .post("/map/add")
-            .header(ContentType::Form)
-            .body("x=0.0&y=0.0&marker_types_id=2")
-            .dispatch()
-            .await;
-        assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.into_string().await.unwrap(), "1");
+        test_add_point(&client).await;
 
         //test with marker
         let response = client.post("/map/report/1").dispatch().await;
@@ -372,14 +365,7 @@ mod test {
         test_signup(&client).await;
 
         //add point
-        let response = client
-            .post("/map/add")
-            .header(ContentType::Form)
-            .body("x=0.0&y=0.0&marker_types_id=2")
-            .dispatch()
-            .await;
-        assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.into_string().await.unwrap(), "1");
+        test_add_point(&client).await;
 
         //1 point query
         let response = client.get("/map/get_near?x=0.0&y=0.0").dispatch().await;

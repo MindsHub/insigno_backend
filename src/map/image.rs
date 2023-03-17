@@ -9,9 +9,11 @@ use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
 use diesel::insert_into;
 use diesel::QueryDsl;
+
 use rocket::data::Limits;
 use rocket::fs::NamedFile;
 use rocket::futures::TryFutureExt;
+
 use rocket::response::Debug;
 use rocket::serde::json::Json;
 use rocket::Data;
@@ -179,11 +181,13 @@ pub(crate) async fn get_image(
     //print!("{:?}", path);
     NamedFile::open(path).await.ok()
 }
-/*
+
+
+
 #[cfg(test)]
 mod test {
-    use rocket::{local::asynchronous::Client, Data};
-    use crate::{rocket, test::test_reset_db};
+    use rocket::{local::asynchronous::Client};
+    use crate::{rocket, test::{test_reset_db, test_signup, test_add_point, test_add_image}};
 
     #[rocket::async_test]
     async fn test_marker_add_image() {
@@ -193,9 +197,9 @@ mod test {
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
-
-        // try to get types list
-        let response = client.post("/map/image/add").dispatch().await;
+        test_signup(&client).await;
+        test_add_point(&client).await;
+        test_add_image(1, "./media/4sxUSP4vWT.jpg", &client).await;
 
     }
-}*/
+}
