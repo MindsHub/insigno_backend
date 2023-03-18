@@ -65,7 +65,7 @@ CREATE OR REPLACE FUNCTION assign_point(inp_user_id BIGINT, pt FLOAT, res_date t
 	END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION resolve_marker(marker_id BIGINT, user_id BIGINT) RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION resolve_marker(marker_id BIGINT, user_id BIGINT) RETURNS BigInt AS $$
 		DECLARE points DOUBLE PRECISION;
 		DECLARE res_date timestamp with time zone;
 	BEGIN
@@ -80,6 +80,20 @@ CREATE OR REPLACE FUNCTION resolve_marker(marker_id BIGINT, user_id BIGINT) RETU
 
 		--update all the points 
 		PERFORM assign_point(user_id, points, res_date);
+		RETURN points;
 	END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION add_marker(user_id BIGINT, point GEOMETRY, trash_type BIGINT) RETURNS BIGINT AS $$
+	DECLARE ret BIGINT;
+	BEGIN
+		PERFORM assign_point(user_id, 1.0, now());
+		INSERT INTO public.markers (
+		created_by, point, marker_types_id)
+		VALUES 
+		(user_id, point, trash_type)
+		RETURNING id
+		INTO ret;
+		RETURN ret;
+	END;
+$$ LANGUAGE plpgsql;

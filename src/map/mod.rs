@@ -19,6 +19,7 @@ use postgis_diesel::sql_types::Geometry;
 use rocket::form::Form;
 use rocket::Route;
 use rocket::State;
+
 use serde::Serialize;
 
 use super::db::Db;
@@ -77,7 +78,12 @@ async fn add_map(
     user: User,
     connection: Db,
     trash_types_map: &State<TrashTypeMap>,
-) -> Result<String, Debug<Box<dyn Error>>> {
+) -> Result<Json<MarkerUpdate>, InsignoError> {
+    #[derive(QueryableByName, Debug)]
+    struct PointRet {
+        #[sql_type = "BigInt"]
+        add_marker: i64,
+    }
     let type_int = if trash_types_map
         .to_string
         .contains_key(&data.marker_types_id)
@@ -87,27 +93,24 @@ async fn add_map(
         1
     };
 
-    let z = Marker {
-        id: None,
-        created_by: user.id.unwrap(),
-        solved_by: None,
-        point: InsignoPoint::new(data.x, data.y),
-        creation_date: None,
-        resolution_date: None,
-        marker_types_id: type_int,
-    };
-    use markers::dsl::markers as mrkt;
-    let y = connection
-        .run(move |conn| insert_into(mrkt).values(&z).get_result::<Marker>(conn))
-        .await;
-
-    match y {
-        Ok(x) => Ok(x
-            .id
-            .ok_or(str_to_debug("id not found (very strange)"))?
-            .to_string()),
-        Err(x) => Err(to_debug(x)),
-    }
+    let created_id: PointRet = connection
+        .run(move |conn| {
+            //add_marker(user_id BIGINT, point GEOMETRY, trash_type BIGINT)
+            sql_query(
+                "
+            SELECT * FROM add_marker($1, $2, $3);",
+            )
+            .bind::<BigInt, _>(user.id.unwrap())
+            .bind::<Geometry, _>(InsignoPoint::new(data.x, data.y))
+            .bind::<BigInt, _>(type_int)
+            .get_result(conn)
+        })
+        .await
+        .map_err(|x| InsignoError::new(404, "id not found", &x.to_string()))?;
+    Ok(Json(MarkerUpdate {
+        id: created_id.add_marker,
+        earned_points: 1.0,
+    }))
 }
 
 #[get("/types")]
@@ -142,6 +145,11 @@ impl From<Marker> for MarkerInfo {
             images_id: None,
         }
     }
+}
+#[derive(Serialize)]
+struct MarkerUpdate {
+    id: i64,
+    earned_points: f64,
 }
 
 #[get("/<marker_id>")]
@@ -195,23 +203,45 @@ async fn get_marker_from_id(
     if v.is_empty() {
         m.can_report = true;
     }
+
     Ok(Json(m))
 }
 
+#[derive(QueryableByName, Debug)]
+struct ResolveRet {
+    #[sql_type = "BigInt"]
+    resolve_marker: i64,
+}
+
 #[post("/resolve/<marker_id>")]
-async fn resolve_marker_from_id(marker_id: i64, user: User, connection: Db) -> Status {
-    let y = connection
-        .run(move |conn| select(resolve_marker(marker_id, user.id.unwrap())).execute(conn))
-        .await;
-    if let Err(tmp) = y {
-        match tmp.to_string().as_str() {
+async fn resolve_marker_from_id(
+    marker_id: i64,
+    user: User,
+    connection: Db,
+) -> Result<Json<MarkerUpdate>, Status> {
+    let y: ResolveRet = connection
+        .run(
+            move |conn| {
+                sql_query(
+                    "
+            SELECT * FROM resolve_marker($1, $2);",
+                )
+                .bind::<BigInt, _>(marker_id)
+                .bind::<BigInt, _>(user.id.unwrap())
+                .get_result(conn)
+            }, //select(resolve_marker(marker_id, user.id.unwrap())).execute(conn))
+        )
+        .await
+        .map_err(|tmp| match tmp.to_string().as_str() {
             "marker_non_trovato" => Status::NotFound,
             "marker_risolto" => Status::BadRequest,
             _ => Status::InternalServerError,
-        }
-    } else {
-        Status::Ok
-    }
+        })?;
+
+    Ok(Json(MarkerUpdate {
+        id: y.resolve_marker,
+        earned_points: 1.0,
+    }))
 }
 
 #[post("/report/<marker_id>")]
@@ -328,7 +358,10 @@ mod test {
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.into_string().await.unwrap(), "1");
+        assert_eq!(
+            response.into_string().await.unwrap(),
+            "{\"id\":1,\"earned_points\":1.0}"
+        );
 
         let response = client.post("/map/resolve/1").dispatch().await;
         assert_eq!(response.status(), Status::Ok);

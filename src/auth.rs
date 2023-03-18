@@ -126,30 +126,39 @@ async fn signup(
     mut create_info: Form<CreateInfo>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<i64>, InsignoError> {
-    create_info.name=create_info.name.trim().to_string();
+    create_info.name = create_info.name.trim().to_string();
     let name_len = create_info.name.len();
-    if name_len<3 && 20<name_len {
+    if name_len < 3 && 20 < name_len {
         let message = "Nome utente invalido. Deve essere lungo tra 3 e 20 caratteri (e possibilmente simile al nome)";
         return Err(InsignoError::new(401, message, message));
     }
-    if !create_info.name.chars().all(|x| x.is_alphanumeric()||x=='_'||x==' '){
-        let message = "Nome utente invalido. Un nome corretto può contenere lettere, numeri, spazi e _";
+    if !create_info
+        .name
+        .chars()
+        .all(|x| x.is_alphanumeric() || x == '_' || x == ' ')
+    {
+        let message =
+            "Nome utente invalido. Un nome corretto può contenere lettere, numeri, spazi e _";
         return Err(InsignoError::new(401, message, message));
     }
-    if create_info.password.len()<8{
+    if create_info.password.len() < 8 {
         let message = "Password troppo breve, deve essere lunga almeno 8 caratteri";
         return Err(InsignoError::new(401, message, message));
     }
-    if !create_info.password.chars().any(|x| x.is_ascii_uppercase()){
+    if !create_info.password.chars().any(|x| x.is_ascii_uppercase()) {
         let message = "La password deve contenere almeno una maiuscola";
         return Err(InsignoError::new(401, message, message));
     }
-    if !create_info.password.chars().any(|x| x.is_ascii_lowercase()){
+    if !create_info.password.chars().any(|x| x.is_ascii_lowercase()) {
         let message = "La password deve contenere almeno una minuscola";
         return Err(InsignoError::new(401, message, message));
     }
 
-    if !create_info.password.chars().any(|x| !x.is_ascii_alphanumeric()){
+    if !create_info
+        .password
+        .chars()
+        .any(|x| !x.is_ascii_alphanumeric())
+    {
         let message = "La password deve contenere almeno un carattere speciale";
         return Err(InsignoError::new(401, message, message));
     }

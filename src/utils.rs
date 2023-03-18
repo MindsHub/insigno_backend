@@ -2,18 +2,18 @@ use std::{
     backtrace::Backtrace,
     error::Error,
     fs::File,
-    io::{Cursor, Write},
+    io::Write,
     path::{Path, PathBuf},
 };
 
 use chrono::Local;
 
 use rand::{distributions::Alphanumeric, Rng};
-use rocket::{response::Responder, http::ContentType};
+use rocket::response::Responder;
 use rocket::{
     http::Status,
     response::{self, Debug},
-    Request, Response,
+    Request,
 };
 
 pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
@@ -67,7 +67,6 @@ pub struct InsignoError {
 #[allow(dead_code)]
 impl InsignoError {
     pub fn new_code(v: i32) -> Self {
-        
         InsignoError {
             debug: None,
             client: None,

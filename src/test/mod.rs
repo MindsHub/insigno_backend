@@ -33,7 +33,10 @@ pub async fn test_add_point(client: &Client) {
         .dispatch()
         .await;
     assert_eq!(response.status(), Status::Ok);
-    assert_eq!(response.into_string().await.unwrap(), "1");
+    assert_eq!(
+        response.into_string().await.unwrap(),
+        "{\"id\":1,\"earned_points\":1.0}"
+    );
 }
 
 pub async fn test_add_image(marker_id: i64, path: &str, c: &Client) {
