@@ -12,6 +12,7 @@ use diesel::*;
 
 use diesel::sql_types::BigInt;
 use diesel::sql_types::Bool;
+use diesel::sql_types::Double;
 use postgis::ewkb::Point;
 use postgis_diesel::*;
 
