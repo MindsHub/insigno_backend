@@ -209,8 +209,8 @@ async fn get_marker_from_id(
 
 #[derive(QueryableByName, Debug)]
 struct ResolveRet {
-    #[sql_type = "BigInt"]
-    resolve_marker: i64,
+    #[sql_type = "Double"]
+    resolve_marker: f64,
 }
 
 #[post("/resolve/<marker_id>")]
@@ -239,8 +239,8 @@ async fn resolve_marker_from_id(
         })?;
 
     Ok(Json(MarkerUpdate {
-        id: y.resolve_marker,
-        earned_points: 1.0,
+        id: marker_id,
+        earned_points: y.resolve_marker,
     }))
 }
 
