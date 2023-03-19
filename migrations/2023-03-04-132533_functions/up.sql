@@ -65,7 +65,7 @@ CREATE OR REPLACE FUNCTION assign_point(inp_user_id BIGINT, pt FLOAT, res_date t
 	END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION resolve_marker(marker_id BIGINT, user_id BIGINT) RETURNS BigInt AS $$
+CREATE OR REPLACE FUNCTION resolve_marker(marker_id BIGINT, user_id BIGINT) RETURNS DOUBLE PRECISION AS $$
 		DECLARE points DOUBLE PRECISION;
 		DECLARE res_date timestamp with time zone;
 	BEGIN
