@@ -1,9 +1,10 @@
 use std::{collections::BTreeMap, fs};
 
 use diesel::{Connection, PgConnection, RunQueryDsl};
-use rocket::{fairing::*, serde::Deserialize};
+use rocket::{fairing::*, serde::Deserialize, State};
 use rocket_sync_db_pools::Config;
 use schema_sql::marker_types;
+use utils::InsignoError;
 #[macro_use]
 extern crate rocket;
 #[macro_use]
@@ -24,6 +25,7 @@ mod utils;
 #[serde(crate = "rocket::serde")]
 struct InsignoConfig {
     media_folder: String,
+    oldest_supported_version: String,
 }
 pub struct TrashTypeMap {
     pub to_string: BTreeMap<i64, String>,
@@ -52,6 +54,31 @@ pub fn stage() -> AdHoc {
         rocket.manage(trash_types_map)
     })
 }
+#[get("/compatibile?<version_str>")]
+async fn compatibile(
+    version_str: String,
+    config: &State<InsignoConfig>
+) -> Result<String, InsignoError> {
+    let supported = config.oldest_supported_version.trim().split('.').map(|x| x.parse::<i64>().unwrap());
+    let test = version_str.trim().split('.').map(|x| x.parse::<i64>().unwrap());
+    let result = supported.zip(test).fold(None, |prev, (x, y)| {
+        if prev.is_some(){
+            return prev;
+        }
+        if x!=y {
+            Some(x<y)
+        }else{
+            None
+        }
+        //todo!();
+    });
+    if let Some(y) = result{
+        Ok(y.to_string())
+    }else{
+        Ok(true.to_string())
+    }
+    //todo!()
+}
 
 #[launch]
 fn rocket() -> _ {
@@ -61,6 +88,7 @@ fn rocket() -> _ {
         .mount("/pills", pills::get_routes())
         .mount("/map", map::get_routes())
         .mount("/", auth::get_routes())
+        .mount("/", routes![compatibile])
         .attach(AdHoc::config::<InsignoConfig>())
         .attach(AdHoc::on_ignite("checking config", |rocket| async {
             // if media folder does not exist it creates it
