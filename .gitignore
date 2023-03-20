@@ -5,6 +5,7 @@ Cargo.lock
 **/*.rs.bk
 *.pdb
 .env
+Rocket.toml
 
 # temporaneo
 pills.json
