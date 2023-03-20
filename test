@@ -5,8 +5,8 @@ sleep 5
 #& $($(echo "$(cargo tarpaulin --print-rust-flags --target-dir=target/tarpaulin)" | grep -v INFO)) cargo build 
 #$(cargo tarpaulin  --print-rust-flags | grep -v INFO)
 #cargo tarpaulin --command build --skip-clean --target-dir=target/tarpaulin
-
-#diesel database reset
+#DATABASE_URL=
+diesel database reset --database-url="postgres://mindshub:test@localhost:5432/insignorocketdb"
 
 #cargo test -- --test-threads=1
-cargo watch -x "tarpaulin --target-dir=target/tarpaulin --skip-clean -- --test-threads=1"
+cargo watch -s "DATABASE_URL=\"postgres://mindshub:test@localhost:5432/insignorocketdb\" cargo tarpaulin --target-dir=target/tarpaulin --skip-clean -- --test-threads=1"

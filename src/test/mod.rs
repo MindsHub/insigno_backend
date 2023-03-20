@@ -2,27 +2,39 @@ use std::process::Command;
 
 use rocket::{
     http::{ContentType, Status},
-    local::asynchronous::Client,
+    local::asynchronous::Client, futures::io::Flush,
 };
 
-pub fn test_reset_db() {
-    let success = Command::new("diesel")
-        .args(["database", "reset"])
+use crate::db::Db;
+pub  fn test_reset_db() {
+    //use rocket_sync_db_pools::Config;
+    //let y = Db::get_one(client.rocket()).await.unwrap();
+    //y.run(|conn| conn.);
+    let y = std::env::var("DATABASE_URL").unwrap();
+    let output = Command::new("diesel")
+        .args(["database", "reset", &format!("--database-url={y}")])
         .output()
-        .unwrap()
-        .status
-        .success();
-    assert!(success);
+        .unwrap();
+        
+    //println!("{}", );
+    assert!(output.status.success(), "{:?}", String::from_utf8(output.stderr));
 }
 
-pub async fn test_signup(client: &Client) {
+pub async fn test_signup(client: &Client) -> i64{
     let data = "name=IlMagicoTester&password=Testtes1!";
     let response = client
         .post("/signup")
         .header(ContentType::Form)
         .body(data)
-        .dispatch();
-    assert_eq!(response.await.status(), Status::Ok);
+        .dispatch()
+        .await;
+    //assert_eq!(response.status(), Status::Ok);
+    let text = response.into_string().await.unwrap();
+    println!("{}", text);
+   
+    //response.into_string().await.unwrap().parse::<i64>().unwrap()
+    text.parse::<i64>().unwrap()
+
 }
 
 pub async fn test_add_point(client: &Client) {

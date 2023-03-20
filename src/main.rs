@@ -34,8 +34,9 @@ pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Insigno config", |rocket| async {
         //generate trash_types_map
         let config = Config::from("db", &rocket).unwrap();
+        
         let conn = PgConnection::establish(&config.url).unwrap();
-
+        //std::env::set_var("DATABASE_URL", config.url);
         let sorted = marker_types::table
             .load::<(i64, String, f64)>(&conn)
             .unwrap()

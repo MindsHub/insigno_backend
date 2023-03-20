@@ -86,6 +86,7 @@ mod test {
     use crate::db::Db;
     use crate::diesel::ExpressionMethods;
     use crate::diesel::RunQueryDsl;
+    use crate::erase_tables;
     use crate::pills::AddPill;
     use crate::rocket;
     use crate::test::*;
@@ -100,6 +101,7 @@ mod test {
             .await
             .expect("valid rocket instance");
 
+        //erase_tables!(client, user_sessions, users, pills);
         // try to get a pill with an empty database
         let response = client.get("/pills/random").dispatch();
         assert_eq!(response.await.status(), Status::NotFound);
@@ -118,7 +120,7 @@ mod test {
         assert_eq!(response.await.status(), Status::Unauthorized);
 
         //signup
-        test_signup(&client).await;
+        let id = test_signup(&client).await;
 
         let input = "text=test&source=test";
         // add
@@ -150,7 +152,7 @@ mod test {
 
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(
-            r#"{"id":1,"text":"test","author":"IlMagicoTester","source":"test","accepted":true}"#,
+            format!(r#"{{"id":{id},"text":"test","author":"IlMagicoTester","source":"test","accepted":true}}"#),
             response.into_string().await.unwrap()
         );
     }

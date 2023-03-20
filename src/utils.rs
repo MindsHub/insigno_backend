@@ -113,3 +113,18 @@ impl<'r> Responder<'r, 'static> for InsignoError {
         }
     }
 }
+
+#[macro_export]
+macro_rules! erase_tables {
+    ( $client:expr, $( $table:ident ),* ) => {
+        {
+            let connection = Db::get_one($client.rocket()).await.unwrap();
+            connection.run(|conn| {
+                $(
+                    diesel::delete(crate::schema_sql::$table::dsl::$table).execute(conn).unwrap();
+                )*
+                println!("test");
+            }).await
+        }
+    };
+}

@@ -153,6 +153,10 @@ async fn signup(
         let message = "La password deve contenere almeno una minuscola";
         return Err(InsignoError::new(401, message, message));
     }
+    if !create_info.password.chars().any(|x| x.is_numeric()) {
+        let message = "La password deve contenere almeno un numero";
+        return Err(InsignoError::new(401, message, message));
+    }
 
     if !create_info
         .password
@@ -220,8 +224,8 @@ async fn login(
     } else {
         Err(InsignoError::new(
             401,
-            "wrong username or password",
-            "wrong username or password",
+            "password errata",
+            "password errata",
         ))
     }
 }
@@ -304,8 +308,9 @@ pub fn get_routes() -> Vec<Route> {
 mod test {
     use crate::{
         rocket,
-        test::{test_reset_db, test_signup},
+        test::{test_signup, test_reset_db}, erase_tables, db::Db,
     };
+    use diesel::RunQueryDsl;
     use rocket::{
         http::{ContentType, Status},
         local::asynchronous::Client,
@@ -316,13 +321,16 @@ mod test {
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
+        
+        //erase_tables!(client, users, user_sessions);
 
         let response = client.get("/user/1").dispatch().await;
         assert_eq!(response.status(), Status::NotFound);
-        test_signup(&client).await;
+        
+        let id = test_signup(&client).await;
 
         // try to get types list
-        let response = client.get("/user/1").dispatch().await;
+        let response = client.get(format!("/user/{id}")).dispatch().await;
         assert_eq!(response.status(), Status::Ok);
     }
     #[rocket::async_test]
@@ -331,6 +339,8 @@ mod test {
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
+        
+        //erase_tables!(client, users);
 
         let response = client.get("/user").dispatch().await;
         assert_eq!(response.status(), Status::Unauthorized);
@@ -340,12 +350,17 @@ mod test {
         let response = client.get("/user").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
     }
+
     #[rocket::async_test]
     async fn test_autentication() {
         test_reset_db();
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
+        
+        //clean DB
+        erase_tables!(client, user_sessions, users);
+
         // try to get types list
         let data = "name=IlMagicoTester&password=Testtes1!";
         let response = client
