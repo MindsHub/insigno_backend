@@ -2,11 +2,10 @@ use std::process::Command;
 
 use rocket::{
     http::{ContentType, Status},
-    local::asynchronous::Client, futures::io::Flush,
+    local::asynchronous::Client,
 };
 
-use crate::db::Db;
-pub  fn test_reset_db() {
+pub fn test_reset_db() {
     //use rocket_sync_db_pools::Config;
     //let y = Db::get_one(client.rocket()).await.unwrap();
     //y.run(|conn| conn.);
@@ -15,12 +14,16 @@ pub  fn test_reset_db() {
         .args(["database", "reset", &format!("--database-url={y}")])
         .output()
         .unwrap();
-        
+
     //println!("{}", );
-    assert!(output.status.success(), "{:?}", String::from_utf8(output.stderr));
+    assert!(
+        output.status.success(),
+        "{:?}",
+        String::from_utf8(output.stderr)
+    );
 }
 
-pub async fn test_signup(client: &Client) -> i64{
+pub async fn test_signup(client: &Client) -> i64 {
     let data = "name=IlMagicoTester&password=Testtes1!";
     let response = client
         .post("/signup")
@@ -31,10 +34,9 @@ pub async fn test_signup(client: &Client) -> i64{
     //assert_eq!(response.status(), Status::Ok);
     let text = response.into_string().await.unwrap();
     println!("{}", text);
-   
+
     //response.into_string().await.unwrap().parse::<i64>().unwrap()
     text.parse::<i64>().unwrap()
-
 }
 
 pub async fn test_add_point(client: &Client) {

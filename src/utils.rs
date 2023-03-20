@@ -121,7 +121,7 @@ macro_rules! erase_tables {
             let connection = Db::get_one($client.rocket()).await.unwrap();
             connection.run(|conn| {
                 $(
-                    diesel::delete(crate::schema_sql::$table::dsl::$table).execute(conn).unwrap();
+                    diesel::delete($crate::schema_sql::$table::dsl::$table).execute(conn).unwrap();
                 )*
                 println!("test");
             }).await

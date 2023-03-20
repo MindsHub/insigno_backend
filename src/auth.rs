@@ -222,11 +222,7 @@ async fn login(
         .map_err(|x| InsignoError::new(500, "Db Error", &x.to_string()))?;
         Ok(Json(user.id.unwrap()))
     } else {
-        Err(InsignoError::new(
-            401,
-            "password errata",
-            "password errata",
-        ))
+        Err(InsignoError::new(401, "password errata", "password errata"))
     }
 }
 
@@ -307,8 +303,9 @@ pub fn get_routes() -> Vec<Route> {
 #[cfg(test)]
 mod test {
     use crate::{
-        rocket,
-        test::{test_signup, test_reset_db}, erase_tables, db::Db,
+        db::Db,
+        erase_tables, rocket,
+        test::{test_reset_db, test_signup},
     };
     use diesel::RunQueryDsl;
     use rocket::{
@@ -321,12 +318,12 @@ mod test {
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
-        
+
         //erase_tables!(client, users, user_sessions);
 
         let response = client.get("/user/1").dispatch().await;
         assert_eq!(response.status(), Status::NotFound);
-        
+
         let id = test_signup(&client).await;
 
         // try to get types list
@@ -339,7 +336,7 @@ mod test {
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
-        
+
         //erase_tables!(client, users);
 
         let response = client.get("/user").dispatch().await;
@@ -357,7 +354,7 @@ mod test {
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
-        
+
         //clean DB
         erase_tables!(client, user_sessions, users);
 
