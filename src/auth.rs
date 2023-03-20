@@ -1,12 +1,12 @@
+use crypto::scrypt::ScryptParams;
 //use rocket::form::prelude::Entity::Form;
 use diesel::dsl::now;
 use diesel::sql_query;
 use diesel::sql_types::BigInt;
 use diesel::sql_types::Text;
 
-use pbkdf2::pbkdf2_hmac_array;
+use crypto::scrypt;
 use serde::Serialize;
-use sha2::Sha256;
 
 use rand::distributions::Alphanumeric;
 use rand::Rng;
@@ -33,8 +33,11 @@ struct CreateInfo {
 }
 
 fn hash_password(password: &String) -> String {
-    let key = pbkdf2_hmac_array::<Sha256, 20>(password.as_bytes(), "test".as_bytes(), 4096);
-    hex::encode(key)
+    let params = ScryptParams::new(11, 8, 1);
+    scrypt::scrypt_simple(password, &params).unwrap()
+}
+fn check_hash(password: &String, hash: &String) -> bool{
+    scrypt::scrypt_check(password, hash).unwrap()
 }
 
 fn generate_token() -> String {
@@ -157,6 +160,7 @@ async fn signup(
         let message = "La password deve contenere almeno un numero";
         return Err(InsignoError::new(401, message, message));
     }
+    
 
     if !create_info
         .password
@@ -196,8 +200,7 @@ async fn login(
     let user = get_user_by_email(&db, login_info.name.clone())
         .await
         .map_err(|x| InsignoError::new(401, "email not found", &x.to_string()))?;
-    let hash = hash_password(&login_info.password);
-    if user.password == hash {
+    if check_hash(&login_info.password, &user.password) {
         let cur_user_id = user.id.unwrap();
 
         let token_str = generate_token();

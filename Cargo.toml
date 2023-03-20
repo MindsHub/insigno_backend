@@ -17,7 +17,7 @@ serde = "1.0.140"
 rand = "0.8.5"
 chrono= {version = "0.4.23", features= ["clock", "serde"]}
 json = "0.12.4"
-pbkdf2 = "0.12.1"
+rust-crypto = "0.2.36"
 sha2 = "0.10.6"
 hex = "0.4.3"
 form-data-builder = "1.0.1"
