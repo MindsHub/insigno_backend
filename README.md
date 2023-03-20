@@ -1,14 +1,5 @@
 ## Comandi utili
 
-### Rocket
-
-Fare setup della repo all'ultima commit:
-```sh
-mkdir lib/
-cd lib/
-git clone git@github.com:SergioBenitez/Rocket.git
-```
-
 Eseguire server:
 ```sh
 cargo run
