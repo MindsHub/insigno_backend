@@ -40,6 +40,7 @@ table! {
     users(id){
         id -> Nullable<BigInt>,
         name -> Text,
+        email -> Text,
         password -> Text,
         is_admin -> Bool,
         points -> Double,

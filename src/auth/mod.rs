@@ -1,18 +1,10 @@
-use crypto::scrypt::ScryptParams;
-//use rocket::form::prelude::Entity::Form;
-use diesel::dsl::now;
-use diesel::sql_query;
-use diesel::sql_types::BigInt;
-use diesel::sql_types::Text;
 
-use crypto::scrypt;
+use diesel::dsl::now;
+
 use serde::Serialize;
 
-use rand::distributions::Alphanumeric;
-use rand::Rng;
 use rocket::form::Form;
-use rocket::http::{Cookie, CookieJar, Status};
-use rocket::request::{self, FromRequest};
+use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
 use rocket::Route;
 use serde::Deserialize;
@@ -26,107 +18,32 @@ use crate::schema_sql::users;
 use crate::utils::InsignoError;
 use crate::{db::Db, schema_rs::User};
 
+pub use self::authentication::*;
+
+mod authentication;
+
 #[derive(FromForm, Deserialize)]
-struct CreateInfo {
+struct SignupInfo {
     name: String,
+    email: String,
     password: String,
 }
 
-fn hash_password(password: &String) -> String {
-    let params = ScryptParams::new(11, 8, 1);
-    scrypt::scrypt_simple(password, &params).unwrap()
+#[derive(FromForm, Deserialize)]
+struct LoginInfo {
+    email: String,
+    password: String,
 }
-fn check_hash(password: &String, hash: &String) -> bool{
-    scrypt::scrypt_check(password, hash).unwrap()
-}
-
-fn generate_token() -> String {
-    rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(10)
-        .map(char::from)
-        .collect()
-}
-
-async fn get_user_by_email(db: &Db, email: String) -> Result<User, diesel::result::Error> {
-    let users: Vec<User> = db
-        .run(|conn| users::table.filter(users::name.eq(email)).get_results(conn))
-        .await?;
-    //.map_err(to_debug)?;
-    let user = users.get(0).ok_or(diesel::result::Error::NotFound)?;
-    Ok(user.clone())
-}
-
-pub async fn get_user_by_id(db: &Db, id: i64) -> Result<User, diesel::result::Error> {
-    let users: Vec<User> = db
-        .run(move |conn| users::table.find(id).get_results(conn))
-        .await?;
-    //.map_err(to_debug)?;
-    let user = users.get(0).ok_or(diesel::result::Error::NotFound)?;
-    Ok(user.clone())
-}
-
-sql_function! {fn autenticate(id_inp: BigInt, tok: Text)->(BigInt, Text, Text, Bool, Double)}
-
-#[derive(Responder, Debug)]
-pub enum AuthError<T> {
-    #[response(status = 401)]
-    Unauthorized(T),
-}
-fn auth_fail(inp: &str) -> request::Outcome<User, AuthError<String>> {
-    request::Outcome::Failure((
-        Status::Unauthorized,
-        AuthError::Unauthorized(inp.to_string()),
-    ))
-}
-
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for User {
-    type Error = AuthError<String>;
-
-    async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
-        let connection = request.guard::<Db>().await.unwrap();
-        let cookie = request.cookies();
-        let insigno_auth = match cookie.get_private("insigno_auth") {
-            Some(a) => a,
-            None => {
-                return auth_fail("insigno_auth cookie not found");
-            }
-        }
-        .value()
-        .to_string();
-        let vec: Vec<&str> = insigno_auth.split(' ').collect();
-
-        let id: i64 = vec[0].parse().unwrap();
-        let tok = vec[1].to_string();
-        if !tok.chars().all(|x| x.is_ascii_alphanumeric()) {
-            return auth_fail("sql ignection?");
-        }
-
-        let auth: Result<User, _> = connection
-            .run(move |conn| {
-                sql_query("SELECT * FROM autenticate($1, $2);")
-                    .bind::<BigInt, _>(id)
-                    .bind::<Text, _>(tok)
-                    .get_result(conn)
-            })
-            .await;
-
-        match auth {
-            Ok(a) => {
-                return request::Outcome::Success(a);
-            }
-            Err(_) => {
-                return auth_fail("errore nell'autenticazione");
-            }
-        }
+impl From<SignupInfo> for LoginInfo{
+    fn from(value: SignupInfo) -> Self {
+        Self { email: value.email, password: value.password }
     }
 }
 
 #[post("/signup", format = "form", data = "<create_info>")]
 async fn signup(
     db: Db,
-    mut create_info: Form<CreateInfo>,
+    mut create_info: Form<SignupInfo>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<i64>, InsignoError> {
     create_info.name = create_info.name.trim().to_string();
@@ -174,6 +91,7 @@ async fn signup(
     let user: User = User {
         id: None,
         name: create_info.name.clone(),
+        email: create_info.email.clone(),
         password: hash_password(&create_info.password.clone()),
         points: 0.0,
         is_admin: false,
@@ -187,17 +105,17 @@ async fn signup(
         })
         .await
         .map_err(|x| InsignoError::new(401, "Nome utente usato", &format!("{x:?}")))?;
-    login(db, create_info, cookies).await?;
+    login(db, LoginInfo::from(create_info.into_inner()).into(), cookies).await?;
     Ok(Json(user.id.unwrap()))
 }
 
 #[post("/login", format = "form", data = "<login_info>")]
 async fn login(
     db: Db,
-    login_info: Form<CreateInfo>,
+    login_info: Form<LoginInfo>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<i64>, InsignoError> {
-    let user = get_user_by_email(&db, login_info.name.clone())
+    let user = get_user_by_email(&db, login_info.email.clone())
         .await
         .map_err(|x| InsignoError::new(401, "email not found", &x.to_string()))?;
     if check_hash(&login_info.password, &user.password) {
@@ -362,7 +280,7 @@ mod test {
         erase_tables!(client, user_sessions, users);
 
         // try to get types list
-        let data = "name=IlMagicoTester&password=Testtes1!";
+        let data = "email=test@test.com&password=Testtes1!";
         let response = client
             .post("/login")
             .header(ContentType::Form)

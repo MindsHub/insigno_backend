@@ -2,16 +2,16 @@ use std::process::Command;
 
 use rocket::{
     http::{ContentType, Status},
-    local::asynchronous::Client,
+    local::asynchronous::Client, Rocket,
 };
 
 pub fn test_reset_db() {
-    //use rocket_sync_db_pools::Config;
-    //let y = Db::get_one(client.rocket()).await.unwrap();
-    //y.run(|conn| conn.);
-    let y = std::env::var("DATABASE_URL").unwrap();
+    let value  = Rocket::build().figment().find_value("databases.db.url").unwrap();
+    println!("{value:?}");
+    let url = value.as_str().unwrap();
+        
     let output = Command::new("diesel")
-        .args(["database", "reset", &format!("--database-url={y}")])
+        .args(["database", "reset", &format!("--database-url={url}")])
         .output()
         .unwrap();
 
@@ -24,7 +24,7 @@ pub fn test_reset_db() {
 }
 
 pub async fn test_signup(client: &Client) -> i64 {
-    let data = "name=IlMagicoTester&password=Testtes1!";
+    let data = "name=IlMagicoTester&password=Testtes1!&email=test@test.com";
     let response = client
         .post("/signup")
         .header(ContentType::Form)

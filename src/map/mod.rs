@@ -2,19 +2,14 @@ use std::collections::BTreeMap;
 
 use std::error::Error;
 
-use crate::auth::get_user_by_id;
-use crate::auth::UnautenticatedUser;
+use crate::auth::*;
 use crate::utils::*;
 use crate::TrashTypeMap;
 use chrono::Utc;
 use diesel::RunQueryDsl;
 use diesel::*;
 
-use diesel::sql_types::BigInt;
-use diesel::sql_types::Bool;
-use diesel::sql_types::Double;
-use postgis::ewkb::Point;
-use postgis_diesel::*;
+use diesel::sql_types::*;
 
 use postgis_diesel::sql_types::Geometry;
 use rocket::form::Form;
@@ -32,21 +27,23 @@ use self::image::*;
 use crate::schema_rs::*;
 use rocket::http::Status;
 mod image;
-
+use postgis_diesel::types::Point;
 #[get("/get_near?<x>&<y>&<srid>&<include_resolved>")]
 async fn get_near(
     connection: Db,
     x: f64,
     y: f64,
-    srid: Option<i32>,
+    srid: Option<u32>,
     include_resolved: Option<bool>,
 ) -> Result<Json<Vec<Marker>>, Debug<Box<dyn Error>>> {
-    let tmp_point = Point {
+    /*let tmp_point = Point {
         x,
         y,
         srid: Some(srid.unwrap_or(4326)),
-    };
-    let cur_point = PointC { v: tmp_point };
+    };*/
+    let cur_point = Point { x,
+        y,
+        srid: Some(srid.unwrap_or(4326u32)), };
     let res: Vec<Marker> = connection
         .run(move |conn| {
             let query = sql_query(
@@ -102,7 +99,7 @@ async fn add_map(
             SELECT * FROM add_marker($1, $2, $3);",
             )
             .bind::<BigInt, _>(user.id.unwrap())
-            .bind::<Geometry, _>(InsignoPoint::new(data.x, data.y))
+            .bind::<Geometry, _>(Point::new(data.x, data.y, None))//(InsignoPoint::new(data.x, data.y))
             .bind::<BigInt, _>(type_int)
             .get_result(conn)
         })
@@ -160,7 +157,7 @@ async fn get_marker_from_id(
     user: Option<User>,
 ) -> Result<Json<MarkerInfo>, InsignoError> {
     let m: Marker = connection
-        .run(move |conn| markers::table.find(marker_id).load::<Marker>(conn))
+        .run(move |conn| markers::table.filter(markers::id.eq(marker_id)).load::<Marker>(conn))
         .await
         .map_err(|x| InsignoError::new_debug(404, &x.to_string()))?
         .get(0)

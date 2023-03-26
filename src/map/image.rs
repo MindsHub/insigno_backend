@@ -111,7 +111,7 @@ pub(crate) async fn add_image(
     connection
         .run(move |conn| {
             markers::table
-                .find(id)
+                .filter(markers::id.eq(id))
                 .filter(markers::created_by.eq(user_id))
                 .load::<Marker>(conn)
         })

@@ -4,7 +4,7 @@ use crate::schema_rs::User;
 use crate::schema_sql::pills;
 use crate::utils::to_debug;
 use diesel::ExpressionMethods;
-use diesel::{insert_into, sql_types::Double, QueryDsl, RunQueryDsl};
+use diesel::{insert_into, QueryDsl, RunQueryDsl};
 use rocket::response::Debug;
 use rocket::{form::Form, serde::json::Json, Route};
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ use super::db::Db;
 #[derive(Serialize, Deserialize, Clone, Queryable, Debug, Insertable)]
 #[diesel(table_name = pills)]
 struct Pill {
-    #[diesel(deserialize_as = "i64")]
+    #[diesel(deserialize_as = i64)]
     id: Option<i64>,
     text: String,
     author: String,
@@ -22,7 +22,7 @@ struct Pill {
     accepted: bool,
 }
 
-no_arg_sql_function!(random, Double, "Represents the sql RANDOM() function"); // "Represents the sql RANDOM() function"
+sql_function!(fn random()-> Double); // "Represents the sql RANDOM() function"
 
 #[get("/random")]
 async fn get_random_pill(connection: Db) -> Result<Option<Json<Pill>>, Debug<Box<dyn Error>>> {
@@ -32,7 +32,7 @@ async fn get_random_pill(connection: Db) -> Result<Option<Json<Pill>>, Debug<Box
         .run(|c| {
             pills::table
                 .filter(pills::accepted.eq(true))
-                .order(random)
+                .order(random())
                 .limit(1)
                 .load(c)
         })

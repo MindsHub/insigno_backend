@@ -1,10 +1,12 @@
 use std::{collections::BTreeMap, fs};
 
 use diesel::{Connection, PgConnection, RunQueryDsl};
+use mail::{send_mail, SmtpConfig};
 use rocket::{fairing::*, serde::Deserialize, State};
 use rocket_sync_db_pools::Config;
 use schema_sql::marker_types;
 use utils::InsignoError;
+
 #[macro_use]
 extern crate rocket;
 #[macro_use]
@@ -20,12 +22,14 @@ mod schema_sql;
 #[cfg(test)]
 mod test;
 mod utils;
+mod mail;
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
-struct InsignoConfig {
+pub struct InsignoConfig {
     media_folder: String,
     oldest_supported_version: String,
+    smtp: Option<SmtpConfig>,
 }
 pub struct TrashTypeMap {
     pub to_string: BTreeMap<i64, String>,
@@ -37,10 +41,10 @@ pub fn stage() -> AdHoc {
         //generate trash_types_map
         let config = Config::from("db", &rocket).unwrap();
 
-        let conn = PgConnection::establish(&config.url).unwrap();
-        //std::env::set_var("DATABASE_URL", config.url);
+        let mut conn = PgConnection::establish(&config.url).unwrap();
+        println!("{:?}", &config.url);
         let sorted = marker_types::table
-            .load::<(i64, String, f64)>(&conn)
+            .load::<(i64, String, f64)>(&mut conn)
             .unwrap()
             .into_iter()
             .map(|(x, y, ..)| (x, y))
@@ -54,6 +58,7 @@ pub fn stage() -> AdHoc {
         rocket.manage(trash_types_map)
     })
 }
+
 #[get("/compatibile?<version_str>")]
 async fn compatibile(
     version_str: String,
@@ -82,6 +87,7 @@ async fn compatibile(
 
 #[launch]
 fn rocket() -> _ {
+    
     let rocket = rocket::build();
     rocket
         .attach(db::stage())
@@ -93,6 +99,7 @@ fn rocket() -> _ {
         .attach(AdHoc::on_ignite("checking config", |rocket| async {
             // if media folder does not exist it creates it
             let cfg: &InsignoConfig = rocket.state().unwrap();
+            //send_mail("alessio@mindshub.it", "test", "dovria nar bem", &cfg.smtp.as_ref().expect("mail parameters not found"));
             let _ = fs::create_dir_all(cfg.media_folder.clone());
             rocket
         }))
@@ -101,3 +108,4 @@ fn rocket() -> _ {
         .mount("/", cors::get_routes())
     //.manage(users)
 }
+
