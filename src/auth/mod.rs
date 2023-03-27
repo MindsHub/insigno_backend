@@ -14,11 +14,12 @@ use rocket::http::{ContentType, Cookie, CookieJar};
 use rocket::serde::json::Json;
 use rocket::{Route, State};
 
+use crate::auth::mail_auth::AsyncMail;
 use crate::diesel::ExpressionMethods;
-use crate::InsignoConfig;
 //use crate::diesel::QueryDsl;
 use crate::diesel::RunQueryDsl;
 
+use crate::mail::Mailer;
 use crate::schema_rs::PendingUser;
 use crate::schema_sql::user_sessions::dsl::user_sessions;
 use crate::schema_sql::user_sessions::{refresh_date, token, user_id};
@@ -35,12 +36,12 @@ pub mod mail_auth;
 async fn signup(
     db: Db,
     mut create_info: Form<SignupInfo>,
-    cfg: &State<InsignoConfig>,
+    mail_cfg: &State<Mailer>,
 ) -> Result<String, InsignoError> {
     create_info.check(&db).await?;
     let pending_user: PendingUser = create_info.clone().into();
     let local_time = Local::now();
-    pending_user.send_verification_mail(&cfg.smtp)?;
+    pending_user.send_verification_mail(&mail_cfg).await?;
 
     println!(
         "mail time {}",
@@ -62,9 +63,10 @@ async fn signup(
 #[post("/login", format = "form", data = "<login_info>")]
 async fn login(
     db: Db,
-    login_info: Form<LoginInfo>,
+    mut login_info: Form<LoginInfo>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<i64>, InsignoError> {
+    login_info.check().await?;
     let user = get_user_by_email(&db, login_info.email.clone())
         .await
         .map_err(|x| InsignoError::new(401, "email not found", &x.to_string()))?;

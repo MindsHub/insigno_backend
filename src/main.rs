@@ -37,6 +37,8 @@ pub struct TrashTypeMap {
     pub to_i64: BTreeMap<String, i64>,
 }
 
+
+
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Insigno config", |rocket| async {
         //generate trash_types_map
@@ -112,6 +114,7 @@ fn rocket() -> _ {
         }))
         .attach(stage())
         .attach(cors::Cors)
+        .attach(mail::stage())
         .mount("/", cors::get_routes())
     //.manage(users)
 }

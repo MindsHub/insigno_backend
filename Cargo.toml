@@ -19,8 +19,9 @@ chrono= {version = "0.4.24", features= ["clock", "serde"]}
 json = "0.12.4"
 rust-crypto = "0.2.36"
 hex = "0.4.3"
-lettre = "0.10.3"
+lettre = {version="0.10.3", default-features = false, features=["tokio1", "smtp-transport", "pool", "tokio1-native-tls", "builder"]}
 toml = "0.7.3"
+
 
 [dev-dependencies]
 form-data-builder = "1.0.1"

@@ -136,13 +136,76 @@ impl From<SignupInfo> for LoginInfo {
         }
     }
 }
+fn check_name(name: &str) -> Result<String, &str> {
+    let name: String = name.trim().to_string();
+    let name_len = name.len();
+    if name_len < 3 && 20 < name_len {
+        return Err("Nome utente invalido. Deve essere lungo tra 3 e 20 caratteri (e possibilmente simile al nome)");
+    }
+    if !name
+        .chars()
+        .all(|x| x.is_alphanumeric() || x == '_' || x == ' ')
+    {
+        return Err(
+            "Nome utente invalido. Un nome corretto può contenere lettere, numeri, spazi e _",
+        );
+    }
+    Ok(name)
+}
+fn check_email(email: &str) -> Result<String, &str> {
+    let email = email.to_ascii_lowercase().to_string();
+    let mut tmp = "".to_string();
+    let mut on_server = false;
+    for c in email.trim().chars(){
+        if c=='@'{
+            on_server=true;
+        }
+        if c!='.' || on_server{
+            tmp.push(c);
+        }
+    }
+    let email=tmp;
+    if !email
+        .chars()
+        .all(|x| x.is_ascii_alphanumeric() || x == '.' || x == '-' || x == '@' || x == '_')
+    {
+        return Err("Mail invalida");
+    }
+
+    Ok(email)
+}
+fn check_password(password: &str) -> Result<String, &str> {
+    let password = password.trim().to_string();
+    if password.len() < 8 {
+        return Err("Password troppo breve, deve essere lunga almeno 8 caratteri");
+    }
+
+    if !password.chars().any(|x| x.is_ascii_uppercase()) {
+        return Err("La password deve contenere almeno una maiuscola");
+    }
+
+    if !password.chars().any(|x| x.is_ascii_lowercase()) {
+        return Err("La password deve contenere almeno una minuscola");
+    }
+
+    if !password.chars().any(|x| x.is_numeric()) {
+        return Err("La password deve contenere almeno un numero");
+    }
+
+    if !password.chars().any(|x| !x.is_ascii_alphanumeric()) {
+        return Err("La password deve contenere almeno un carattere speciale");
+    }
+
+    Ok(password)
+}
+
 
 impl SignupInfo {
     pub async fn check(&mut self, db: &Db) -> Result<(), InsignoError> {
         let mut check = || -> Result<(), String> {
-            self.check_name()?;
-            self.check_email()?;
-            self.check_password()?;
+            self.name= check_name(&self.name)?;
+            self.email = check_email(&self.email)?;
+            self.password = check_password(&self.password)?;
             Ok(())
         };
         check().map_err(|e| InsignoError::new(401, &e, &e))?;
@@ -169,58 +232,16 @@ impl SignupInfo {
             Ok(())
         }
     }
+}
 
-    fn check_name(&mut self) -> Result<(), &str> {
-        self.name = self.name.trim().to_string();
-        let name_len = self.name.len();
-        if name_len < 3 && 20 < name_len {
-            return Err("Nome utente invalido. Deve essere lungo tra 3 e 20 caratteri (e possibilmente simile al nome)");
-        }
-        if !self
-            .name
-            .chars()
-            .all(|x| x.is_alphanumeric() || x == '_' || x == ' ')
-        {
-            return Err(
-                "Nome utente invalido. Un nome corretto può contenere lettere, numeri, spazi e _",
-            );
-        }
-        Ok(())
-    }
-
-    fn check_password(&self) -> Result<(), &str> {
-        if self.password.len() < 8 {
-            return Err("Password troppo breve, deve essere lunga almeno 8 caratteri");
-        }
-
-        if !self.password.chars().any(|x| x.is_ascii_uppercase()) {
-            return Err("La password deve contenere almeno una maiuscola");
-        }
-
-        if !self.password.chars().any(|x| x.is_ascii_lowercase()) {
-            return Err("La password deve contenere almeno una minuscola");
-        }
-
-        if !self.password.chars().any(|x| x.is_numeric()) {
-            return Err("La password deve contenere almeno un numero");
-        }
-
-        if !self.password.chars().any(|x| !x.is_ascii_alphanumeric()) {
-            return Err("La password deve contenere almeno un carattere speciale");
-        }
-
-        Ok(())
-    }
-
-    fn check_email(&self) -> Result<(), &str> {
-        if !self
-            .email
-            .chars()
-            .all(|x| x.is_ascii_alphanumeric() || x == '.' || x == '-' || x == '@' || x == '_')
-        {
-            return Err("Mail invalida");
-        }
-
+impl LoginInfo{
+    pub async fn check(&mut self) -> Result<(), InsignoError> {
+        let mut check = || -> Result<(), String> {
+            self.email = check_email(&self.email)?;
+            self.password = check_password(&self.password)?;
+            Ok(())
+        };
+        check().map_err(|e| InsignoError::new(401, &e, &e))?;
         Ok(())
     }
 }

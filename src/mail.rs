@@ -1,8 +1,11 @@
 use lettre::message::header::ContentType;
+use lettre::transport::smtp::PoolConfig;
 use lettre::transport::smtp::authentication::Credentials;
-use lettre::{Message, SmtpTransport, Transport};
+use lettre::{Message, SmtpTransport, Transport, AsyncSmtpTransport, AsyncTransport, Tokio1Executor};
+use rocket::fairing::AdHoc;
 use serde::Deserialize;
 
+use crate::InsignoConfig;
 use crate::utils::InsignoError;
 
 #[derive(Deserialize)]
@@ -14,23 +17,22 @@ pub struct SmtpConfig {
 }
 
 #[cfg(test)]
-pub fn send_mail(
+pub async fn send_mail(
     _to: &str,
     _subject: &str,
     _message: &str,
-    _config: &SmtpConfig,
+    _mailer: &Mailer,
 ) -> Result<(), InsignoError> {
     Ok(())
 }
 
 #[cfg(not(test))]
-
-pub fn send_mail(
+pub async fn send_mail(
     to: &str,
     subject: &str,
     message: &str,
-    config: &SmtpConfig,
-) -> Result<(), InsignoError> {
+    mailer: &Mailer,
+) -> Result<(), InsignoError> { 
     let email = Message::builder()
         .from("Insigno: <insigno@mindshub.it>".parse().unwrap())
         //.reply_to("mail to reply".parse().unwrap())
@@ -39,18 +41,36 @@ pub fn send_mail(
         .header(ContentType::TEXT_HTML)
         .body(message.to_string())
         .unwrap();
-
-    let creds = Credentials::new(config.user.to_owned(), config.password.to_owned());
+    /*
 
     // Open a remote connection to gmail
-    let mailer = SmtpTransport::relay(&config.server)
+    let mailer = SmtpTransport::relay()
         .unwrap()
         .credentials(creds)
-        .build();
+        .build();*/
 
     // Send the email
-    match mailer.send(&email) {
+    match mailer.m.send(email).await {
         Ok(_) => Ok(()),
         Err(e) => Err(InsignoError::new_debug(500, &e.to_string())), //format!("Could not send email: {e:?}")),
     }
+}
+
+pub struct Mailer{
+    pub m: AsyncSmtpTransport<Tokio1Executor>,
+}
+
+pub fn stage() -> AdHoc {
+    AdHoc::on_ignite("Gmail stage", |rocket| async {
+        let config: &InsignoConfig = rocket.state().unwrap();
+        
+        let mail_config = PoolConfig::new().min_idle(1);
+        let creds = Credentials::new(config.smtp.user.to_string(), config.smtp.password.to_string());
+        let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(&config.smtp.server).unwrap()
+            .credentials(creds)
+            .pool_config(mail_config)
+            .build();
+        let mailer = Mailer{m: mailer};
+        rocket.manage(mailer)
+    })
 }
