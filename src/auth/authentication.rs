@@ -14,12 +14,12 @@ use crate::{
 };
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
-pub fn hash_password(password: &String) -> String {
+pub fn hash_password(password: &str) -> String {
     let params = ScryptParams::new(11, 8, 1);
     scrypt::scrypt_simple(password, &params).unwrap()
 }
 
-pub fn check_hash(password: &String, hash: &String) -> bool {
+pub fn check_hash(password: &str, hash: &str) -> bool {
     scrypt::scrypt_check(password, hash).unwrap()
 }
 
@@ -162,7 +162,7 @@ impl SignupInfo {
             })
             .await
             .map_err(|x| InsignoError::new_debug(500, &x.to_string()))?;
-        if ret.len() > 0 {
+        if !ret.is_empty() {
             let message = "email o nome utente già utilizzati";
             Err(InsignoError::new(401, message, message))
         } else {
