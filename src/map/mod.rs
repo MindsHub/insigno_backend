@@ -41,9 +41,11 @@ async fn get_near(
         y,
         srid: Some(srid.unwrap_or(4326)),
     };*/
-    let cur_point = Point { x,
+    let cur_point = Point {
+        x,
         y,
-        srid: Some(srid.unwrap_or(4326u32)), };
+        srid: Some(srid.unwrap_or(4326u32)),
+    };
     let res: Vec<Marker> = connection
         .run(move |conn| {
             let query = sql_query(
@@ -79,7 +81,7 @@ async fn add_map(
 ) -> Result<Json<MarkerUpdate>, InsignoError> {
     #[derive(QueryableByName, Debug)]
     struct PointRet {
-        #[sql_type = "BigInt"]
+        #[diesel(sql_type = BigInt)]
         add_marker: i64,
     }
     let type_int = if trash_types_map
@@ -99,7 +101,7 @@ async fn add_map(
             SELECT * FROM add_marker($1, $2, $3);",
             )
             .bind::<BigInt, _>(user.id.unwrap())
-            .bind::<Geometry, _>(Point::new(data.x, data.y, None))//(InsignoPoint::new(data.x, data.y))
+            .bind::<Geometry, _>(Point::new(data.x, data.y, None)) //(InsignoPoint::new(data.x, data.y))
             .bind::<BigInt, _>(type_int)
             .get_result(conn)
         })
@@ -157,7 +159,11 @@ async fn get_marker_from_id(
     user: Option<User>,
 ) -> Result<Json<MarkerInfo>, InsignoError> {
     let m: Marker = connection
-        .run(move |conn| markers::table.filter(markers::id.eq(marker_id)).load::<Marker>(conn))
+        .run(move |conn| {
+            markers::table
+                .filter(markers::id.eq(marker_id))
+                .load::<Marker>(conn)
+        })
         .await
         .map_err(|x| InsignoError::new_debug(404, &x.to_string()))?
         .get(0)
@@ -207,7 +213,7 @@ async fn get_marker_from_id(
 
 #[derive(QueryableByName, Debug)]
 struct ResolveRet {
-    #[sql_type = "Double"]
+    #[diesel(sql_type = Double)]
     resolve_marker: f64,
 }
 

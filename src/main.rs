@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, fs};
 
 use diesel::{Connection, PgConnection, RunQueryDsl};
-use mail::{send_mail, SmtpConfig};
+use mail::SmtpConfig;
 use rocket::{fairing::*, serde::Deserialize, State};
 use rocket_sync_db_pools::Config;
 use schema_sql::marker_types;
@@ -15,6 +15,8 @@ extern crate diesel;
 mod auth;
 mod cors;
 mod db;
+#[allow(dead_code, unused)]
+mod mail;
 mod map;
 mod pills;
 mod schema_rs;
@@ -22,14 +24,13 @@ mod schema_sql;
 #[cfg(test)]
 mod test;
 mod utils;
-mod mail;
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct InsignoConfig {
     media_folder: String,
     oldest_supported_version: String,
-    smtp: Option<SmtpConfig>,
+    smtp: SmtpConfig,
 }
 pub struct TrashTypeMap {
     pub to_string: BTreeMap<i64, String>,
@@ -62,24 +63,31 @@ pub fn stage() -> AdHoc {
 #[get("/compatibile?<version_str>")]
 async fn compatibile(
     version_str: String,
-    config: &State<InsignoConfig>
+    config: &State<InsignoConfig>,
 ) -> Result<String, InsignoError> {
-    let supported = config.oldest_supported_version.trim().split('.').map(|x| x.parse::<i64>().unwrap());
-    let test = version_str.trim().split('.').map(|x| x.parse::<i64>().unwrap());
+    let supported = config
+        .oldest_supported_version
+        .trim()
+        .split('.')
+        .map(|x| x.parse::<i64>().unwrap());
+    let test = version_str
+        .trim()
+        .split('.')
+        .map(|x| x.parse::<i64>().unwrap());
     let result = supported.zip(test).fold(None, |prev, (x, y)| {
-        if prev.is_some(){
+        if prev.is_some() {
             return prev;
         }
-        if x!=y {
-            Some(x<y)
-        }else{
+        if x != y {
+            Some(x < y)
+        } else {
             None
         }
         //todo!();
     });
-    if let Some(y) = result{
+    if let Some(y) = result {
         Ok(y.to_string())
-    }else{
+    } else {
         Ok(true.to_string())
     }
     //todo!()
@@ -87,7 +95,6 @@ async fn compatibile(
 
 #[launch]
 fn rocket() -> _ {
-    
     let rocket = rocket::build();
     rocket
         .attach(db::stage())
@@ -99,7 +106,7 @@ fn rocket() -> _ {
         .attach(AdHoc::on_ignite("checking config", |rocket| async {
             // if media folder does not exist it creates it
             let cfg: &InsignoConfig = rocket.state().unwrap();
-            //send_mail("alessio@mindshub.it", "test", "dovria nar bem", &cfg.smtp.as_ref().expect("mail parameters not found"));
+
             let _ = fs::create_dir_all(cfg.media_folder.clone());
             rocket
         }))
@@ -108,4 +115,3 @@ fn rocket() -> _ {
         .mount("/", cors::get_routes())
     //.manage(users)
 }
-

@@ -1,6 +1,6 @@
 use rocket::fairing::AdHoc;
 
-use rocket_sync_db_pools::{diesel::PgConnection, database};
+use rocket_sync_db_pools::{database, diesel::PgConnection};
 
 #[database("db")]
 pub struct Db(pub PgConnection);

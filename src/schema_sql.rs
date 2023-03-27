@@ -63,12 +63,13 @@ table! {
     }
 }
 
-/*
-table!{
-    groups(id){
-        id->BigInt,
-        points->Double,
-        creation_date->Timestamptz,
-        end_date->Nullable<Timestamptz>,
+table! {
+    pending_users(id){
+        id->Nullable<BigInt>,
+        name->Text,
+        email->Text,
+        password_hash->Text,
+        request_date->Nullable<Timestamptz>,
+        token->Text,
     }
-}*/
+}

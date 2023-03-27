@@ -2,14 +2,18 @@ use std::process::Command;
 
 use rocket::{
     http::{ContentType, Status},
-    local::asynchronous::Client, Rocket,
+    local::asynchronous::Client,
+    Rocket,
 };
 
 pub fn test_reset_db() {
-    let value  = Rocket::build().figment().find_value("databases.db.url").unwrap();
+    let value = Rocket::build()
+        .figment()
+        .find_value("databases.db.url")
+        .unwrap();
     println!("{value:?}");
     let url = value.as_str().unwrap();
-        
+
     let output = Command::new("diesel")
         .args(["database", "reset", &format!("--database-url={url}")])
         .output()
@@ -23,7 +27,8 @@ pub fn test_reset_db() {
     );
 }
 
-pub async fn test_signup(client: &Client) -> i64 {
+#[cfg(test)]
+pub async fn test_signup(client: &Client) {
     let data = "name=IlMagicoTester&password=Testtes1!&email=test@test.com";
     let response = client
         .post("/signup")
@@ -31,12 +36,26 @@ pub async fn test_signup(client: &Client) -> i64 {
         .body(data)
         .dispatch()
         .await;
-    //assert_eq!(response.status(), Status::Ok);
+    assert_eq!(response.status(), Status::Ok);
     let text = response.into_string().await.unwrap();
     println!("{}", text);
 
+    let response = client.get("/verify/1111111111").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let data = "password=Testtes1!&email=test@test.com";
+    let response = client
+        .post("/login")
+        .header(ContentType::Form)
+        .body(data)
+        .dispatch()
+        .await;
+    //let y = response.body();
+    let text = response.into_string().await.unwrap();
+    println!("{}", text);
+    //assert_eq!(response.status(), Status::Ok);
     //response.into_string().await.unwrap().parse::<i64>().unwrap()
-    text.parse::<i64>().unwrap()
+    //text.parse::<i64>().unwrap()
 }
 
 pub async fn test_add_point(client: &Client) {

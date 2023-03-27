@@ -1,9 +1,9 @@
-
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
 use serde::Deserialize;
 
+use crate::utils::InsignoError;
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -13,13 +13,30 @@ pub struct SmtpConfig {
     password: String,
 }
 
-pub fn send_mail(to: &str, subject: &str, message: &str, config: &SmtpConfig)-> Result<(), String>{
+#[cfg(test)]
+pub fn send_mail(
+    _to: &str,
+    _subject: &str,
+    _message: &str,
+    _config: &SmtpConfig,
+) -> Result<(), InsignoError> {
+    Ok(())
+}
+
+#[cfg(not(test))]
+
+pub fn send_mail(
+    to: &str,
+    subject: &str,
+    message: &str,
+    config: &SmtpConfig,
+) -> Result<(), InsignoError> {
     let email = Message::builder()
-        .from("MAIL FROM: <insigno@mindshub.it>".parse().unwrap())
+        .from("Insigno: <insigno@mindshub.it>".parse().unwrap())
         //.reply_to("mail to reply".parse().unwrap())
         .to(to.parse().unwrap())
         .subject(subject)
-        .header(ContentType::TEXT_PLAIN)
+        .header(ContentType::TEXT_HTML)
         .body(message.to_string())
         .unwrap();
 
@@ -34,6 +51,6 @@ pub fn send_mail(to: &str, subject: &str, message: &str, config: &SmtpConfig)-> 
     // Send the email
     match mailer.send(&email) {
         Ok(_) => Ok(()),
-        Err(e) => Err(format!("Could not send email: {e:?}")),
+        Err(e) => Err(InsignoError::new_debug(500, &e.to_string())), //format!("Could not send email: {e:?}")),
     }
 }

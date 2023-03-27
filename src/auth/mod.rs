@@ -1,112 +1,62 @@
+use std::fs;
 
+use chrono::Local;
 use diesel::dsl::now;
+
+use diesel::query_dsl::methods::FilterDsl;
+use diesel::sql_types::Text;
+use diesel::{insert_into, sql_query};
 
 use serde::Serialize;
 
 use rocket::form::Form;
-use rocket::http::{Cookie, CookieJar};
+use rocket::http::{ContentType, Cookie, CookieJar};
 use rocket::serde::json::Json;
-use rocket::Route;
-use serde::Deserialize;
+use rocket::{Route, State};
 
 use crate::diesel::ExpressionMethods;
-use crate::diesel::QueryDsl;
+use crate::InsignoConfig;
+//use crate::diesel::QueryDsl;
 use crate::diesel::RunQueryDsl;
+
+use crate::schema_rs::PendingUser;
 use crate::schema_sql::user_sessions::dsl::user_sessions;
 use crate::schema_sql::user_sessions::{refresh_date, token, user_id};
-use crate::schema_sql::users;
+use crate::schema_sql::{pending_users, users};
 use crate::utils::InsignoError;
 use crate::{db::Db, schema_rs::User};
 
 pub use self::authentication::*;
 
 mod authentication;
-
-#[derive(FromForm, Deserialize)]
-struct SignupInfo {
-    name: String,
-    email: String,
-    password: String,
-}
-
-#[derive(FromForm, Deserialize)]
-struct LoginInfo {
-    email: String,
-    password: String,
-}
-impl From<SignupInfo> for LoginInfo{
-    fn from(value: SignupInfo) -> Self {
-        Self { email: value.email, password: value.password }
-    }
-}
+pub mod mail_auth;
 
 #[post("/signup", format = "form", data = "<create_info>")]
 async fn signup(
     db: Db,
     mut create_info: Form<SignupInfo>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<i64>, InsignoError> {
-    create_info.name = create_info.name.trim().to_string();
-    let name_len = create_info.name.len();
-    if name_len < 3 && 20 < name_len {
-        let message = "Nome utente invalido. Deve essere lungo tra 3 e 20 caratteri (e possibilmente simile al nome)";
-        return Err(InsignoError::new(401, message, message));
-    }
-    if !create_info
-        .name
-        .chars()
-        .all(|x| x.is_alphanumeric() || x == '_' || x == ' ')
-    {
-        let message =
-            "Nome utente invalido. Un nome corretto può contenere lettere, numeri, spazi e _";
-        return Err(InsignoError::new(401, message, message));
-    }
-    if create_info.password.len() < 8 {
-        let message = "Password troppo breve, deve essere lunga almeno 8 caratteri";
-        return Err(InsignoError::new(401, message, message));
-    }
-    if !create_info.password.chars().any(|x| x.is_ascii_uppercase()) {
-        let message = "La password deve contenere almeno una maiuscola";
-        return Err(InsignoError::new(401, message, message));
-    }
-    if !create_info.password.chars().any(|x| x.is_ascii_lowercase()) {
-        let message = "La password deve contenere almeno una minuscola";
-        return Err(InsignoError::new(401, message, message));
-    }
-    if !create_info.password.chars().any(|x| x.is_numeric()) {
-        let message = "La password deve contenere almeno un numero";
-        return Err(InsignoError::new(401, message, message));
-    }
-    
+    cfg: &State<InsignoConfig>,
+) -> Result<String, InsignoError> {
+    create_info.check(&db).await?;
+    let pending_user: PendingUser = create_info.clone().into();
+    let local_time = Local::now();
+    pending_user.send_verification_mail(&cfg.smtp)?;
 
-    if !create_info
-        .password
-        .chars()
-        .any(|x| !x.is_ascii_alphanumeric())
-    {
-        let message = "La password deve contenere almeno un carattere speciale";
-        return Err(InsignoError::new(401, message, message));
-    }
+    println!(
+        "mail time {}",
+        Local::now()
+            .signed_duration_since(local_time)
+            .num_milliseconds()
+    );
+    db.run(|conn| {
+        insert_into(pending_users::dsl::pending_users)
+            .values(pending_user)
+            .execute(conn)
+    })
+    .await
+    .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
-    let user: User = User {
-        id: None,
-        name: create_info.name.clone(),
-        email: create_info.email.clone(),
-        password: hash_password(&create_info.password.clone()),
-        points: 0.0,
-        is_admin: false,
-    };
-
-    let user: User = db
-        .run(|conn| {
-            diesel::insert_into(users::table)
-                .values(user)
-                .get_result(conn)
-        })
-        .await
-        .map_err(|x| InsignoError::new(401, "Nome utente usato", &format!("{x:?}")))?;
-    login(db, LoginInfo::from(create_info.into_inner()).into(), cookies).await?;
-    Ok(Json(user.id.unwrap()))
+    Ok("mail inviata".to_string())
 }
 
 #[post("/login", format = "form", data = "<login_info>")]
@@ -211,6 +161,40 @@ pub async fn get_user(db: Db, id: i64) -> Result<Json<UnautenticatedUser>, Insig
     }))
 }
 
+#[get("/verify/<cur_token>")]
+pub async fn verify(cur_token: String, db: Db) -> Result<(ContentType, String), InsignoError> {
+    let pending_user: PendingUser = db
+        .run(|conn| {
+            sql_query(
+                "
+        SELECT * FROM get_pending_user($1);",
+            )
+            .bind::<Text, _>(cur_token)
+            .get_result(conn)
+            //pending_users::table.filter(pending_users::token.eq(cur_token)).get_result(conn)
+        })
+        .await
+        .map_err(|e| InsignoError::new(422, "token scaduto", &e.to_string()))?;
+
+    let user: User = User {
+        id: None,
+        name: pending_user.name,
+        email: pending_user.email,
+        password: pending_user.password_hash,
+        is_admin: false,
+        points: 0.0,
+    };
+    db.run(|conn| insert_into(users::dsl::users).values(user).execute(conn))
+        .await
+        .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?;
+    let success = fs::read("./templates/account_creation.html")
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+    let success =
+        String::from_utf8(success).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+    //let file = NamedFile::open("./templates/account_creation.html").await.unwrap();
+    Ok((ContentType::HTML, success))
+}
+
 pub fn get_routes() -> Vec<Route> {
     routes![
         login,
@@ -219,6 +203,7 @@ pub fn get_routes() -> Vec<Route> {
         refresh_session,
         get_auth_user,
         get_user,
+        verify,
     ]
 }
 #[cfg(test)]
@@ -245,10 +230,10 @@ mod test {
         let response = client.get("/user/1").dispatch().await;
         assert_eq!(response.status(), Status::NotFound);
 
-        let id = test_signup(&client).await;
+        test_signup(&client).await;
 
         // try to get types list
-        let response = client.get(format!("/user/{id}")).dispatch().await;
+        let response = client.get(format!("/user/1")).dispatch().await;
         assert_eq!(response.status(), Status::Ok);
     }
     #[rocket::async_test]
@@ -280,7 +265,7 @@ mod test {
         erase_tables!(client, user_sessions, users);
 
         // try to get types list
-        let data = "email=test@test.com&password=Testtes1!";
+        let data = "name=IlMagicoTester&password=Testtes1!&email=test@test.com";
         let response = client
             .post("/login")
             .header(ContentType::Form)

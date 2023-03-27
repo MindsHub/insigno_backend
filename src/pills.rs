@@ -119,7 +119,7 @@ mod test {
         assert_eq!(response.await.status(), Status::Unauthorized);
 
         //signup
-        let id = test_signup(&client).await;
+        test_signup(&client).await;
 
         let input = "text=test&source=test";
         // add
@@ -152,7 +152,7 @@ mod test {
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(
             format!(
-                r#"{{"id":{id},"text":"test","author":"IlMagicoTester","source":"test","accepted":true}}"#
+                r#"{{"id":1,"text":"test","author":"IlMagicoTester","source":"test","accepted":true}}"#
             ),
             response.into_string().await.unwrap()
         );

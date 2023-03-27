@@ -1,9 +1,8 @@
-
 use chrono::Utc;
 
 use diesel::sql_types::*;
+use postgis_diesel::sql_types::Geometry;
 use postgis_diesel::types::Point;
-use postgis_diesel::{sql_types::Geometry};
 use rocket::serde::{Deserialize, Serialize};
 use serde::ser::SerializeStruct;
 
@@ -56,13 +55,13 @@ impl Serialize for InsignoPoint {
     }
 }
 
-impl From<Point> for InsignoPoint{
+impl From<Point> for InsignoPoint {
     fn from(value: Point) -> Self {
-        Self { point: value}
+        Self { point: value }
     }
 }
 
-impl Into<Point> for InsignoPoint{
+impl Into<Point> for InsignoPoint {
     fn into(self) -> Point {
         self.point
     }
@@ -82,28 +81,28 @@ impl InsignoPoint {
     }
 }*/
 
-#[derive(Clone, Queryable, Debug, Serialize, Insertable, QueryableByName)]//
+#[derive(Clone, Queryable, Debug, Serialize, Insertable, QueryableByName)] //
 #[diesel(table_name = markers)]
 pub struct Marker {
-    #[sql_type = "Nullable<BigInt>"]
+    #[diesel(sql_type = Nullable<BigInt>)]
     pub id: Option<i64>,
-    #[sql_type = "Geometry"]
 
+    #[diesel(sql_type = Geometry)]
     #[diesel(serialize_as = Point)]
     #[diesel(deserialize_as = Point)]
     pub point: InsignoPoint,
 
-    #[sql_type = "Nullable<Timestamptz>"]
+    #[diesel(sql_type = Nullable<Timestamptz>)]
     pub creation_date: Option<chrono::DateTime<Utc>>,
 
-    #[sql_type = "Nullable<Timestamptz>"]
+    #[diesel(sql_type = Nullable<Timestamptz>)]
     pub resolution_date: Option<chrono::DateTime<Utc>>,
 
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub created_by: i64,
-    #[sql_type = "Nullable<BigInt>"]
+    #[diesel(sql_type = Nullable<BigInt>)]
     pub solved_by: Option<i64>,
-    #[sql_type = "BigInt"]
+    #[diesel(sql_type = BigInt)]
     pub marker_types_id: i64,
 }
 
@@ -146,4 +145,15 @@ pub struct MarkerReport {
     pub id: Option<i64>,
     pub user_f: i64,
     pub reported_marker: i64,
+}
+
+#[derive(Queryable, Insertable, Debug, QueryableByName)]
+#[diesel(table_name = pending_users)]
+pub struct PendingUser {
+    pub id: Option<i64>,
+    pub name: String,
+    pub email: String,
+    pub password_hash: String,
+    pub request_date: Option<chrono::DateTime<Utc>>,
+    pub token: String,
 }
