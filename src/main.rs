@@ -97,6 +97,10 @@ async fn compatibile(
 
 #[launch]
 fn rocket() -> _ {
+    use rocket_prometheus::PrometheusMetrics;
+
+    let prometheus = PrometheusMetrics::new();
+
     let rocket = rocket::build();
     rocket
         .attach(db::stage())
@@ -116,5 +120,7 @@ fn rocket() -> _ {
         .attach(cors::Cors)
         .attach(mail::stage())
         .mount("/", cors::get_routes())
+        .attach(prometheus.clone())
+        .mount("/metrics", prometheus)
     //.manage(users)
 }
