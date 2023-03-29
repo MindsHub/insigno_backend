@@ -1,6 +1,5 @@
 use std::{
     backtrace::Backtrace,
-    error::Error,
     fs::File,
     io::Write,
     path::{Path, PathBuf},
@@ -12,7 +11,7 @@ use rand::{distributions::Alphanumeric, Rng};
 use rocket::response::Responder;
 use rocket::{
     http::Status,
-    response::{self, Debug},
+    response::{self},
     Request,
 };
 
@@ -31,31 +30,6 @@ pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
             return dest;
         }
     }
-}
-
-pub fn to_debug<E: Error>(err: E) -> Debug<Box<dyn Error>> {
-    let bt = Backtrace::force_capture();
-    let mut file = File::options()
-        .append(true)
-        .create(true)
-        .open("./log")
-        .unwrap();
-    let to_write =
-        Local::now().to_string() + " " + &err.to_string() + "\n" + &bt.to_string() + "\n";
-    file.write_all(to_write.as_bytes()).unwrap();
-    Debug(err.to_string().into())
-}
-
-pub fn str_to_debug(s: &str) -> Debug<Box<dyn Error>> {
-    let bt = Backtrace::force_capture();
-    let mut file = File::options()
-        .append(true)
-        .create(true)
-        .open("./log")
-        .unwrap();
-    let to_write = Local::now().to_string() + " " + s + "\n" + &bt.to_string() + "\n";
-    file.write_all(to_write.as_bytes()).unwrap();
-    Debug(s.into())
 }
 
 pub struct InsignoError {

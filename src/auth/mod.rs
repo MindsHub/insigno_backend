@@ -41,7 +41,7 @@ async fn signup(
     create_info.check(&db).await?;
     let pending_user: PendingUser = create_info.clone().into();
     let local_time = Local::now();
-    pending_user.send_verification_mail(&mail_cfg).await?;
+    pending_user.send_verification_mail(mail_cfg).await?;
 
     println!(
         "mail time {}",

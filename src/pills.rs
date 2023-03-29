@@ -1,11 +1,8 @@
-use std::error::Error;
-
 use crate::schema_rs::User;
 use crate::schema_sql::pills;
-use crate::utils::to_debug;
+use crate::utils::InsignoError;
 use diesel::ExpressionMethods;
 use diesel::{insert_into, QueryDsl, RunQueryDsl};
-use rocket::response::Debug;
 use rocket::{form::Form, serde::json::Json, Route};
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +22,7 @@ struct Pill {
 sql_function!(fn random()-> Double); // "Represents the sql RANDOM() function"
 
 #[get("/random")]
-async fn get_random_pill(connection: Db) -> Result<Option<Json<Pill>>, Debug<Box<dyn Error>>> {
+async fn get_random_pill(connection: Db) -> Result<Option<Json<Pill>>, InsignoError> {
     // this allows executing this query: SELECT * FROM pills ORDER BY RANDOM() LIMIT 1
 
     let res: Vec<Pill> = connection
@@ -37,7 +34,7 @@ async fn get_random_pill(connection: Db) -> Result<Option<Json<Pill>>, Debug<Box
                 .load(c)
         })
         .await
-        .map_err(to_debug)?;
+        .map_err(|e| InsignoError::new(404, "impossible to obtain pill", &e.to_string()))?;
 
     let pill = res.into_iter().next();
     if let Some(p) = pill {
@@ -54,11 +51,7 @@ struct AddPill {
 }
 
 #[post("/add", data = "<data>")]
-async fn add_pill(
-    connection: Db,
-    data: Form<AddPill>,
-    user: User,
-) -> Result<String, Debug<Box<dyn Error>>> {
+async fn add_pill(connection: Db, data: Form<AddPill>, user: User) -> Result<String, InsignoError> {
     let pill = Pill {
         id: None,
         text: data.text.clone(),
@@ -72,7 +65,7 @@ async fn add_pill(
             insert_into(pi).values(&pill).execute(conn)
         })
         .await
-        .map_err(to_debug)?;
+        .map_err(|e| InsignoError::new(500, "impossible to add pill", &e.to_string()))?;
 
     Ok("Added".to_string())
 }

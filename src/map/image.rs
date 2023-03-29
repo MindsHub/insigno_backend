@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::fs;
 
 use std::path::Path;
@@ -14,7 +13,6 @@ use rocket::data::Limits;
 use rocket::fs::NamedFile;
 use rocket::futures::TryFutureExt;
 
-use rocket::response::Debug;
 use rocket::serde::json::Json;
 use rocket::Data;
 use rocket::{http::ContentType, State};
@@ -27,29 +25,36 @@ use crate::utils::*;
 use crate::InsignoConfig;
 use std::str;
 
-fn convert_image(input: &Path, output: &Path) -> Result<(), Debug<Box<dyn Error>>> {
+fn convert_image(input: &Path, output: &Path) -> Result<(), InsignoError> {
     println!("out={}", output.to_str().unwrap());
     if input.exists() {
         let raw_out = process::Command::new("ffmpeg")
             .args([
                 "-i",
-                input.to_str().ok_or(str_to_debug("invalid path"))?,
+                input
+                    .to_str()
+                    .ok_or(InsignoError::new_debug(500, "invalid path"))?,
                 "-vf",
                 "scale=w=2500:h=2500:force_original_aspect_ratio=decrease",
-                output.to_str().ok_or(str_to_debug("invalid path"))?,
+                output
+                    .to_str()
+                    .ok_or(InsignoError::new_debug(500, "invalid path"))?,
             ])
             .output()
-            .map_err(to_debug)?;
+            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
         if !raw_out.status.success() {
-            return Err(str_to_debug(str::from_utf8(&raw_out.stderr).unwrap()));
+            return Err(InsignoError::new_debug(
+                500,
+                str::from_utf8(&raw_out.stderr).unwrap(),
+            ))?;
         }
         Ok(())
     } else {
-        Err(str_to_debug("wtf bro. This is not a valid file path"))
+        Err(InsignoError::new_debug(500, "input path does not exits"))?
     }
 }
 
-async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Debug<Box<dyn Error>>> {
+async fn save_image(connection: Db, name: String, id: i64) -> Result<(), InsignoError> {
     let img = MarkerImage {
         id: None,
         path: name,
@@ -62,7 +67,7 @@ async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Debug<B
             insert_into(mi).values(&img).get_result::<MarkerImage>(conn)
         })
         .await
-        .map_err(to_debug)?;
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
     Ok(())
 }
@@ -75,35 +80,35 @@ pub(crate) async fn add_image(
     connection: Db,
     config: &State<InsignoConfig>,
     limits: &Limits,
-) -> Result<(), Debug<Box<dyn Error>>> {
+) -> Result<(), InsignoError> {
     // parse multipart data
     let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("image")
             .size_limit(limits.get("data-form").unwrap().as_u64())
             .content_type_by_string(Some(mime::IMAGE_STAR))
-            .map_err(to_debug)?,
+            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?,
         MultipartFormDataField::text("refers_to_id"),
     ]);
     options.max_data_bytes = limits.get("data-form").unwrap().as_u64();
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         .await
-        .map_err(to_debug)?;
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
     // cast data to normal values
     let photo_path = multipart_form_data
         .files
         .get("image")
-        .ok_or(str_to_debug("image field not found"))?
+        .ok_or(InsignoError::new_debug(500, "image field not found"))? //str_to_debug("image field not found"))?
         .get(0)
-        .ok_or(str_to_debug("err"))?; //at drop it cleans the file
+        .ok_or(InsignoError::new_debug(500, "err"))?; //str_to_debug("err"))?; //at drop it cleans the file
 
     let id = multipart_form_data
         .texts
         .get("refers_to_id")
-        .ok_or(str_to_debug("id field not found"))?[0]
+        .ok_or(InsignoError::new_debug(500, "image field not found"))?[0]
         .text
         .parse::<i64>()
-        .map_err(to_debug)?;
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
     let user_id = user.id.unwrap();
 
@@ -116,7 +121,7 @@ pub(crate) async fn add_image(
                 .load::<Marker>(conn)
         })
         .await
-        .map_err(to_debug)?;
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
     //generate unique name and convert
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
@@ -124,9 +129,9 @@ pub(crate) async fn add_image(
 
     let name = new_pos
         .strip_prefix(&config.media_folder)
-        .map_err(to_debug)?
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?
         .to_str()
-        .ok_or(str_to_debug("err"))?
+        .ok_or(InsignoError::new_debug(500, "err"))?
         .to_string();
 
     // try to save it in database
@@ -162,7 +167,7 @@ pub(crate) async fn get_image(
     image_id: i64,
     connection: Db,
     config: &State<InsignoConfig>,
-) -> Option<NamedFile> {
+) -> Result<NamedFile, InsignoError> {
     let res: MarkerImage = connection
         .run(move |conn| {
             marker_images::table
@@ -170,16 +175,18 @@ pub(crate) async fn get_image(
                 .load::<MarkerImage>(conn)
         })
         .await
-        .map_err(to_debug)
-        .ok()?
-        .get(0)?
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?
+        .get(0)
+        .ok_or(InsignoError::new_debug(404, "image field not found"))?
         .clone();
     let mut path = PathBuf::new();
     path.push(config.media_folder.clone());
     path.push(res.path);
 
     //print!("{:?}", path);
-    NamedFile::open(path).await.ok()
+    NamedFile::open(path)
+        .await
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))
 }
 
 #[cfg(test)]
@@ -206,7 +213,7 @@ mod test {
         let response = client.get("/map/image/1").dispatch().await;
         assert_eq!(response.status(), Status::NotFound);
 
-        test_signup(&client).await;
+        let _id = test_signup(&client).await;
         test_add_point(&client).await;
         test_add_image(1, "./test_data/add_image.jpg", &client).await;
 

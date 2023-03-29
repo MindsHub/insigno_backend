@@ -136,6 +136,7 @@ impl From<SignupInfo> for LoginInfo {
         }
     }
 }
+
 fn check_name(name: &str) -> Result<String, &str> {
     let name: String = name.trim().to_string();
     let name_len = name.len();
@@ -152,19 +153,20 @@ fn check_name(name: &str) -> Result<String, &str> {
     }
     Ok(name)
 }
+
 fn check_email(email: &str) -> Result<String, &str> {
     let email = email.to_ascii_lowercase().to_string();
     let mut tmp = "".to_string();
     let mut on_server = false;
-    for c in email.trim().chars(){
-        if c=='@'{
-            on_server=true;
+    for c in email.trim().chars() {
+        if c == '@' {
+            on_server = true;
         }
-        if c!='.' || on_server{
+        if c != '.' || on_server {
             tmp.push(c);
         }
     }
-    let email=tmp;
+    let email = tmp;
     if !email
         .chars()
         .all(|x| x.is_ascii_alphanumeric() || x == '.' || x == '-' || x == '@' || x == '_')
@@ -174,6 +176,7 @@ fn check_email(email: &str) -> Result<String, &str> {
 
     Ok(email)
 }
+
 fn check_password(password: &str) -> Result<String, &str> {
     let password = password.trim().to_string();
     if password.len() < 8 {
@@ -199,11 +202,10 @@ fn check_password(password: &str) -> Result<String, &str> {
     Ok(password)
 }
 
-
 impl SignupInfo {
     pub async fn check(&mut self, db: &Db) -> Result<(), InsignoError> {
         let mut check = || -> Result<(), String> {
-            self.name= check_name(&self.name)?;
+            self.name = check_name(&self.name)?;
             self.email = check_email(&self.email)?;
             self.password = check_password(&self.password)?;
             Ok(())
@@ -234,7 +236,7 @@ impl SignupInfo {
     }
 }
 
-impl LoginInfo{
+impl LoginInfo {
     pub async fn check(&mut self) -> Result<(), InsignoError> {
         let mut check = || -> Result<(), String> {
             self.email = check_email(&self.email)?;

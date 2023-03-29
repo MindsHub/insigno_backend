@@ -1,12 +1,14 @@
 use lettre::message::header::ContentType;
-use lettre::transport::smtp::PoolConfig;
 use lettre::transport::smtp::authentication::Credentials;
-use lettre::{Message, SmtpTransport, Transport, AsyncSmtpTransport, AsyncTransport, Tokio1Executor};
+use lettre::transport::smtp::PoolConfig;
+use lettre::{
+    AsyncSmtpTransport, AsyncTransport, Message, SmtpTransport, Tokio1Executor, Transport,
+};
 use rocket::fairing::AdHoc;
 use serde::Deserialize;
 
-use crate::InsignoConfig;
 use crate::utils::InsignoError;
+use crate::InsignoConfig;
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -32,7 +34,7 @@ pub async fn send_mail(
     subject: &str,
     message: &str,
     mailer: &Mailer,
-) -> Result<(), InsignoError> { 
+) -> Result<(), InsignoError> {
     let email = Message::builder()
         .from("Insigno: <insigno@mindshub.it>".parse().unwrap())
         //.reply_to("mail to reply".parse().unwrap())
@@ -56,21 +58,25 @@ pub async fn send_mail(
     }
 }
 
-pub struct Mailer{
+pub struct Mailer {
     pub m: AsyncSmtpTransport<Tokio1Executor>,
 }
 
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Gmail stage", |rocket| async {
         let config: &InsignoConfig = rocket.state().unwrap();
-        
+
         let mail_config = PoolConfig::new().min_idle(1);
-        let creds = Credentials::new(config.smtp.user.to_string(), config.smtp.password.to_string());
-        let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(&config.smtp.server).unwrap()
+        let creds = Credentials::new(
+            config.smtp.user.to_string(),
+            config.smtp.password.to_string(),
+        );
+        let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay(&config.smtp.server)
+            .unwrap()
             .credentials(creds)
             .pool_config(mail_config)
             .build();
-        let mailer = Mailer{m: mailer};
+        let mailer = Mailer { m: mailer };
         rocket.manage(mailer)
     })
 }
