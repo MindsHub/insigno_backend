@@ -104,7 +104,7 @@ async fn add_map(
             SELECT * FROM add_marker($1, $2, $3);",
             )
             .bind::<BigInt, _>(user.id.unwrap())
-            .bind::<Geometry, _>(Point::new(data.x, data.y, None)) //(InsignoPoint::new(data.x, data.y))
+            .bind::<Geometry, _>(Point::new(data.x, data.y, Some(4326))) //(InsignoPoint::new(data.x, data.y))
             .bind::<BigInt, _>(type_int)
             .get_result(conn)
         })
