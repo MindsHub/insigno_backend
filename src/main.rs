@@ -83,14 +83,12 @@ async fn compatibile(
         } else {
             None
         }
-        //todo!();
     });
     if let Some(y) = result {
         Ok(y.to_string())
     } else {
         Ok(true.to_string())
     }
-    //todo!()
 }
 
 #[launch]
@@ -110,7 +108,6 @@ fn rocket() -> _ {
         .attach(AdHoc::on_ignite("checking config", |rocket| async {
             // if media folder does not exist it creates it
             let cfg: &InsignoConfig = rocket.state().unwrap();
-
             let _ = fs::create_dir_all(cfg.media_folder.clone());
             rocket
         }))

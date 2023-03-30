@@ -43,15 +43,6 @@ pub async fn send_mail(
         .header(ContentType::TEXT_HTML)
         .body(message.to_string())
         .unwrap();
-    /*
-
-    // Open a remote connection to gmail
-    let mailer = SmtpTransport::relay()
-        .unwrap()
-        .credentials(creds)
-        .build();*/
-
-    // Send the email
     match mailer.m.send(email).await {
         Ok(_) => Ok(()),
         Err(e) => Err(InsignoError::new_debug(500, &e.to_string())), //format!("Could not send email: {e:?}")),
