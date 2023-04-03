@@ -33,6 +33,7 @@ pub fn generate_token() -> String {
         .map(char::from)
         .collect()
 }
+
 #[cfg(test)]
 pub fn generate_token() -> String {
     "1111111111".to_string()

@@ -4,7 +4,7 @@ use lettre::message::{header::ContentType, Attachment, Body, MultiPart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::PoolConfig;
 use lettre::{
-    AsyncSmtpTransport, AsyncTransport, Message, SmtpTransport, Tokio1Executor, Transport
+    AsyncSmtpTransport, AsyncTransport, Message, SmtpTransport, Tokio1Executor, Transport,
 };
 use rocket::fairing::AdHoc;
 use serde::Deserialize;
@@ -48,7 +48,7 @@ pub async fn send_mail(
         .header(ContentType::TEXT_HTML)
         .body(message.to_string())
         .unwrap();
-        
+
     match mailer.m.send(email).await {
         Ok(_) => Ok(()),
         Err(e) => Err(InsignoError::new_debug(500, &e.to_string())), //format!("Could not send email: {e:?}")),
