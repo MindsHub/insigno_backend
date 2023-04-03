@@ -15,12 +15,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Cache rust
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-rust
-        with:
-          path: ~/target
-          key: ${{ runner.os }}-build-${{ env.cache-rust }}
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-rust
+      with:
+        path: ~/target
+        key: ${{ runner.os }}-build-${{ env.cache-rust }}
     - name: Build
       run: cargo build --release
     - name: Upload binaries to release
