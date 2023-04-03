@@ -21,9 +21,13 @@ use super::schema_sql::*;
 use rocket::serde::{json::Json, Deserialize};
 
 use self::image::*;
+use self::marker_report::marker_reports;
+use self::marker_report::MarkerReport;
 use crate::schema_rs::*;
 use rocket::http::Status;
 mod image;
+mod marker_image;
+mod marker_report;
 use postgis_diesel::types::Point;
 #[get("/get_near?<x>&<y>&<srid>&<include_resolved>")]
 async fn get_near(
@@ -291,6 +295,8 @@ pub fn get_routes() -> Vec<Route> {
         resolve_marker_from_id,
         report_marker,
         get_marker_from_id,
+        get_to_review,
+        review
     ]
 }
 

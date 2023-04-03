@@ -4,8 +4,10 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process;
 
+use super::marker_image::MarkerImage;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
+use crate::map::marker_image::marker_images;
 use diesel::insert_into;
 use diesel::QueryDsl;
 
@@ -25,6 +27,7 @@ use crate::utils::*;
 use crate::InsignoConfig;
 use std::str;
 
+use super::marker_report::MarkerReport;
 fn convert_image(input: &Path, output: &Path) -> Result<(), InsignoError> {
     println!("out={}", output.to_str().unwrap());
     if input.exists() {
@@ -59,6 +62,7 @@ async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Insigno
         id: None,
         path: name,
         refers_to: id,
+        approved: false,
     };
 
     connection
@@ -187,6 +191,55 @@ pub(crate) async fn get_image(
     NamedFile::open(path)
         .await
         .map_err(|e| InsignoError::new_debug(500, &e.to_string()))
+}
+
+#[get("/image/to_review")]
+pub(crate) async fn get_to_review(
+    connection: Db,
+    user: User,
+) -> Result<Json<Vec<MarkerImage>>, InsignoError> {
+    if !user.is_admin {
+        //if user isn't admin, it's not allowed
+        return Err(InsignoError::new_code(403));
+    }
+    let images = MarkerImage::get_to_report(&connection).await?;
+    Ok(Json(images))
+}
+
+#[get("/image/review/<image_id>?<verdict>")]
+pub(crate) async fn review(
+    image_id: i64,
+    connection: Db,
+    config: &State<InsignoConfig>,
+    user: User,
+    mut verdict: String,
+) -> Result<(), InsignoError> {
+    if !user.is_admin {
+        //if user isn't admin, it's not allowed
+        return Err(InsignoError::new_code(403));
+    }
+    verdict = verdict.trim().to_ascii_lowercase();
+    match verdict.as_str() {
+        "ok" => {
+            MarkerImage::approve(&connection, image_id).await?;
+        }
+        "delete" => {
+            MarkerImage::delete(&connection, image_id, &config).await?;
+        }
+        "delete_report" => {
+            let image = MarkerImage::delete(&connection, image_id, &config).await?;
+            MarkerReport::report(&connection, user.id.unwrap(), image.id.unwrap()).await?;
+        }
+        _ => {
+            return Err(InsignoError::new(
+                422,
+                "opzione non riconosciuta",
+                "opzione non riconosciuta",
+            ));
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

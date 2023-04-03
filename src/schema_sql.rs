@@ -29,14 +29,6 @@ table! {
 }
 
 table! {
-    marker_images(id){
-        id -> BigInt,
-        path -> Text,
-        refers_to -> BigInt,
-    }
-}
-
-table! {
     users(id){
         id -> Nullable<BigInt>,
         name -> Text,
@@ -52,14 +44,6 @@ table! {
         user_id -> BigInt,
         token -> Text,
         refresh_date -> Timestamptz,
-    }
-}
-
-table! {
-    marker_reports(id){
-        id -> Nullable<BigInt>,
-        user_f -> BigInt,
-        reported_marker -> BigInt,
     }
 }
 

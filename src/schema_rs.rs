@@ -106,14 +106,6 @@ pub struct Marker {
     pub marker_types_id: i64,
 }
 
-#[derive(Clone, Queryable, Insertable, Debug)]
-#[diesel(table_name = marker_images)]
-pub struct MarkerImage {
-    #[diesel(deserialize_as = i64)]
-    pub id: Option<i64>,
-    pub path: String,
-    pub refers_to: i64,
-}
 #[derive(
     Debug, Clone, Default, QueryId, Serialize, Deserialize, Insertable, Queryable, QueryableByName,
 )]
@@ -139,13 +131,6 @@ pub struct UserSession {
     from -> BigInt,
     reported_marker -> BigInt,
 } */
-#[derive(Clone, Queryable, Insertable, Debug, QueryableByName)]
-#[diesel(table_name = marker_reports)]
-pub struct MarkerReport {
-    pub id: Option<i64>,
-    pub user_f: i64,
-    pub reported_marker: i64,
-}
 
 #[derive(Queryable, Insertable, Debug, QueryableByName)]
 #[diesel(table_name = pending_users)]
