@@ -9,10 +9,9 @@ use crate::{
     utils::InsignoError,
 };
 use diesel::RunQueryDsl;
-use serde::Deserialize;
 
-use super::user::User;
-use super::validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword};
+use super::signup_info::SignupInfo;
+
 
 #[cfg(not(test))]
 pub fn generate_token() -> String {
@@ -28,60 +27,6 @@ pub fn generate_token() -> String {
 #[cfg(test)]
 pub fn generate_token() -> String {
     "1111111111".to_string()
-}
-
-#[derive(FromForm, Deserialize, Clone)]
-pub struct SignupInfo {
-    pub name: String,
-    pub email: String,
-    pub password: String,
-}
-
-impl Name for SignupInfo {
-    fn get_name(&mut self) -> &mut String {
-        &mut self.name
-    }
-}
-
-impl Password for SignupInfo {
-    fn get_password(&mut self) -> &mut String {
-        &mut self.password
-    }
-}
-
-impl Email for SignupInfo {
-    fn get_email(&mut self) -> &mut String {
-        &mut self.email
-    }
-}
-
-impl SignupInfo {
-    async fn check(&mut self, connection: &Db) -> Result<(), InsignoError> {
-        self.sanitize_name()
-            .map_err(|e| InsignoError::new(422, &e.to_string(), &e.to_string()))?;
-        self.sanitize_email()
-            .map_err(|e| InsignoError::new(422, &e.to_string(), &e.to_string()))?;
-        self.sanitize_password()
-            .map_err(|e| InsignoError::new(422, &e.to_string(), &e.to_string()))?;
-
-        //check if unique
-        let name = self.name.to_string();
-        let email = self.email.to_string();
-        let ret: Vec<User> = connection
-            .run(move |conn| {
-                sql_query("SELECT * FROM users WHERE email=$1 OR name=$2;")
-                    .bind::<Text, _>(email)
-                    .bind::<Text, _>(name)
-                    .get_results(conn)
-            })
-            .await
-            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
-        if !ret.is_empty() {
-            let message = "email o nome utente già utilizzati";
-            return Err(InsignoError::new(401, message, message));
-        }
-        Ok(())
-    }
 }
 
 /*
@@ -133,7 +78,6 @@ impl PendingUser {
             token: generate_token(),
         })
     }
-
     pub async fn send_verification_mail(&self, mailer: &Mailer) -> Result<(), InsignoError> {
         let link = format!("https://insigno.mindshub.it/verify/{}", self.token);
 
@@ -153,7 +97,7 @@ impl PendingUser {
         connection: &Db,
         mailer: &Mailer,
     ) -> Result<(), InsignoError> {
-        self.send_verification_mail(mailer).await;
+        self.send_verification_mail(mailer).await?;
         connection
             .run(|conn| {
                 use pending_users::dsl::pending_users;

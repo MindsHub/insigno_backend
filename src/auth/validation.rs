@@ -15,7 +15,7 @@ impl<T: Email> SanitizeEmail for T {
         mem::swap(&mut email, self.get_email());
     }
     fn sanitize_email(&mut self) -> Result<(), &str> {
-        self.sanitize_email();
+        self.fmt_email();
         let email = self.get_email();
         if !email
             .chars()

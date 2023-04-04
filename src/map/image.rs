@@ -225,10 +225,10 @@ pub(crate) async fn review(
             MarkerImage::approve(&connection, image_id).await?;
         }
         "delete" => {
-            MarkerImage::delete(&connection, image_id, &config).await?;
+            MarkerImage::delete(&connection, image_id, config).await?;
         }
         "delete_report" => {
-            let image = MarkerImage::delete(&connection, image_id, &config).await?;
+            let image = MarkerImage::delete(&connection, image_id, config).await?;
             MarkerReport::report(&connection, user.as_ref().id.unwrap(), image.id.unwrap()).await?;
         }
         _ => {

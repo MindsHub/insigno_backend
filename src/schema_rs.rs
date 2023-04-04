@@ -3,7 +3,7 @@ use chrono::Utc;
 use diesel::sql_types::*;
 use postgis_diesel::sql_types::Geometry;
 use postgis_diesel::types::Point;
-use rocket::serde::{Deserialize, Serialize};
+use rocket::serde::Serialize;
 use serde::ser::SerializeStruct;
 
 use crate::schema_sql::*;
@@ -61,9 +61,9 @@ impl From<Point> for InsignoPoint {
     }
 }
 
-impl Into<Point> for InsignoPoint {
-    fn into(self) -> Point {
-        self.point
+impl From<InsignoPoint> for Point {
+    fn from(val: InsignoPoint) -> Self {
+        val.point
     }
 }
 /*

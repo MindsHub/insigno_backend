@@ -69,7 +69,9 @@ impl User {
         v.fmt_password();
         v.fmt_email();
 
-        let user = User::get_by_email(connection, v.email).await?;
+        let user = User::get_by_email(connection, v.email)
+            .await
+            .map_err(|_| InsignoError::new(401, "invalid user", "invalid user"))?;
         if !user.check_hash(&v.password) {
             let message = "email o password errati";
             Err(InsignoError::new(403, message, message))

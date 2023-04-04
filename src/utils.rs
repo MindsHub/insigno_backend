@@ -1,7 +1,5 @@
 use std::{
     backtrace::Backtrace,
-    error::Error,
-    fmt::Display,
     fs::File,
     io::Write,
     path::{Path, PathBuf},
@@ -65,11 +63,13 @@ impl InsignoError {
         }
     }
 }
-impl<T> Into<request::Outcome<T, InsignoError>> for InsignoError {
-    fn into(self) -> request::Outcome<T, InsignoError> {
-        request::Outcome::Failure((self.code, self))
+
+impl<T> From<InsignoError> for request::Outcome<T, InsignoError> {
+    fn from(val: InsignoError) -> Self {
+         request::Outcome::Failure((val.code, val))
     }
 }
+
 impl<'r> Responder<'r, 'static> for InsignoError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
         let deb_str = self.debug.unwrap_or(

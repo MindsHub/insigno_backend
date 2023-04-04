@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use crate::auth::*;
 use crate::auth::authenticated_user::AuthenticatedUser;
 use crate::auth::user::User;
 use crate::utils::*;
@@ -182,19 +181,14 @@ async fn get_marker_from_id(
             "marker not found",
         ))?
         .clone();
-    let creation_user = User::get_by_id(&connection, m.created_by)
-        .await?;
+    let creation_user = User::get_by_id(&connection, m.created_by).await?;
     let solved_by_user = if let Some(s) = m.solved_by {
-        Some(
-            User::get_by_id(&connection, s)
-                .await?
-                .into(),
-        )
+        Some(User::get_by_id(&connection, s).await?)
     } else {
         None
     };
     let mut m: MarkerInfo = m.into();
-    m.created_by = Some(creation_user.into());
+    m.created_by = Some(creation_user);
     m.solved_by = solved_by_user;
     m.images_id = Some(_list_image(marker_id, &connection).await?);
 
@@ -256,7 +250,11 @@ async fn resolve_marker_from_id(
 }
 
 #[post("/report/<marker_id>")]
-async fn report_marker(marker_id: i64, user: AuthenticatedUser, connection: Db) -> Result<(), InsignoError> {
+async fn report_marker(
+    marker_id: i64,
+    user: AuthenticatedUser,
+    connection: Db,
+) -> Result<(), InsignoError> {
     connection
         .run(move |conn| {
             let query = sql_query(

@@ -12,6 +12,7 @@ use rocket::serde::json::Json;
 use rocket::{Route, State};
 
 use crate::auth::login_info::LoginInfo;
+use crate::auth::signup_info::SignupInfo;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
 
@@ -29,6 +30,7 @@ pub mod login_info;
 pub mod pending_user;
 pub mod user;
 pub mod validation;
+pub mod signup_info;
 /*
 signup info -> pending user (verifica credenziali) #
 pending user -> email + db (inviare la mail e salvarla nel db)
@@ -57,8 +59,8 @@ pub async fn verify(
     connection: Db,
 ) -> Result<(ContentType, String), InsignoError> {
     let pending_user = PendingUser::from_token(cur_token, &connection).await?;
-
-    let user = User::new_from_pending(pending_user, &connection).await?;
+    //inserting into db
+    User::new_from_pending(pending_user, &connection).await?;
 
     let success = fs::read("./templates/account_creation.html")
         .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
@@ -167,8 +169,6 @@ mod test {
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
-
-        //erase_tables!(client, users, user_sessions);
 
         let response = client.get("/user/1").dispatch().await;
         assert_eq!(response.status(), Status::NotFound);
