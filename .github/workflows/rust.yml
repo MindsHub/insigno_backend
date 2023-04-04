@@ -17,7 +17,13 @@ jobs:
     - name: Cache rust
       uses: actions/cache@v3
       with:
-        path: ./target
+        path: ~/.cargo/bin
+          ~/.cargo/registry/index
+          ~/.cargo/registry/cache
+          ~/.cargo/git
+          ~/.cargo/.crates.toml
+          ~/.cargo/.crates2.json
+          ./target
         key: ${{ runner.os }}-build-cache-rust
     - name: Build
       run: cargo build --release
