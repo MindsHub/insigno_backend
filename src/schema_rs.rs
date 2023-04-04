@@ -106,20 +106,6 @@ pub struct Marker {
     pub marker_types_id: i64,
 }
 
-#[derive(
-    Debug, Clone, Default, QueryId, Serialize, Deserialize, Insertable, Queryable, QueryableByName,
-)]
-#[diesel(table_name = users)]
-//#[derive(Queryable, Clone,  SqlType)]
-pub struct User {
-    pub id: Option<i64>,
-    pub name: String,
-    pub email: String,
-    pub password: String,
-    pub is_admin: bool,
-    pub points: f64,
-}
-
 #[derive(Clone, Queryable, Insertable, Debug)]
 pub struct UserSession {
     pub user_id: i64,
@@ -131,14 +117,3 @@ pub struct UserSession {
     from -> BigInt,
     reported_marker -> BigInt,
 } */
-
-#[derive(Queryable, Insertable, Debug, QueryableByName)]
-#[diesel(table_name = pending_users)]
-pub struct PendingUser {
-    pub id: Option<i64>,
-    pub name: String,
-    pub email: String,
-    pub password_hash: String,
-    pub request_date: Option<chrono::DateTime<Utc>>,
-    pub token: String,
-}

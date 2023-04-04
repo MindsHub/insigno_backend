@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::process;
 
 use super::marker_image::MarkerImage;
+use crate::auth::authenticated_user::AuthenticatedUser;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
 use crate::map::marker_image::marker_images;
@@ -80,7 +81,7 @@ async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Insigno
 pub(crate) async fn add_image(
     content_type: &ContentType,
     data: Data<'_>,
-    user: User,
+    user: AuthenticatedUser,
     connection: Db,
     config: &State<InsignoConfig>,
     limits: &Limits,
@@ -114,7 +115,7 @@ pub(crate) async fn add_image(
         .parse::<i64>()
         .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
-    let user_id = user.id.unwrap();
+    let user_id = user.as_ref().id.unwrap();
 
     // check if user own the marker
     connection
@@ -196,9 +197,9 @@ pub(crate) async fn get_image(
 #[get("/image/to_review")]
 pub(crate) async fn get_to_review(
     connection: Db,
-    user: User,
+    user: AuthenticatedUser,
 ) -> Result<Json<Vec<MarkerImage>>, InsignoError> {
-    if !user.is_admin {
+    if !user.as_ref().is_admin {
         //if user isn't admin, it's not allowed
         return Err(InsignoError::new_code(403));
     }
@@ -211,10 +212,10 @@ pub(crate) async fn review(
     image_id: i64,
     connection: Db,
     config: &State<InsignoConfig>,
-    user: User,
+    user: AuthenticatedUser,
     mut verdict: String,
 ) -> Result<(), InsignoError> {
-    if !user.is_admin {
+    if !user.as_ref().is_admin {
         //if user isn't admin, it's not allowed
         return Err(InsignoError::new_code(403));
     }
@@ -228,7 +229,7 @@ pub(crate) async fn review(
         }
         "delete_report" => {
             let image = MarkerImage::delete(&connection, image_id, &config).await?;
-            MarkerReport::report(&connection, user.id.unwrap(), image.id.unwrap()).await?;
+            MarkerReport::report(&connection, user.as_ref().id.unwrap(), image.id.unwrap()).await?;
         }
         _ => {
             return Err(InsignoError::new(

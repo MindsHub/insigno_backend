@@ -1,4 +1,5 @@
-use crate::schema_rs::User;
+use crate::auth::authenticated_user::AuthenticatedUser;
+use crate::auth::user::User;
 use crate::schema_sql::pills;
 use crate::utils::InsignoError;
 use diesel::ExpressionMethods;
@@ -51,11 +52,11 @@ struct AddPill {
 }
 
 #[post("/add", data = "<data>")]
-async fn add_pill(connection: Db, data: Form<AddPill>, user: User) -> Result<String, InsignoError> {
+async fn add_pill(connection: Db, data: Form<AddPill>, user: AuthenticatedUser) -> Result<String, InsignoError> {
     let pill = Pill {
         id: None,
         text: data.text.clone(),
-        author: user.name,
+        author: user.as_ref().name.clone(),
         source: data.source.clone(),
         accepted: false,
     };

@@ -1,5 +1,7 @@
 use std::{
     backtrace::Backtrace,
+    error::Error,
+    fmt::Display,
     fs::File,
     io::Write,
     path::{Path, PathBuf},
@@ -8,12 +10,12 @@ use std::{
 use chrono::Local;
 
 use rand::{distributions::Alphanumeric, Rng};
-use rocket::response::Responder;
 use rocket::{
     http::Status,
     response::{self},
     Request,
 };
+use rocket::{request, response::Responder};
 
 pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
     loop {
@@ -32,6 +34,7 @@ pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
     }
 }
 
+#[derive(Debug)]
 pub struct InsignoError {
     debug: Option<String>,
     client: Option<String>,
@@ -62,7 +65,11 @@ impl InsignoError {
         }
     }
 }
-
+impl<T> Into<request::Outcome<T, InsignoError>> for InsignoError {
+    fn into(self) -> request::Outcome<T, InsignoError> {
+        request::Outcome::Failure((self.code, self))
+    }
+}
 impl<'r> Responder<'r, 'static> for InsignoError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
         let deb_str = self.debug.unwrap_or(

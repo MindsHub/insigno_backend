@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
 use crate::auth::*;
+use crate::auth::authenticated_user::AuthenticatedUser;
+use crate::auth::user::User;
 use crate::utils::*;
 use crate::TrashTypeMap;
 use chrono::Utc;
@@ -82,7 +84,7 @@ struct AddTrashField {
 #[post("/add", data = "<data>")]
 async fn add_map(
     data: Form<AddTrashField>,
-    user: User,
+    user: AuthenticatedUser,
     connection: Db,
     trash_types_map: &State<TrashTypeMap>,
 ) -> Result<Json<MarkerUpdate>, InsignoError> {
@@ -107,7 +109,7 @@ async fn add_map(
                 "
             SELECT * FROM add_marker($1, $2, $3);",
             )
-            .bind::<BigInt, _>(user.id.unwrap())
+            .bind::<BigInt, _>(user.as_ref().id.unwrap())
             .bind::<Geometry, _>(Point::new(data.x, data.y, Some(4326))) //(InsignoPoint::new(data.x, data.y))
             .bind::<BigInt, _>(type_int)
             .get_result(conn)
@@ -131,8 +133,8 @@ pub struct MarkerInfo {
     point: InsignoPoint,
     creation_date: chrono::DateTime<Utc>,
     resolution_date: Option<chrono::DateTime<Utc>>,
-    created_by: Option<UnautenticatedUser>,
-    solved_by: Option<UnautenticatedUser>,
+    created_by: Option<User>,
+    solved_by: Option<User>,
     marker_types_id: i64,
     can_report: bool,
     images_id: Option<Vec<i64>>,
@@ -163,7 +165,7 @@ struct MarkerUpdate {
 async fn get_marker_from_id(
     marker_id: i64,
     connection: Db,
-    user: Option<User>,
+    user: Option<AuthenticatedUser>,
 ) -> Result<Json<MarkerInfo>, InsignoError> {
     let m: Marker = connection
         .run(move |conn| {
@@ -180,14 +182,12 @@ async fn get_marker_from_id(
             "marker not found",
         ))?
         .clone();
-    let creation_user = get_user_by_id(&connection, m.created_by)
-        .await
-        .map_err(|x| InsignoError::new_debug(404, &x.to_string()))?;
+    let creation_user = User::get_by_id(&connection, m.created_by)
+        .await?;
     let solved_by_user = if let Some(s) = m.solved_by {
         Some(
-            get_user_by_id(&connection, s)
-                .await
-                .map_err(|x| InsignoError::new_debug(404, &x.to_string()))?
+            User::get_by_id(&connection, s)
+                .await?
                 .into(),
         )
     } else {
@@ -203,7 +203,7 @@ async fn get_marker_from_id(
             let query = marker_reports::table.filter(marker_reports::reported_marker.eq(marker_id));
             if let Some(user) = user {
                 query
-                    .filter(marker_reports::user_f.eq(user.id.unwrap()))
+                    .filter(marker_reports::user_f.eq(user.as_ref().id.unwrap()))
                     .get_results(conn)
             } else {
                 query.get_results(conn)
@@ -227,7 +227,7 @@ struct ResolveRet {
 #[post("/resolve/<marker_id>")]
 async fn resolve_marker_from_id(
     marker_id: i64,
-    user: User,
+    user: AuthenticatedUser,
     connection: Db,
 ) -> Result<Json<MarkerUpdate>, Status> {
     let y: ResolveRet = connection
@@ -238,7 +238,7 @@ async fn resolve_marker_from_id(
             SELECT * FROM resolve_marker($1, $2);",
                 )
                 .bind::<BigInt, _>(marker_id)
-                .bind::<BigInt, _>(user.id.unwrap())
+                .bind::<BigInt, _>(user.as_ref().id.unwrap())
                 .get_result(conn)
             }, //select(resolve_marker(marker_id, user.id.unwrap())).execute(conn))
         )
@@ -256,7 +256,7 @@ async fn resolve_marker_from_id(
 }
 
 #[post("/report/<marker_id>")]
-async fn report_marker(marker_id: i64, user: User, connection: Db) -> Result<(), InsignoError> {
+async fn report_marker(marker_id: i64, user: AuthenticatedUser, connection: Db) -> Result<(), InsignoError> {
     connection
         .run(move |conn| {
             let query = sql_query(
@@ -267,7 +267,7 @@ async fn report_marker(marker_id: i64, user: User, connection: Db) -> Result<(),
                         WHERE user_f=$1 AND reported_marker=$2)
                 returning *;",
             )
-            .bind::<BigInt, _>(user.id.unwrap())
+            .bind::<BigInt, _>(user.as_ref().id.unwrap())
             .bind::<BigInt, _>(marker_id);
 
             query.get_result::<MarkerReport>(conn)

@@ -94,7 +94,7 @@ async fn compatibile(
 #[launch]
 fn rocket() -> _ {
     use rocket_prometheus::PrometheusMetrics;
-    
+
     let prometheus = PrometheusMetrics::new();
 
     let rocket = rocket::build();

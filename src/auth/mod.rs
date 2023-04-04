@@ -1,11 +1,8 @@
 use std::fs;
 
-use chrono::Local;
 use diesel::dsl::now;
 
 use diesel::query_dsl::methods::FilterDsl;
-use diesel::sql_types::Text;
-use diesel::{insert_into, sql_query};
 
 use serde::Serialize;
 
@@ -14,95 +11,101 @@ use rocket::http::{ContentType, Cookie, CookieJar};
 use rocket::serde::json::Json;
 use rocket::{Route, State};
 
-use crate::auth::mail_auth::AsyncMail;
+use crate::auth::login_info::LoginInfo;
 use crate::diesel::ExpressionMethods;
-//use crate::diesel::QueryDsl;
 use crate::diesel::RunQueryDsl;
 
+use crate::db::Db;
 use crate::mail::Mailer;
-use crate::schema_rs::PendingUser;
 use crate::schema_sql::user_sessions::dsl::user_sessions;
 use crate::schema_sql::user_sessions::{refresh_date, token, user_id};
-use crate::schema_sql::{pending_users, users};
 use crate::utils::InsignoError;
-use crate::{db::Db, schema_rs::User};
 
-pub use self::authentication::*;
-
-mod authentication;
-pub mod mail_auth;
+use self::authenticated_user::AuthenticatedUser;
+pub use self::pending_user::*;
+use self::user::User;
+pub mod authenticated_user;
+pub mod login_info;
+pub mod pending_user;
+pub mod user;
+pub mod validation;
+/*
+signup info -> pending user (verifica credenziali) #
+pending user -> email + db (inviare la mail e salvarla nel db)
+pending user -> user (finire registrazione)
+login info->  auth-user/admin-auth-user
+cookie -> auth-user/admin-auth-user*/
 
 #[post("/signup", format = "form", data = "<create_info>")]
 async fn signup(
     db: Db,
-    mut create_info: Form<SignupInfo>,
+    create_info: Form<SignupInfo>,
     mail_cfg: &State<Mailer>,
 ) -> Result<String, InsignoError> {
-    create_info.check(&db).await?;
-    let pending_user: PendingUser = create_info.clone().into();
-    let local_time = Local::now();
-    pending_user.send_verification_mail(mail_cfg).await?;
+    //check if all values are correct
+    let pending = PendingUser::new(create_info.into_inner(), &db).await?;
 
-    println!(
-        "mail time {}",
-        Local::now()
-            .signed_duration_since(local_time)
-            .num_milliseconds()
-    );
-    db.run(|conn| {
-        insert_into(pending_users::dsl::pending_users)
-            .values(pending_user)
-            .execute(conn)
-    })
-    .await
-    .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+    //send registration mail and insert it in db
+    pending.register_and_mail(&db, mail_cfg).await?;
 
     Ok("mail inviata".to_string())
+}
+
+#[get("/verify/<cur_token>")]
+pub async fn verify(
+    cur_token: String,
+    connection: Db,
+) -> Result<(ContentType, String), InsignoError> {
+    let pending_user = PendingUser::from_token(cur_token, &connection).await?;
+
+    let user = User::new_from_pending(pending_user, &connection).await?;
+
+    let success = fs::read("./templates/account_creation.html")
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+
+    let success =
+        String::from_utf8(success).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+
+    Ok((ContentType::HTML, success))
 }
 
 #[post("/login", format = "form", data = "<login_info>")]
 async fn login(
     db: Db,
-    mut login_info: Form<LoginInfo>,
+    login_info: Form<LoginInfo>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<i64>, InsignoError> {
-    login_info.check().await?;
-    let user = get_user_by_email(&db, login_info.email.clone())
-        .await
-        .map_err(|x| InsignoError::new(401, "email not found", &x.to_string()))?;
-    if check_hash(&login_info.password, &user.password) {
-        let cur_user_id = user.id.unwrap();
+    let user = User::login(login_info.into_inner(), &db).await?;
 
-        let token_str = generate_token();
-        let insigno_auth = format!("{cur_user_id} {token_str}");
+    let cur_user_id = user.id.unwrap();
 
-        cookies.add_private(Cookie::new("insigno_auth", insigno_auth));
+    let token_str = generate_token();
+    let insigno_auth = format!("{cur_user_id} {token_str}");
 
-        // update token on login
-        db.run(move |conn| {
-            diesel::insert_into(user_sessions)
-                .values((
-                    user_id.eq(cur_user_id),
-                    token.eq(token_str.clone()),
-                    refresh_date.eq(now),
-                ))
-                .on_conflict(user_id)
-                .do_update()
-                .set((token.eq(token_str), refresh_date.eq(now)))
-                .execute(conn)
-        })
-        .await
-        .map_err(|x| InsignoError::new(500, "Db Error", &x.to_string()))?;
-        Ok(Json(user.id.unwrap()))
-    } else {
-        Err(InsignoError::new(401, "password errata", "password errata"))
-    }
+    cookies.add_private(Cookie::new("insigno_auth", insigno_auth));
+
+    // update token on login
+    db.run(move |conn| {
+        diesel::insert_into(user_sessions)
+            .values((
+                user_id.eq(cur_user_id),
+                token.eq(token_str.clone()),
+                refresh_date.eq(now),
+            ))
+            .on_conflict(user_id)
+            .do_update()
+            .set((token.eq(token_str), refresh_date.eq(now)))
+            .execute(conn)
+    })
+    .await
+    .map_err(|x| InsignoError::new(500, "Db Error", &x.to_string()))?;
+    Ok(Json(user.id.unwrap()))
 }
 
 #[post("/logout")]
-async fn logout(db: Db, cookies: &CookieJar<'_>, user: User) -> Option<()> {
+async fn logout(db: Db, cookies: &CookieJar<'_>, user: AuthenticatedUser) -> Option<()> {
     cookies.remove_private(Cookie::named("insigno_auth"));
-    let id = user.id.unwrap();
+    let id = user.as_ref().id.unwrap();
     if db
         .run(move |conn| diesel::delete(user_sessions.filter(user_id.eq(id))).execute(conn))
         .await
@@ -115,86 +118,26 @@ async fn logout(db: Db, cookies: &CookieJar<'_>, user: User) -> Option<()> {
 }
 
 #[post("/session")]
-async fn refresh_session(_user: User) -> Option<()> {
+fn refresh_session(_user: AuthenticatedUser) -> Option<()> {
     Some(())
 }
 
 #[derive(Serialize)]
-pub struct UnautenticatedUser {
-    id: i64,
-    name: String,
-    points: f64,
-}
-
-impl From<User> for UnautenticatedUser {
-    fn from(value: User) -> Self {
-        UnautenticatedUser {
-            name: value.name,
-            points: value.points,
-            id: value.id.unwrap(),
-        }
-    }
-}
-#[derive(Serialize)]
-pub struct AutenticateUser {
+pub struct AutenticatedUserTest {
     id: i64,
     name: String,
     points: f64,
 }
 
 #[get("/user")] //, format="form", data="<login_info>"
-fn get_auth_user(user: User) -> Json<AutenticateUser> {
-    Json(AutenticateUser {
-        id: user.id.unwrap(),
-        name: user.name,
-        points: user.points,
-    })
+fn get_auth_user(user: AuthenticatedUser) -> Json<AuthenticatedUser> {
+    Json(user)
 }
 
 #[get("/user/<id>")] //, format="form", data="<login_info>"
-pub async fn get_user(db: Db, id: i64) -> Result<Json<UnautenticatedUser>, InsignoError> {
-    let user = get_user_by_id(&db, id)
-        .await
-        .map_err(|e| InsignoError::new(404, "user not found", &e.to_string()))?;
-    Ok(Json(UnautenticatedUser {
-        id: user.id.unwrap(),
-        name: user.name,
-        points: user.points,
-    }))
-}
-
-#[get("/verify/<cur_token>")]
-pub async fn verify(cur_token: String, db: Db) -> Result<(ContentType, String), InsignoError> {
-    let pending_user: PendingUser = db
-        .run(|conn| {
-            sql_query(
-                "
-        SELECT * FROM get_pending_user($1);",
-            )
-            .bind::<Text, _>(cur_token)
-            .get_result(conn)
-            //pending_users::table.filter(pending_users::token.eq(cur_token)).get_result(conn)
-        })
-        .await
-        .map_err(|e| InsignoError::new(422, "token scaduto", &e.to_string()))?;
-
-    let user: User = User {
-        id: None,
-        name: pending_user.name,
-        email: pending_user.email,
-        password: pending_user.password_hash,
-        is_admin: false,
-        points: 0.0,
-    };
-    db.run(|conn| insert_into(users::dsl::users).values(user).execute(conn))
-        .await
-        .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?;
-    let success = fs::read("./templates/account_creation.html")
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
-    let success =
-        String::from_utf8(success).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
-    //let file = NamedFile::open("./templates/account_creation.html").await.unwrap();
-    Ok((ContentType::HTML, success))
+pub async fn get_user(db: Db, id: i64) -> Result<Json<User>, InsignoError> {
+    let user = User::get_by_id(&db, id).await?;
+    Ok(Json(user))
 }
 
 pub fn get_routes() -> Vec<Route> {
@@ -211,11 +154,9 @@ pub fn get_routes() -> Vec<Route> {
 #[cfg(test)]
 mod test {
     use crate::{
-        db::Db,
-        erase_tables, rocket,
+        rocket,
         test::{test_reset_db, test_signup},
     };
-    use diesel::RunQueryDsl;
     use rocket::{
         http::{ContentType, Status},
         local::asynchronous::Client,
@@ -262,9 +203,6 @@ mod test {
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");
-
-        //clean DB
-        erase_tables!(client, user_sessions, users);
 
         // try to get types list
         let data = "name=IlMagicoTester&password=Testtes1!&email=test@test.com";
