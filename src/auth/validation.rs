@@ -1,6 +1,7 @@
 use std::mem;
 
 use crypto::scrypt::{scrypt_simple, ScryptParams};
+use regex::Regex;
 
 pub trait Email {
     fn get_email(&mut self) -> &mut String;
@@ -17,9 +18,8 @@ impl<T: Email> SanitizeEmail for T {
     fn sanitize_email(&mut self) -> Result<(), &str> {
         self.fmt_email();
         let email = self.get_email();
-        if !email
-            .chars()
-            .all(|x| x.is_ascii_alphanumeric() || x == '.' || x == '-' || x == '@' || x == '_')
+        let re = Regex::new(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)+$").unwrap();
+        if !re.is_match(email)
         {
             return Err("Mail invalida");
         }
