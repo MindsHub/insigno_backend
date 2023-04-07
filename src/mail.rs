@@ -1,5 +1,6 @@
 use std::fs;
 
+use lettre::message::SinglePart;
 use lettre::message::{header::ContentType, Attachment, Body, MultiPart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::PoolConfig;
@@ -9,6 +10,8 @@ use lettre::{
 use rocket::fairing::AdHoc;
 use serde::Deserialize;
 
+use crate::auth::signup_info::SignupInfo;
+use crate::auth::user::User;
 use crate::utils::InsignoError;
 use crate::InsignoConfig;
 
@@ -20,7 +23,7 @@ pub struct SmtpConfig {
     password: String,
 }
 
-#[cfg(test)]
+/*#[cfg(test)]
 pub async fn send_mail(
     _to: &str,
     _subject: &str,
@@ -37,12 +40,8 @@ pub async fn send_mail(
     message: &str,
     mailer: &Mailer,
 ) -> Result<(), InsignoError> {
-    //let image = fs::read("docs/lettre.png").unwrap();
-    //let image_body = Body::new(image);
-    //let y = MultiPart::alternative().singlepart(part).singlepart(part).;
     let email = Message::builder()
         .from("Insigno <insigno@mindshub.it>".parse().unwrap())
-        //.reply_to("mail to reply".parse().unwrap())
         .to(to.parse().unwrap())
         .subject(subject)
         .header(ContentType::TEXT_HTML)
@@ -53,6 +52,56 @@ pub async fn send_mail(
         Ok(_) => Ok(()),
         Err(e) => Err(InsignoError::new_debug(500, &e.to_string())), //format!("Could not send email: {e:?}")),
     }
+}*/
+
+pub async fn send_mail(
+    to: &str,
+    subject: &str,
+    message: &str,
+    mailer: &Mailer,
+) -> Result<(), InsignoError> {
+    let logo_insigno = fs::read("./templates/logo_insigno.png")
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+
+    let logo_insigno_body = Body::new(logo_insigno);
+    let logo_mindshub = fs::read("./templates/logo_mindshub.png")
+        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+
+    let logo_mindshub_body = Body::new(logo_mindshub);
+
+    //let html = String::from_utf8(fs::read("./templates/insigno.html").unwrap()).unwrap();
+    let m = Message::builder()
+        .from("Insigno <insigno@mindshub.it>".parse().unwrap())
+        .to(to.parse().unwrap())
+        .subject(subject)
+        .multipart(
+            MultiPart::alternative()
+                .singlepart(SinglePart::plain(String::from("Hello, world! :)")))
+                .multipart(
+                    MultiPart::related()
+                        .singlepart(SinglePart::html(String::from(
+                            //"<p><b>Hello</b>, <i>world</i>! <img src=cid:123></p>",
+                            message,
+                        )))
+                        .singlepart(
+                            Attachment::new_inline(String::from("123"))
+                                .body(logo_insigno_body, "image/png".parse().unwrap()),
+                        ).singlepart(
+                            Attachment::new_inline(String::from("124"))
+                                .body(logo_mindshub_body, "image/png".parse().unwrap()),
+                        ),
+                )
+                /*)
+                .singlepart(Attachment::new(String::from("example.rs")).body(
+                    String::from("fn main() { println!(\"Hello, World!\") }"),
+                    "text/plain".parse().unwrap(),
+                )),*/
+        ).unwrap();
+    match mailer.m.send(m).await {
+        Ok(_) => Ok(()),
+        Err(e) => Err(InsignoError::new_debug(500, &e.to_string())), //format!("Could not send email: {e:?}")),
+    }
+    //Ok(())
 }
 
 pub struct Mailer {

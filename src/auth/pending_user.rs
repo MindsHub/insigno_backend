@@ -81,13 +81,13 @@ impl PendingUser {
     pub async fn send_verification_mail(&self, mailer: &Mailer) -> Result<(), InsignoError> {
         let link = format!("https://insigno.mindshub.it/verify/{}", self.token);
 
-        let mail = fs::read("./templates/mail.html") // TODO cache file
+        let mail = fs::read("./templates/mail_account_creation.html") // TODO cache file
             .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
         let mail =
             String::from_utf8(mail).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
         let mail = mail
             .replace("{user}", &self.name)
-            .replace("{mail}", &self.email)
+            .replace("{email}", &self.email)
             .replace("{link}", &link);
         send_mail(&self.email, "Verifica account", &mail, mailer).await
     }

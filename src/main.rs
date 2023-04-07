@@ -1,11 +1,14 @@
 use std::{collections::BTreeMap, fs};
 
+use auth::{signup_info::SignupInfo, PendingUser};
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use mail::SmtpConfig;
 use rocket::{fairing::*, serde::Deserialize, State};
 use rocket_sync_db_pools::Config;
 use schema_sql::marker_types;
 use utils::InsignoError;
+
+use crate::db::Db;
 
 #[macro_use]
 extern crate rocket;
@@ -119,3 +122,14 @@ fn rocket() -> _ {
         .mount("/metrics", prometheus)
     //.manage(users)
 }
+/*
+#[get("/prova")]
+async fn prova(config: &State<InsignoConfig>, db: Db)->Result<(), InsignoError>{
+    let mut u = SignupInfo{ name: "Alezen".to_string(), email: "insigno@mindshub.it".to_string(), password: "PippoBaudo1!".to_string()};
+    u.check(&db).await?;
+    let pending = PendingUser::new(u.into_inner(), &db).await?;
+
+    //send registration mail and insert it in db
+    pending.register_and_mail(&db, mail_cfg).await?;
+    Ok(())
+}   */
