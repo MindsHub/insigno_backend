@@ -1,8 +1,10 @@
-docker stop postgres
-docker container rm -f postgres
-docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=test -e POSTGRES_USER=mindshub -d postgis/postgis
+set -o xtrace # print commands being executed
+
+sudo docker stop postgres
+sudo docker container rm -f postgres
+sudo docker run --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=test -e POSTGRES_USER=mindshub -d postgis/postgis
 sleep 5
-#& $($(echo "$(cargo tarpaulin --print-rust-flags --target-dir=target/tarpaulin)" | grep -v INFO)) cargo build 
+#& $($(echo "$(cargo tarpaulin --print-rust-flags --target-dir=target/tarpaulin)" | grep -v INFO)) cargo build
 #$(cargo tarpaulin  --print-rust-flags | grep -v INFO)
 #cargo tarpaulin --command build --skip-clean --target-dir=target/tarpaulin
 #DATABASE_URL=
