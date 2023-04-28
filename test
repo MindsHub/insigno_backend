@@ -10,5 +10,8 @@ sleep 5
 #DATABASE_URL=
 diesel database reset --database-url="postgres://mindshub:test@localhost:5432/insignorocketdb"
 
+# terminate gracefully when the user uses Ctrl+C
+trap 'sudo docker stop postgres; sudo docker container rm -f postgres; exit' INT
+
 #cargo test -- --test-threads=1
 cargo watch -s "DATABASE_URL=\"postgres://mindshub:test@localhost:5432/insignorocketdb\" cargo tarpaulin --target-dir=target/tarpaulin --skip-clean -- --test-threads=1"
