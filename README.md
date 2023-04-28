@@ -10,6 +10,13 @@ Eseguire server che si aggiorna in automatico quando si cambiano file:
 cargo watch -x run
 ```
 
+Cose da installare per fare test:
+```sh
+cargo install cargo-watch
+cargo install cargo-tarpaulin
+cargo install diesel_cli --no-default-features --features "postgres"
+```
+
 ### PostgreSQL
 
 Aprire shell di `psql`:
