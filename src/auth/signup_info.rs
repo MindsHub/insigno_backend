@@ -3,7 +3,10 @@ use serde::Deserialize;
 
 use crate::{db::Db, utils::InsignoError};
 
-use super::{validation::{Name, Password, Email, SanitizeName, SanitizeEmail, SanitizePassword}, user::User};
+use super::{
+    user::User,
+    validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword},
+};
 
 #[derive(FromForm, Deserialize, Clone)]
 pub struct SignupInfo {

@@ -12,7 +12,6 @@ use diesel::RunQueryDsl;
 
 use super::signup_info::SignupInfo;
 
-
 #[cfg(not(test))]
 pub fn generate_token() -> String {
     use rand::distributions::Alphanumeric;

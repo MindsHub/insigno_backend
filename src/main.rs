@@ -1,14 +1,11 @@
 use std::{collections::BTreeMap, fs};
 
-use auth::{signup_info::SignupInfo, PendingUser};
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use mail::SmtpConfig;
 use rocket::{fairing::*, serde::Deserialize, State};
 use rocket_sync_db_pools::Config;
 use schema_sql::marker_types;
 use utils::InsignoError;
-
-use crate::db::Db;
 
 #[macro_use]
 extern crate rocket;

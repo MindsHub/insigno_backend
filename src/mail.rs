@@ -1,6 +1,7 @@
 use std::fs;
 
 use lettre::message::SinglePart;
+use lettre::message::header::Header;
 use lettre::message::{header::ContentType, Attachment, Body, MultiPart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::PoolConfig;
@@ -86,19 +87,32 @@ pub async fn send_mail(
                         .singlepart(
                             Attachment::new_inline(String::from("123"))
                                 .body(logo_insigno_body, "image/png".parse().unwrap()),
-                        ).singlepart(
+                        )
+                        .singlepart(
                             Attachment::new_inline(String::from("124"))
                                 .body(logo_mindshub_body, "image/png".parse().unwrap()),
                         ),
-                )
-                /*)
-                .singlepart(Attachment::new(String::from("example.rs")).body(
-                    String::from("fn main() { println!(\"Hello, World!\") }"),
-                    "text/plain".parse().unwrap(),
-                )),*/
-        ).unwrap();
+                ), /*)
+                   .singlepart(Attachment::new(String::from("example.rs")).body(
+                       String::from("fn main() { println!(\"Hello, World!\") }"),
+                       "text/plain".parse().unwrap(),
+                   )),*/
+        )
+        .unwrap();
+    //let y = mailer.m.send(m).await.unwrap();
     match mailer.m.send(m).await {
-        Ok(_) => Ok(()),
+        Ok(resp) => {
+            println!("{}", resp.code());
+            for i in resp.message(){
+                println!("{}", i);
+            }
+            
+            if resp.is_positive(){
+                Ok(())
+            }else{
+                Err(InsignoError::new_debug(500, resp.first_line().unwrap()))
+            }
+        },
         Err(e) => Err(InsignoError::new_debug(500, &e.to_string())), //format!("Could not send email: {e:?}")),
     }
     //Ok(())

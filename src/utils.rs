@@ -66,7 +66,7 @@ impl InsignoError {
 
 impl<T> From<InsignoError> for request::Outcome<T, InsignoError> {
     fn from(val: InsignoError) -> Self {
-         request::Outcome::Failure((val.code, val))
+        request::Outcome::Failure((val.code, val))
     }
 }
 

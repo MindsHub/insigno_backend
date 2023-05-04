@@ -19,8 +19,7 @@ impl<T: Email> SanitizeEmail for T {
         self.fmt_email();
         let email = self.get_email();
         let re = Regex::new(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)+$").unwrap();
-        if !re.is_match(email)
-        {
+        if !re.is_match(email) {
             return Err("Mail invalida");
         }
 

@@ -28,9 +28,9 @@ use self::user::User;
 pub mod authenticated_user;
 pub mod login_info;
 pub mod pending_user;
+pub mod signup_info;
 pub mod user;
 pub mod validation;
-pub mod signup_info;
 /*
 signup info -> pending user (verifica credenziali) #
 pending user -> email + db (inviare la mail e salvarla nel db)
