@@ -62,6 +62,7 @@ impl AsRef<User> for AuthenticatedUser {
         &self.user
     }
 }
+
 impl Serialize for AuthenticatedUser {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

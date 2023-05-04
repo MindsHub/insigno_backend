@@ -26,6 +26,7 @@ use self::authenticated_user::AuthenticatedUser;
 pub use self::pending_user::*;
 use self::user::User;
 pub mod authenticated_user;
+pub mod admin_user;
 pub mod login_info;
 pub mod pending_user;
 pub mod signup_info;

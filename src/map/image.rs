@@ -5,7 +5,9 @@ use std::path::PathBuf;
 use std::process;
 
 use super::marker_image::MarkerImage;
+use crate::auth::admin_user::AdminUser;
 use crate::auth::authenticated_user::AuthenticatedUser;
+use crate::auth::user::User;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
 use crate::map::marker_image::marker_images;
@@ -197,12 +199,8 @@ pub(crate) async fn get_image(
 #[get("/image/to_review")]
 pub(crate) async fn get_to_review(
     connection: Db,
-    user: AuthenticatedUser,
+    _user: AdminUser,
 ) -> Result<Json<Vec<MarkerImage>>, InsignoError> {
-    if !user.as_ref().is_admin {
-        //if user isn't admin, it's not allowed
-        return Err(InsignoError::new_code(403));
-    }
     let images = MarkerImage::get_to_report(&connection).await?;
     Ok(Json(images))
 }
@@ -212,13 +210,9 @@ pub(crate) async fn review(
     image_id: i64,
     connection: Db,
     config: &State<InsignoConfig>,
-    user: AuthenticatedUser,
+    user: AdminUser,
     mut verdict: String,
 ) -> Result<(), InsignoError> {
-    if !user.as_ref().is_admin {
-        //if user isn't admin, it's not allowed
-        return Err(InsignoError::new_code(403));
-    }
     verdict = verdict.trim().to_ascii_lowercase();
     match verdict.as_str() {
         "ok" => {
@@ -229,7 +223,7 @@ pub(crate) async fn review(
         }
         "delete_report" => {
             let image = MarkerImage::delete(&connection, image_id, config).await?;
-            MarkerReport::report(&connection, user.as_ref().id.unwrap(), image.id.unwrap()).await?;
+            MarkerReport::report(&connection, (user.as_ref() as &User).id.unwrap(), image.id.unwrap()).await?;
         }
         _ => {
             return Err(InsignoError::new(
