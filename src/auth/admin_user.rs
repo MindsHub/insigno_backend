@@ -1,10 +1,12 @@
-use rocket::{request::{FromRequest, self}, http::Status};
+use rocket::{
+    http::Status,
+    request::{self, FromRequest},
+};
 use serde::Serialize;
 
 use crate::utils::InsignoError;
 
-use super::{user::User, authenticated_user::AuthenticatedUser};
-
+use super::{authenticated_user::AuthenticatedUser, user::User};
 
 pub struct AdminUser {
     user: AuthenticatedUser,
@@ -15,18 +17,11 @@ impl<'r> FromRequest<'r> for AdminUser {
     type Error = InsignoError;
 
     async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
-        let user = AuthenticatedUser::from_request(request)
-            .await
-            .unwrap();
+        let user = AuthenticatedUser::from_request(request).await.unwrap();
         if !user.as_ref().is_admin {
-            return request::Outcome::Failure((Status::Forbidden ,InsignoError::new_code(401)));
+            return request::Outcome::Failure((Status::Forbidden, InsignoError::new_code(401)));
         }
-        request::Outcome::Success(
-            AdminUser{
-                user
-            }
-        )
-        
+        request::Outcome::Success(AdminUser { user })
     }
 }
 impl AsRef<AuthenticatedUser> for AdminUser {
