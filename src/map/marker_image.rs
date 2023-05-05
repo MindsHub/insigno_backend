@@ -1,8 +1,9 @@
-use std::{fs, path::Path};
+use std::path::Path;
 
 use crate::diesel::RunQueryDsl;
 use crate::{db::Db, utils::InsignoError, InsignoConfig};
 use diesel::{sql_query, sql_types::BigInt};
+use rocket::tokio::fs;
 use serde::Serialize;
 
 table! {
@@ -65,7 +66,7 @@ impl MarkerImage {
                 )
             })?;
         let img_path = Path::new(&config.media_folder).join(&img.path);
-        let _ = fs::remove_file(img_path);
+        let _ = fs::remove_file(img_path).await;
         Ok(img)
     }
 

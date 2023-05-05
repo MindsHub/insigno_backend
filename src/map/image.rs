@@ -1,5 +1,6 @@
-use std::fs;
+//use rocket::tokio::fs;
 
+use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process;
@@ -143,8 +144,8 @@ pub(crate) async fn add_image(
 
     // try to save it in database
     save_image(connection, name.clone(), id)
-        .map_err(|x| {
-            let _ = fs::remove_file(new_pos);
+        .map_err(|x|{
+            let _ = fs::remove_file(new_pos);//sync version
             x
         })
         .await?;
@@ -223,7 +224,12 @@ pub(crate) async fn review(
         }
         "delete_report" => {
             let image = MarkerImage::delete(&connection, image_id, config).await?;
-            MarkerReport::report(&connection, (user.as_ref() as &User).id.unwrap(), image.id.unwrap()).await?;
+            MarkerReport::report(
+                &connection,
+                (user.as_ref() as &User).id.unwrap(),
+                image.id.unwrap(),
+            )
+            .await?;
         }
         _ => {
             return Err(InsignoError::new(

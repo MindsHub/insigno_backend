@@ -1,4 +1,4 @@
-use std::fs;
+use rocket::tokio::fs;
 
 use diesel::dsl::now;
 
@@ -25,8 +25,8 @@ use crate::utils::InsignoError;
 use self::authenticated_user::AuthenticatedUser;
 pub use self::pending_user::*;
 use self::user::User;
-pub mod authenticated_user;
 pub mod admin_user;
+pub mod authenticated_user;
 pub mod login_info;
 pub mod pending_user;
 pub mod signup_info;
@@ -64,6 +64,7 @@ pub async fn verify(
     User::new_from_pending(pending_user, &connection).await?;
 
     let success = fs::read("./templates/account_creation.html")
+        .await
         .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
     let success =
