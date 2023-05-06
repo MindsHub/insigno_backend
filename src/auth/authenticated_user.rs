@@ -71,6 +71,7 @@ impl Serialize for AuthenticatedUser {
         s.serialize_field("id", &self.user.id)?;
         s.serialize_field("name", &self.user.name)?;
         s.serialize_field("points", &self.user.points)?;
+        s.serialize_field("is_admin", &self.user.is_admin)?;
         s.end()
     }
 }
