@@ -4,6 +4,7 @@ use crate::diesel::RunQueryDsl;
 use crate::{db::Db, utils::InsignoError, InsignoConfig};
 use diesel::{sql_query, sql_types::BigInt};
 use serde::Serialize;
+use serde::ser::SerializeStruct;
 
 table! {
     marker_images(id){
@@ -13,7 +14,7 @@ table! {
         approved -> Bool,
     }
 }
-#[derive(Clone, Queryable, Insertable, Debug, QueryableByName, Serialize)]
+#[derive(Clone, Queryable, Insertable, Debug, QueryableByName)]
 #[diesel(table_name = marker_images)]
 pub struct MarkerImage {
     #[diesel(deserialize_as = i64)]
@@ -21,6 +22,18 @@ pub struct MarkerImage {
     pub path: String,
     pub refers_to: i64,
     pub approved: bool,
+}
+
+impl Serialize for MarkerImage {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_struct("MarkerImage", 2)?;
+        s.serialize_field("id", &self.id)?;
+        s.serialize_field("refers_to", &self.refers_to)?;
+        s.end()
+    }
 }
 
 impl MarkerImage {
