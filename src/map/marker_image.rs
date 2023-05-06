@@ -72,7 +72,7 @@ impl MarkerImage {
             .await
             .map_err(|e| {
                 InsignoError::new(
-                    500,
+                    404,
                     "impossibile cancellare, id non trovato",
                     &e.to_string(),
                 )
