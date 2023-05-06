@@ -28,7 +28,7 @@ impl MarkerImage {
         connection
             .run(move |conn| {
                 sql_query(
-                    "UPDATE marker_images 
+                    "UPDATE marker_images
             SET approved=true
             WHERE id=$1",
                 )
@@ -49,7 +49,7 @@ impl MarkerImage {
             .run(move |conn| {
                 sql_query(
                     "DELETE
-            FROM marker_images 
+            FROM marker_images
             WHERE id=$1
             RETURNING *",
                 )
@@ -76,8 +76,8 @@ impl MarkerImage {
                     "SELECT marker_images
                 FROM marker_images, markers
                 WHERE approved=false
-                    AND markers.id=refers_to 
-                ORDER BY markers.creadion_date ASC
+                    AND markers.id=refers_to
+                ORDER BY markers.creation_date ASC
                 LIMIT 10",
                 )
                 .get_results(conn)
