@@ -67,7 +67,7 @@ impl Serialize for AuthenticatedUser {
     where
         S: serde::Serializer,
     {
-        let mut s = serializer.serialize_struct("User", 3)?;
+        let mut s = serializer.serialize_struct("AuthenticatedUser", 4)?;
         s.serialize_field("id", &self.user.id)?;
         s.serialize_field("name", &self.user.name)?;
         s.serialize_field("points", &self.user.points)?;
