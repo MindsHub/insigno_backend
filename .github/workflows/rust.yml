@@ -52,7 +52,7 @@ jobs:
         username: ${{secrets.SSH_USER}}
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
-        source: "target/release/insigno"
+        source: "target/release/insigno,templates/*"
         target: "insigno"
         strip_components: 2
     - name: Re-run server
