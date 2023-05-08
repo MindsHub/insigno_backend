@@ -4,8 +4,8 @@ use crate::diesel::RunQueryDsl;
 use crate::{db::Db, utils::InsignoError, InsignoConfig};
 use diesel::{sql_query, sql_types::BigInt};
 use rocket::tokio::fs;
-use serde::Serialize;
 use serde::ser::SerializeStruct;
+use serde::Serialize;
 
 table! {
     marker_images(id){
