@@ -14,17 +14,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - run: rustup toolchain install stable --profile minimal
     - name: Cache rust
-      uses: actions/cache@v3
-      with:
-        path: ~/.cargo/bin
-          ~/.cargo/registry/index
-          ~/.cargo/registry/cache
-          ~/.cargo/git
-          ~/.cargo/.crates.toml
-          ~/.cargo/.crates2.json
-          ./target
-        key: ${{ runner.os }}-build-cache-rust
+      uses: Swatinem/rust-cache@v2
     - name: Build
       run: cargo build --release
     - name: Upload binaries to release
@@ -52,9 +44,18 @@ jobs:
         username: ${{secrets.SSH_USER}}
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
-        source: "target/release/insigno,././templates/*"
+        source: "target/release/insigno"
         target: "insigno"
         strip_components: 2
+    - name: Copy exec via SSH
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{secrets.SSH_HOST}}
+        username: ${{secrets.SSH_USER}}
+        password: ${{secrets.SSH_PASS}}
+        port: ${{secrets.SSH_PORT}}
+        source: "templates/*"
+        target: "insigno"
     - name: Re-run server
       uses: appleboy/ssh-action@v0.1.8
       with:
