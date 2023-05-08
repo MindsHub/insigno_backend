@@ -16,6 +16,8 @@ use crate::auth::user::User;
 use crate::utils::InsignoError;
 use crate::InsignoConfig;
 
+mod mail_builder;
+
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct SmtpConfig {
@@ -66,7 +68,9 @@ pub async fn send_mail(
                 .singlepart(SinglePart::plain(String::from("Hello, world! :)")))
                 .multipart(
                     MultiPart::related()
-                        .singlepart(SinglePart::html(String::from("<p><b>Hello</b>, <i>world</i>! <img src=cid:123></p>")))
+                        .singlepart(SinglePart::html(String::from(
+                            "<p><b>Hello</b>, <i>world</i>! <img src=cid:123></p>",
+                        )))
                         .singlepart(SinglePart::html(String::from(
                             //"<p><b>Hello</b>, <i>world</i>! <img src=cid:123></p>",
                             message,

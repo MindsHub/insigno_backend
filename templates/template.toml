@@ -1,0 +1,1 @@
+templates = ["account_creation.html", "mail_account_creation.html", "header.html"]
