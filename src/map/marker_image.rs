@@ -82,22 +82,4 @@ impl MarkerImage {
         let _ = fs::remove_file(img_path).await;
         Ok(img)
     }
-
-    pub async fn get_to_report(connection: &Db) -> Result<Vec<Self>, InsignoError> {
-        let res: Vec<Self> = connection
-            .run(|conn| {
-                sql_query(
-                    "SELECT marker_images.*, marker.type
-                FROM marker_images, markers, types
-                WHERE approved=false
-                    AND markers.id=refers_to
-                ORDER BY markers.creation_date ASC
-                LIMIT 10",
-                )
-                .get_results(conn)
-            })
-            .await
-            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
-        Ok(res)
-    }
 }
