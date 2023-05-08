@@ -5,6 +5,7 @@ use crate::{db::Db, utils::InsignoError, InsignoConfig};
 use diesel::{sql_query, sql_types::BigInt};
 use rocket::tokio::fs;
 use serde::Serialize;
+use serde::ser::SerializeStruct;
 
 table! {
     marker_images(id){
@@ -14,7 +15,7 @@ table! {
         approved -> Bool,
     }
 }
-#[derive(Clone, Queryable, Insertable, Debug, QueryableByName, Serialize)]
+#[derive(Clone, Queryable, Insertable, Debug, QueryableByName)]
 #[diesel(table_name = marker_images)]
 pub struct MarkerImage {
     #[diesel(deserialize_as = i64)]
@@ -24,12 +25,24 @@ pub struct MarkerImage {
     pub approved: bool,
 }
 
+impl Serialize for MarkerImage {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_struct("MarkerImage", 2)?;
+        s.serialize_field("id", &self.id)?;
+        s.serialize_field("refers_to", &self.refers_to)?;
+        s.end()
+    }
+}
+
 impl MarkerImage {
     pub async fn approve(connection: &Db, image_id: i64) -> Result<(), InsignoError> {
         connection
             .run(move |conn| {
                 sql_query(
-                    "UPDATE marker_images 
+                    "UPDATE marker_images
             SET approved=true
             WHERE id=$1",
                 )
@@ -50,7 +63,7 @@ impl MarkerImage {
             .run(move |conn| {
                 sql_query(
                     "DELETE
-            FROM marker_images 
+            FROM marker_images
             WHERE id=$1
             RETURNING *",
                 )
@@ -60,7 +73,7 @@ impl MarkerImage {
             .await
             .map_err(|e| {
                 InsignoError::new(
-                    500,
+                    404,
                     "impossibile cancellare, id non trovato",
                     &e.to_string(),
                 )
@@ -74,11 +87,11 @@ impl MarkerImage {
         let res: Vec<Self> = connection
             .run(|conn| {
                 sql_query(
-                    "SELECT marker_images
+                    "SELECT marker_images.*
                 FROM marker_images, markers
                 WHERE approved=false
-                    AND markers.id=refers_to 
-                ORDER BY markers.creadion_date ASC
+                    AND markers.id=refers_to
+                ORDER BY markers.creation_date ASC
                 LIMIT 10",
                 )
                 .get_results(conn)

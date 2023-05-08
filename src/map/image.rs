@@ -16,6 +16,7 @@ use diesel::insert_into;
 use diesel::QueryDsl;
 
 use rocket::data::Limits;
+use rocket::form::Form;
 use rocket::fs::NamedFile;
 use rocket::futures::TryFutureExt;
 
@@ -23,6 +24,8 @@ use rocket::serde::json::Json;
 use rocket::Data;
 use rocket::{http::ContentType, State};
 use rocket_multipart_form_data::*;
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::db::*;
 use crate::schema_rs::*;
@@ -206,15 +209,20 @@ pub(crate) async fn get_to_review(
     Ok(Json(images))
 }
 
-#[get("/image/review/<image_id>?<verdict>")]
+#[derive(Deserialize, Serialize, FromForm)]
+pub(crate) struct ReviewVerdict {
+    verdict: String,
+}
+
+#[post("/image/review/<image_id>", data = "<verdict>")]
 pub(crate) async fn review(
     image_id: i64,
     connection: Db,
     config: &State<InsignoConfig>,
     user: AdminUser,
-    mut verdict: String,
+    verdict: String,
 ) -> Result<(), InsignoError> {
-    verdict = verdict.trim().to_ascii_lowercase();
+    let verdict = verdict.trim().to_ascii_lowercase();
     match verdict.as_str() {
         "ok" => {
             MarkerImage::approve(&connection, image_id).await?;
