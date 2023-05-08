@@ -96,7 +96,14 @@ impl PendingUser {
             .replace("{user}", &self.name)
             .replace("{email}", &self.email)
             .replace("{link}", &link);
-        send_mail(&self.email, "Verifica account", &mail, &alternative_mail, mailer).await
+        send_mail(
+            &self.email,
+            "Verifica account",
+            &mail,
+            &alternative_mail,
+            mailer,
+        )
+        .await
     }
 
     pub async fn register_and_mail(

@@ -67,9 +67,7 @@ pub async fn send_mail(
                 .singlepart(SinglePart::plain(String::from(plain_text)))
                 .multipart(
                     MultiPart::related()
-                        .singlepart(SinglePart::html(String::from(
-                            message,
-                        )))
+                        .singlepart(SinglePart::html(String::from(message)))
                         .singlepart(
                             Attachment::new_inline(String::from("123"))
                                 .body(logo_insigno_body, "image/png".parse().unwrap()),
@@ -87,7 +85,6 @@ pub async fn send_mail(
         .unwrap();
     match mailer.m.send(m).await {
         Ok(resp) => {
-
             if resp.is_positive() {
                 Ok(())
             } else {
@@ -96,7 +93,6 @@ pub async fn send_mail(
         }
         Err(e) => Err(InsignoError::new_debug(500, &e.to_string())),
     }
-
 }
 
 pub struct Mailer {

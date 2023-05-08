@@ -16,7 +16,6 @@ use diesel::insert_into;
 use diesel::QueryDsl;
 
 use rocket::data::Limits;
-use rocket::form::Form;
 use rocket::fs::NamedFile;
 use rocket::futures::TryFutureExt;
 
@@ -147,8 +146,8 @@ pub(crate) async fn add_image(
 
     // try to save it in database
     save_image(connection, name.clone(), id)
-        .map_err(|x|{
-            let _ = fs::remove_file(new_pos);//sync version
+        .map_err(|x| {
+            let _ = fs::remove_file(new_pos); //sync version
             x
         })
         .await?;
