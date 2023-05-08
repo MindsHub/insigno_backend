@@ -88,7 +88,15 @@ impl PendingUser {
             .replace("{user}", &self.name)
             .replace("{email}", &self.email)
             .replace("{link}", &link);
-        send_mail(&self.email, "Verifica account", &mail, mailer).await
+        let alternative_mail = fs::read("./templates/mail_account_creation_plain.txt")
+            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+        let alternative_mail = String::from_utf8(alternative_mail)
+            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+        let alternative_mail = alternative_mail
+            .replace("{user}", &self.name)
+            .replace("{email}", &self.email)
+            .replace("{link}", &link);
+        send_mail(&self.email, "Verifica account", &mail, &alternative_mail, mailer).await
     }
 
     pub async fn register_and_mail(
