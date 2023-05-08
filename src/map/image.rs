@@ -17,6 +17,7 @@ use diesel::insert_into;
 use diesel::QueryDsl;
 
 use rocket::data::Limits;
+use rocket::form::Form;
 use rocket::fs::NamedFile;
 use rocket::futures::TryFutureExt;
 
@@ -214,15 +215,16 @@ pub(crate) struct ReviewVerdict {
     verdict: String,
 }
 
+
 #[post("/image/review/<image_id>", data = "<verdict>")]
 pub(crate) async fn review(
     image_id: i64,
     connection: Db,
     config: &State<InsignoConfig>,
     user: AdminUser,
-    verdict: String,
+    verdict: Form<ReviewVerdict>,
 ) -> Result<(), InsignoError> {
-    let verdict = verdict.trim().to_ascii_lowercase();
+    let verdict = verdict.verdict.trim().to_ascii_lowercase();
     match verdict.as_str() {
         "ok" => {
             MarkerImage::approve(&connection, image_id).await?;
@@ -240,7 +242,7 @@ pub(crate) async fn review(
             .await?;
         }
         "skip" =>{
-            
+
         }
         _ => {
             return Err(InsignoError::new(
