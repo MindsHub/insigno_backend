@@ -87,8 +87,8 @@ impl MarkerImage {
         let res: Vec<Self> = connection
             .run(|conn| {
                 sql_query(
-                    "SELECT marker_images.*
-                FROM marker_images, markers
+                    "SELECT marker_images.*, marker.type
+                FROM marker_images, markers, types
                 WHERE approved=false
                     AND markers.id=refers_to
                 ORDER BY markers.creation_date ASC

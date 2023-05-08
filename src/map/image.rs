@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::process;
 
 use super::marker_image::MarkerImage;
+use super::marker_report::ImageToReport;
 use crate::auth::admin_user::AdminUser;
 use crate::auth::authenticated_user::AuthenticatedUser;
 use crate::auth::user::User;
@@ -203,8 +204,8 @@ pub(crate) async fn get_image(
 pub(crate) async fn get_to_review(
     connection: Db,
     _user: AdminUser,
-) -> Result<Json<Vec<MarkerImage>>, InsignoError> {
-    let images = MarkerImage::get_to_report(&connection).await?;
+) -> Result<Json<Vec<ImageToReport>>, InsignoError> {
+    let images = ImageToReport::get_to_report(&connection).await?;
     Ok(Json(images))
 }
 
@@ -237,6 +238,9 @@ pub(crate) async fn review(
                 image.id.unwrap(),
             )
             .await?;
+        }
+        "skip" =>{
+            
         }
         _ => {
             return Err(InsignoError::new(
