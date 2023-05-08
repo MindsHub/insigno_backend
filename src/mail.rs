@@ -39,6 +39,7 @@ pub async fn send_mail(
     to: &str,
     subject: &str,
     message: &str,
+    plain_text: &str,
     mailer: &Mailer,
 ) -> Result<(), InsignoError> {
     let logo_insigno = fs::read("./templates/logo_insigno.png")
@@ -63,12 +64,10 @@ pub async fn send_mail(
         .subject(subject)
         .multipart(
             MultiPart::alternative()
-                .singlepart(SinglePart::plain(String::from("Hello, world! :)")))
+                .singlepart(SinglePart::plain(String::from(plain_text)))
                 .multipart(
                     MultiPart::related()
-                        .singlepart(SinglePart::html(String::from("<p><b>Hello</b>, <i>world</i>! <img src=cid:123></p>")))
                         .singlepart(SinglePart::html(String::from(
-                            //"<p><b>Hello</b>, <i>world</i>! <img src=cid:123></p>",
                             message,
                         )))
                         .singlepart(
@@ -83,20 +82,11 @@ pub async fn send_mail(
                             Attachment::new_inline(String::from("125"))
                                 .body(logo_ala_body, "image/png".parse().unwrap()),
                         ),
-                ), /*)
-                   .singlepart(Attachment::new(String::from("example.rs")).body(
-                       String::from("fn main() { println!(\"Hello, World!\") }"),
-                       "text/plain".parse().unwrap(),
-                   )),*/
+                ),
         )
         .unwrap();
-    //let y = mailer.m.send(m).await.unwrap();
     match mailer.m.send(m).await {
         Ok(resp) => {
-            println!("{}", resp.code());
-            for i in resp.message() {
-                println!("{}", i);
-            }
 
             if resp.is_positive() {
                 Ok(())
@@ -104,9 +94,9 @@ pub async fn send_mail(
                 Err(InsignoError::new_debug(500, resp.first_line().unwrap()))
             }
         }
-        Err(e) => Err(InsignoError::new_debug(500, &e.to_string())), //format!("Could not send email: {e:?}")),
+        Err(e) => Err(InsignoError::new_debug(500, &e.to_string())),
     }
-    //Ok(())
+
 }
 
 pub struct Mailer {
