@@ -1,5 +1,5 @@
 use crate::diesel::RunQueryDsl;
-use diesel::{sql_query, sql_types::{Text, BigInt}};
+use diesel::{sql_query, sql_types::BigInt};
 use serde::Serialize;
 
 use crate::{db::Db, utils::InsignoError};
@@ -46,19 +46,18 @@ impl MarkerReport {
 pub struct ImageToReport{
     #[diesel(sql_type=BigInt)]
     pub id: i64,
-    #[diesel(sql_type=Text)]
-    pub name: String,
+    #[diesel(sql_type=BigInt)]
+    pub marker_types_id: i64,
 }
 impl ImageToReport{
     pub async fn get_to_report(connection: &Db) -> Result<Vec<Self>, InsignoError> {
         let res: Vec<Self> = connection
             .run(|conn| {
                 sql_query(
-                    "SELECT marker_images.id, marker_types.name
-                    FROM marker_images, markers, marker_types
+                    "SELECT marker_images.id, marker_types_id
+                    FROM marker_images, markers
                     WHERE approved=false
                         AND markers.id=refers_to
-                        AND marker_types.id=marker_types_id
                     ORDER BY markers.creation_date ASC
                     LIMIT 10",
                 )
