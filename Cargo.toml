@@ -17,8 +17,12 @@ serde = "1.0.158"
 rand = "0.8.5"
 chrono= {version = "0.4.24", features= ["clock", "serde"]}
 json = "0.12.4"
-rust-crypto = "0.2.36"
-#scrypt = "0.11.0"
+
+#rust-crypto = "0.2.36"
+scrypt = "0.11.0"
+base64 = "0.21.0"
+constant_time_eq = "0.2.5"
+
 hex = "0.4.3"
 lettre = {version="0.10.3", default-features = false, features=["tokio1", "smtp-transport", "pool", "tokio1-native-tls", "builder"]}
 toml = "0.7.3"
