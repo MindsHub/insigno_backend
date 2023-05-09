@@ -16,7 +16,7 @@ pub fn scrypt_simple(password: &str, params: &Params) -> Result<String, Box<dyn 
     // 256-bit derived key
     let mut dk = [0u8; 32];
     
-    scrypt(password.as_bytes(), &*salt, params, &mut dk)?;
+    scrypt(password.as_bytes(), &salt, params, &mut dk)?;
 
     let mut result = "$rscrypt$".to_string();
     if params.r() < 256 && params.p() < 256 {
@@ -72,7 +72,7 @@ pub fn scrypt_check(password: &str, hashed_value: &str) -> Result<bool, ScryptEr
 
     // Check that there are no characters before the first "$"
     match iter.next() {
-        Some(x) => if x != "" { return Err(err); },
+        Some(x) => if x.is_empty() { return Err(err); },
         None => return Err(err)
     }
 
@@ -137,35 +137,34 @@ pub fn scrypt_check(password: &str, hashed_value: &str) -> Result<bool, ScryptEr
 
     // Make sure that the input ends with a "$"
     match iter.next() {
-        Some(x) => if x != "" { return Err(err); },
+        Some(x) => if x.is_empty() { return Err(err); },
         None => return Err(err)
     }
 
     // Make sure there is no trailing data after the final "$"
-    match iter.next() {
-        Some(_) => return Err(err),
-        None => { }
+    if iter.next().is_some() {
+        return Err(err);
+        
     }
 
     let mut output: Vec<u8> = repeat(0).take(hash.len()).collect();
-    scrypt(password.as_bytes(), &*salt, &params, &mut output).map_err(|_| err)?;
+    scrypt(password.as_bytes(), &salt, &params, &mut output).map_err(|_| err)?;
 
     // Be careful here - its important that the comparison be done using a fixed time equality
     // check. Otherwise an adversary that can measure how long this step takes can learn about the
     // hashed value which would allow them to mount an offline brute force attack against the
     // hashed password.
-    Ok(constant_time_eq(&*output, &*hash))
+    Ok(constant_time_eq(&output, &hash))
 }
 
 
-//#[cfg(test)]
+/*#[cfg(test)]
 pub mod test {
     use std::time::Instant;
 
-    use chrono::Duration;
     use rand::{rngs::OsRng, RngCore, Rng, thread_rng, distributions::Alphanumeric};
     use super::*;
-    //#[test]
+    #[test]
     pub fn sicurezza(){
         
         for i in 0..100000{
@@ -186,4 +185,4 @@ pub mod test {
         }
         
     }
-}
+}*/

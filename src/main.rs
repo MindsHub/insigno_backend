@@ -7,8 +7,6 @@ use rocket_sync_db_pools::Config;
 use schema_sql::marker_types;
 use utils::InsignoError;
 
-use crate::auth::scrypt::test::sicurezza;
-
 #[macro_use]
 extern crate rocket;
 #[macro_use]
@@ -95,7 +93,6 @@ async fn compatibile(
 
 #[launch]
 fn rocket() -> _ {
-    sicurezza();
     use rocket_prometheus::PrometheusMetrics;
 
     let prometheus = PrometheusMetrics::new();
