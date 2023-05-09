@@ -55,7 +55,8 @@ async fn get_near(
                 FROM markers 
                 WHERE ST_DWITHIN(point, $1, 0.135) 
                 AND (resolution_date IS NULL OR $2) 
-                AND (SELECT COUNT (*) FROM marker_reports WHERE markers.id = reported_marker)<3",
+                AND (SELECT COUNT (*) FROM marker_reports WHERE markers.id = reported_marker)<3
+                AND (SELECT COUNT (*) FROM marker_images WHERE markers.id = marker_images.refers_to)>0",
             )
             .bind::<Geometry, _>(cur_point)
             .bind::<Bool, _>(include_resolved.unwrap_or(true));
@@ -301,7 +302,7 @@ pub fn get_routes() -> Vec<Route> {
 #[cfg(test)]
 mod test {
     use crate::rocket;
-    use crate::test::{test_add_point, test_reset_db, test_signup};
+    use crate::test::{test_add_point, test_reset_db, test_signup, test_add_image};
     use rocket::{
         http::{ContentType, Status},
         local::asynchronous::Client,
@@ -407,6 +408,8 @@ mod test {
         //add point
         test_add_point(&client).await;
 
+        //add image
+        test_add_image(1, "./test_data/add_image.jpg", &client).await;
         //1 point query
         let response = client.get("/map/get_near?x=0.0&y=0.0").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
