@@ -32,6 +32,7 @@ pub mod pending_user;
 pub mod signup_info;
 pub mod user;
 pub mod validation;
+pub mod scrypt;
 /*
 signup info -> pending user (verifica credenziali) #
 pending user -> email + db (inviare la mail e salvarla nel db)

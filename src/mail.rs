@@ -24,17 +24,18 @@ pub struct SmtpConfig {
     password: String,
 }
 
-/*#[cfg(test)]
+#[cfg(test)]
 pub async fn send_mail(
     _to: &str,
     _subject: &str,
     _message: &str,
+    plain_text: &str,
     _mailer: &Mailer,
 ) -> Result<(), InsignoError> {
     Ok(())
-}*/
+}
 
-//#[cfg(not(test))]
+#[cfg(not(test))]
 pub async fn send_mail(
     to: &str,
     subject: &str,
