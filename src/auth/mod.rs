@@ -179,7 +179,7 @@ mod test {
         test_signup(&client).await;
 
         // try to get types list
-        let response = client.get(format!("/user/1")).dispatch().await;
+        let response = client.get(("/user/1").to_string()).dispatch().await;
         assert_eq!(response.status(), Status::Ok);
     }
     #[rocket::async_test]

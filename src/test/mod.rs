@@ -82,7 +82,7 @@ pub async fn test_add_image(marker_id: i64, path: &str, c: &Client) {
         .unwrap();
     let y = form.finish().unwrap(); // returns the writer
     let temp_str = form.content_type_header();
-    let w: Vec<&str> = temp_str.split("/").collect();
+    let w: Vec<&str> = temp_str.split('/').collect();
 
     let response = c
         .post("/map/image/add")
@@ -152,7 +152,7 @@ mod test {
             .unwrap();
         let url = value.as_str().unwrap();
 
-        let _conn = PgConnection::establish(&url).unwrap();
+        let _conn = PgConnection::establish(url).unwrap();
         //conn.transaction(f)
         //let  y = users::all_columns.0;
         //let y: i64 = y.assume_not_null().into();

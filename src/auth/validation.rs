@@ -41,7 +41,7 @@ impl<T: Password> SanitizePassword for T {
         mem::swap(self.get_password(), &mut new_password);
     }
     fn hash_password(&mut self) {
-        let params = Params::new(11, 8, 1, 32usize).unwrap();
+        let params = Params::new(17, 8, 1, 32usize).unwrap();
         let mut hashed = scrypt_simple(self.get_password(), &params).unwrap();
         mem::swap(self.get_password(), &mut hashed);
     }
