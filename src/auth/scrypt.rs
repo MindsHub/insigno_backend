@@ -69,10 +69,9 @@ impl Error for ScryptError{
 pub fn scrypt_check(password: &str, hashed_value: &str) -> Result<bool, ScryptError> {
     let err: ScryptError = ScryptError{};
     let mut iter = hashed_value.split('$');
-
     // Check that there are no characters before the first "$"
     match iter.next() {
-        Some(x) => if x.is_empty() { return Err(err); },
+        Some(x) => if !x.is_empty() { return Err(err); },
         None => return Err(err)
     }
 
@@ -102,7 +101,7 @@ pub fn scrypt_check(password: &str, hashed_value: &str) -> Result<bool, ScryptEr
                     let log_n = pvec[0];
                     let r = pvec[1] as u32;
                     let p = pvec[2] as u32;
-                    params = Params::new(log_n, r, p, 32usize).map_err(|_| err)?; //TODO per me non c'entra un cazzo
+                    params = Params::new(log_n, r, p, 32usize).map_err(|_| err)?; 
                 }
                 "1" => {
                     if pvec.len() != 9 { return Err(err); }
@@ -137,7 +136,7 @@ pub fn scrypt_check(password: &str, hashed_value: &str) -> Result<bool, ScryptEr
 
     // Make sure that the input ends with a "$"
     match iter.next() {
-        Some(x) => if x.is_empty() { return Err(err); },
+        Some(x) => if !x.is_empty() { return Err(err); },
         None => return Err(err)
     }
 
