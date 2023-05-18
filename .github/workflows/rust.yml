@@ -17,6 +17,8 @@ jobs:
     - run: rustup toolchain install stable --profile minimal
     - name: Cache rust
       uses: Swatinem/rust-cache@v2
+      with:
+        cache-all-crates: "true"
     - name: Build
       run: cargo build --release
     - name: Upload binaries to release
