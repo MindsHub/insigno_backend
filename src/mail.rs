@@ -9,14 +9,14 @@ use lettre::{
     AsyncSmtpTransport, AsyncTransport, Message, SmtpTransport, Tokio1Executor, Transport,
 };
 use rocket::fairing::AdHoc;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::auth::signup_info::SignupInfo;
 use crate::auth::user::User;
 use crate::utils::InsignoError;
 use crate::InsignoConfig;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct SmtpConfig {
     server: String,

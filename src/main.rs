@@ -1,10 +1,20 @@
 use std::{collections::BTreeMap, fs};
 
+use auth::scrypt::InsignoScryptParams;
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use mail::SmtpConfig;
-use rocket::{fairing::*, serde::Deserialize, State};
-use rocket_sync_db_pools::Config;
+use rocket::config::Config;
+use rocket::{
+    fairing::*,
+    figment::{
+        providers::{Env, Format, Serialized, Toml},
+        Figment,
+    },
+    serde::Deserialize,
+    State,
+};
 use schema_sql::marker_types;
+use serde::Serialize;
 use utils::InsignoError;
 
 #[macro_use]
@@ -25,12 +35,13 @@ mod schema_sql;
 mod test;
 mod utils;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct InsignoConfig {
     media_folder: String,
     oldest_supported_version: String,
     smtp: SmtpConfig,
+    scrypt: InsignoScryptParams,
 }
 pub struct TrashTypeMap {
     pub to_string: BTreeMap<i64, String>,
@@ -40,7 +51,9 @@ pub struct TrashTypeMap {
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Insigno config", |rocket| async {
         //generate trash_types_map
-        let config = Config::from("db", &rocket).unwrap();
+        //let value = rocket.figment().find_value("databases.db.url").unwrap();
+        //let url = value.as_str().unwrap();
+        let config = rocket_sync_db_pools::Config::from("db", &rocket).unwrap();
 
         let mut conn = PgConnection::establish(&config.url).unwrap();
         println!("{:?}", &config.url);
@@ -96,15 +109,30 @@ fn rocket() -> _ {
     use rocket_prometheus::PrometheusMetrics;
 
     let prometheus = PrometheusMetrics::new();
+    let figment = Figment::from(rocket::Config::default())
+        .merge(Serialized::defaults(InsignoScryptParams::default()).key("scrypt"))
+        //.merge(Toml::file("Rocket.toml").nested())
+        .merge(Toml::file("Insigno.toml").nested())
+        .merge(Env::prefixed("INSIGNO_").global());
 
-    let rocket = rocket::build();
-    rocket
+    let insigno_config: InsignoConfig = figment.extract().unwrap();
+    let databases = figment.find_value("databases").unwrap();
+    //.select(Profile::from_env_or("INSIGNO_PROFILE", "default"));
+
+    /*rocket::custom(figment)
+        .mount("/", routes![/* .. */])
+        .attach(AdHoc::config::<Config>())
+    };*/
+    println!("{:?}", databases);
+    let rocket_figment = Config::figment().merge(Serialized::defaults(databases).key("databases"));
+    rocket::custom(rocket_figment)
         .attach(db::stage())
         .mount("/pills", pills::get_routes())
         .mount("/map", map::get_routes())
         .mount("/", auth::get_routes())
         .mount("/", routes![compatibile])
-        .attach(AdHoc::config::<InsignoConfig>())
+        .manage(insigno_config)
+        //.attach(AdHoc::config::<InsignoConfig>())
         .attach(AdHoc::on_ignite("checking config", |rocket| async {
             // if media folder does not exist it creates it
             let cfg: &InsignoConfig = rocket.state().unwrap();

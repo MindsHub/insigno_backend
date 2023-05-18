@@ -215,7 +215,6 @@ pub(crate) struct ReviewVerdict {
     verdict: String,
 }
 
-
 #[post("/image/review/<image_id>", data = "<verdict>")]
 pub(crate) async fn review(
     image_id: i64,
@@ -241,9 +240,7 @@ pub(crate) async fn review(
             )
             .await?;
         }
-        "skip" =>{
-
-        }
+        "skip" => {}
         _ => {
             return Err(InsignoError::new(
                 422,

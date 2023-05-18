@@ -1,17 +1,16 @@
 use std::process::Command;
 
 use rocket::{
+    figment::providers::{Format, Toml},
     http::{ContentType, Status},
     local::asynchronous::Client,
-    Rocket,
+    Config,
 };
 
 pub fn test_reset_db() {
     println!("cleaning db");
-    let value = Rocket::build()
-        .figment()
-        .find_value("databases.db.url")
-        .unwrap();
+    let figment = Config::figment().merge(Toml::file("Insigno.toml").nested());
+    let value = figment.find_value("databases.db.url").unwrap();
     println!("{value:?}");
     let url = value.as_str().unwrap();
 
@@ -141,15 +140,16 @@ macro_rules! clean_db {
 #[cfg(test)]
 mod test {
     use diesel::{Connection, PgConnection};
-    use rocket::Rocket;
+    use rocket::{
+        figment::providers::{Format, Toml},
+        Config,
+    };
 
     //use crate::schema_sql::users;
     #[test]
     fn test1() {
-        let value = Rocket::build()
-            .figment()
-            .find_value("databases.db.url")
-            .unwrap();
+        let figment = Config::figment().merge(Toml::file("Insigno.toml").nested());
+        let value = figment.find_value("databases.db.url").unwrap();
         let url = value.as_str().unwrap();
 
         let _conn = PgConnection::establish(url).unwrap();

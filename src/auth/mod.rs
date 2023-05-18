@@ -15,6 +15,7 @@ use crate::auth::login_info::LoginInfo;
 use crate::auth::signup_info::SignupInfo;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
+use crate::InsignoConfig;
 
 use crate::db::Db;
 use crate::mail::Mailer;
@@ -29,10 +30,10 @@ pub mod admin_user;
 pub mod authenticated_user;
 pub mod login_info;
 pub mod pending_user;
+pub mod scrypt;
 pub mod signup_info;
 pub mod user;
 pub mod validation;
-pub mod scrypt;
 /*
 signup info -> pending user (verifica credenziali) #
 pending user -> email + db (inviare la mail e salvarla nel db)
@@ -45,9 +46,10 @@ async fn signup(
     db: Db,
     create_info: Form<SignupInfo>,
     mail_cfg: &State<Mailer>,
+    config: &State<InsignoConfig>,
 ) -> Result<String, InsignoError> {
     //check if all values are correct
-    let pending = PendingUser::new(create_info.into_inner(), &db).await?;
+    let pending = PendingUser::new(create_info.into_inner(), &db, config).await?;
 
     //send registration mail and insert it in db
     pending.register_and_mail(&db, mail_cfg).await?;

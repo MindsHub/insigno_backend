@@ -1,7 +1,7 @@
+use super::scrypt;
 use crate::diesel::query_dsl::methods::FilterDsl;
 use crate::diesel::ExpressionMethods;
 use crate::{db::Db, utils::InsignoError};
-use super::scrypt;
 use diesel::insert_into;
 use diesel::RunQueryDsl;
 use serde::ser::SerializeStruct;

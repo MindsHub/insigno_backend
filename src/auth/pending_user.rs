@@ -7,6 +7,7 @@ use crate::{
     db::Db,
     mail::{send_mail, Mailer},
     utils::InsignoError,
+    InsignoConfig,
 };
 use diesel::RunQueryDsl;
 
@@ -65,9 +66,13 @@ pub struct PendingUser {
 }
 
 impl PendingUser {
-    pub async fn new(mut value: SignupInfo, connection: &Db) -> Result<Self, InsignoError> {
+    pub async fn new(
+        mut value: SignupInfo,
+        connection: &Db,
+        config: &InsignoConfig,
+    ) -> Result<Self, InsignoError> {
         //it hash the password
-        value.check(connection).await?;
+        value.check(connection, config).await?;
         Ok(PendingUser {
             id: None,
             name: value.name,

@@ -302,7 +302,7 @@ pub fn get_routes() -> Vec<Route> {
 #[cfg(test)]
 mod test {
     use crate::rocket;
-    use crate::test::{test_add_point, test_reset_db, test_signup, test_add_image};
+    use crate::test::{test_add_image, test_add_point, test_reset_db, test_signup};
     use rocket::{
         http::{ContentType, Status},
         local::asynchronous::Client,

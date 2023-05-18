@@ -1,7 +1,7 @@
 use diesel::{sql_query, sql_types::Text, RunQueryDsl};
 use serde::Deserialize;
 
-use crate::{db::Db, utils::InsignoError};
+use crate::{db::Db, utils::InsignoError, InsignoConfig};
 
 use super::{
     user::User,
@@ -34,12 +34,16 @@ impl Email for SignupInfo {
 }
 
 impl SignupInfo {
-    pub async fn check(&mut self, connection: &Db) -> Result<(), InsignoError> {
+    pub async fn check(
+        &mut self,
+        connection: &Db,
+        config: &InsignoConfig,
+    ) -> Result<(), InsignoError> {
         self.sanitize_name()
             .map_err(|e| InsignoError::new(422, e, e))?;
         self.sanitize_email()
             .map_err(|e| InsignoError::new(422, e, e))?;
-        self.sanitize_password()
+        self.sanitize_password(config)
             .map_err(|e| InsignoError::new(422, e, e))?;
 
         //check if unique

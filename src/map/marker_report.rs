@@ -41,15 +41,14 @@ impl MarkerReport {
     }
 }
 
-
 #[derive(Clone, QueryableByName, Serialize)]
-pub struct ImageToReport{
+pub struct ImageToReport {
     #[diesel(sql_type=BigInt)]
     pub id: i64,
     #[diesel(sql_type=BigInt)]
     pub marker_types_id: i64,
 }
-impl ImageToReport{
+impl ImageToReport {
     pub async fn get_to_report(connection: &Db) -> Result<Vec<Self>, InsignoError> {
         let res: Vec<Self> = connection
             .run(|conn| {
