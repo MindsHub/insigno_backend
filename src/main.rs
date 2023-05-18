@@ -14,7 +14,6 @@ use rocket::{
     State,
 };
 use schema_sql::marker_types;
-use serde::Serialize;
 use utils::InsignoError;
 
 #[macro_use]

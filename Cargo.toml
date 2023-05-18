@@ -6,31 +6,28 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-diesel = {version="2.0.3", default-features = false, features =[ "postgres", "chrono"]}
-postgis_diesel = "2.1.0"
+diesel = {version="2.0.3", default-features = false, features = ["chrono", "postgres"] }
+postgis_diesel = {version="2.1.0", default-features = false}
 postgis = "0.9.0"
-rocket = { version = "0.5.0-rc.3", features = ["json",  "secrets"] } #"tls",
+rocket = { version = "0.5.0-rc.3", features = ["json", "secrets"], default-features = false } #"tls",
 rocket_sync_db_pools = { version = "0.1.0-rc.3", default-features = false, features = ["diesel_postgres_pool"] }
 rocket-multipart-form-data = "0.10.5"
 
-serde = "1.0.158"
-rand = "0.8.5"
-chrono= {version = "0.4.24", features= ["clock", "serde"]}
+serde = { default-features = false, version = "1.0.158" }
+rand = { default-features = false, version = "0.8.5" }
+chrono= {version = "0.4.24", features= ["serde"], default-features = false }
 json = "0.12.4"
 
-#rust-crypto = "0.2.36"
-scrypt = "0.11.0"
-base64 = "0.21.0"
+scrypt = { features = ["std"], default-features = false, version = "0.11.0" }
+base64 = { default-features = false, version = "0.21.0" }
 constant_time_eq = "0.2.5"
 
-hex = "0.4.3"
-lettre = {version="0.10.3", default-features = false, features=["tokio1", "smtp-transport", "pool", "tokio1-native-tls", "builder"]}
-toml = "0.7.3"
+hex = { default-features = false, version = "0.4.3" }
+lettre = {version="0.10.3", default-features = false, features= ["tokio1-native-tls", "pool", "builder", "smtp-transport"] }
+toml = { default-features = false, version = "0.7.3" }
 rocket_prometheus = "0.10.0-rc.3"
 
-regex = "1.7.3"
-#hyper={version="0.14.25", features=["client"]}
-#hyper-tls = "0.5.0"
+regex = { features = ["std"], default-features = false, version = "1.7.3" }
 
 [dev-dependencies]
 form-data-builder = "1.0.1"
