@@ -16,7 +16,7 @@ use crate::auth::user::User;
 use crate::utils::InsignoError;
 use crate::InsignoConfig;
 
-#[derive(Deserialize, Default, Serialize)]
+#[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct SmtpConfig {
     server: String,

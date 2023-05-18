@@ -54,7 +54,7 @@ jobs:
         username: ${{secrets.SSH_USER}}
         password: ${{secrets.SSH_PASS}}
         port: ${{secrets.SSH_PORT}}
-        source: "templates/*"
+        source: "templates/*,Rocket.toml,Insigno.toml"
         target: "insigno"
     - name: Re-run server
       uses: appleboy/ssh-action@v0.1.8

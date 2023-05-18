@@ -35,7 +35,7 @@ mod schema_sql;
 mod test;
 mod utils;
 
-#[derive(Deserialize, Default, Serialize)]
+#[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct InsignoConfig {
     media_folder: String,
