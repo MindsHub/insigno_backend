@@ -39,8 +39,7 @@ pub trait SanitizePassword {
     fn hash_password(&mut self, config: &InsignoConfig);
 }
 
-
-impl<T: Password+std::marker::Send> SanitizePassword for T {
+impl<T: Password + std::marker::Send> SanitizePassword for T {
     fn fmt_password(&mut self) {
         let mut new_password = self.get_password().trim().to_string();
         mem::swap(self.get_password(), &mut new_password);

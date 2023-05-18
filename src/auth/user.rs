@@ -83,10 +83,9 @@ impl User {
     pub async fn check_hash(&self, password: &str) -> bool {
         let me = self.clone();
         let password = password.to_string();
-        spawn_blocking(move ||{
-            scrypt::scrypt_check(&password, &me.password).unwrap()
-        }).await.unwrap()
-        
+        spawn_blocking(move || scrypt::scrypt_check(&password, &me.password).unwrap())
+            .await
+            .unwrap()
     }
 }
 

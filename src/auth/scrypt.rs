@@ -35,9 +35,9 @@ pub fn scrypt_simple(password: &str, params: &Params) -> Result<String, Box<dyn 
     OsRng.fill_bytes(&mut salt);
     // 256-bit derived key
     let mut dk = [0u8; 32];
-    
+
     scrypt(password.as_bytes(), &salt, params, &mut dk)?;
-    
+
     let mut result = "$rscrypt$".to_string();
     if params.r() < 256 && params.p() < 256 {
         result.push_str("0$");
@@ -181,8 +181,6 @@ pub fn scrypt_check(password: &str, hashed_value: &str) -> Result<bool, ScryptEr
     let password = password.to_string();
 
     scrypt(password.as_bytes(), &salt, &params, &mut output).map_err(|_| err)?;
-
-    
 
     // Be careful here - its important that the comparison be done using a fixed time equality
     // check. Otherwise an adversary that can measure how long this step takes can learn about the

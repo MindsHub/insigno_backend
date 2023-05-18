@@ -46,14 +46,15 @@ impl SignupInfo {
             .map_err(|e| InsignoError::new(422, e, e))?;
         self.sanitize_email()
             .map_err(|e| InsignoError::new(422, e, e))?;
-        let mut me= self.clone();
+        let mut me = self.clone();
         let c = config.clone();
-        let mut me = spawn_blocking(move ||->Result<_, _>{
+        let mut me = spawn_blocking(move || -> Result<_, _> {
             me.sanitize_password(&c)
                 .map_err(|e| InsignoError::new(422, e, e))?;
             Ok(me)
-        }
-        ).await.unwrap()?;
+        })
+        .await
+        .unwrap()?;
         mem::swap(self, &mut me);
         //check if unique
         let name = self.name.to_string();
