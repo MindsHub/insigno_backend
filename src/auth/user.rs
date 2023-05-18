@@ -4,6 +4,7 @@ use crate::diesel::ExpressionMethods;
 use crate::{db::Db, utils::InsignoError};
 use diesel::insert_into;
 use diesel::RunQueryDsl;
+use rocket::tokio::task::spawn_blocking;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 
@@ -72,15 +73,20 @@ impl User {
         let user = User::get_by_email(connection, v.email)
             .await
             .map_err(|_| InsignoError::new(401, "invalid user", "invalid user"))?;
-        if !user.check_hash(&v.password) {
+        if !user.check_hash(&v.password).await {
             let message = "email o password errati";
             Err(InsignoError::new(403, message, message))
         } else {
             Ok(user)
         }
     }
-    pub fn check_hash(&self, password: &str) -> bool {
-        scrypt::scrypt_check(password, &self.password).unwrap()
+    pub async fn check_hash(&self, password: &str) -> bool {
+        let me = self.clone();
+        let password = password.to_string();
+        spawn_blocking(move ||{
+            scrypt::scrypt_check(&password, &me.password).unwrap()
+        }).await.unwrap()
+        
     }
 }
 

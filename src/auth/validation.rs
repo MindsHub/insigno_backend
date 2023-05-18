@@ -32,12 +32,15 @@ impl<T: Email> SanitizeEmail for T {
 pub trait Password {
     fn get_password(&mut self) -> &mut String;
 }
+
 pub trait SanitizePassword {
     fn fmt_password(&mut self);
     fn sanitize_password(&mut self, config: &InsignoConfig) -> Result<(), &str>;
     fn hash_password(&mut self, config: &InsignoConfig);
 }
-impl<T: Password> SanitizePassword for T {
+
+
+impl<T: Password+std::marker::Send> SanitizePassword for T {
     fn fmt_password(&mut self) {
         let mut new_password = self.get_password().trim().to_string();
         mem::swap(self.get_password(), &mut new_password);

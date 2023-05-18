@@ -19,6 +19,9 @@ jobs:
       uses: Swatinem/rust-cache@v2.3.0
       with:
         cache-all-crates: "true"
+        prefix-key: "v0-rust"
+        shared-key: "test"
+        key: "test"
     - name: Build
       run: cargo build --release
     - name: Upload binaries to release
