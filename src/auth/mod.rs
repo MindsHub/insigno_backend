@@ -12,7 +12,7 @@ use rocket::serde::json::Json;
 use rocket::{Route, State};
 
 use crate::auth::login_info::LoginInfo;
-use crate::auth::signup_info::SignupInfo;
+use crate::auth::signup::SignupInfo;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
 use crate::InsignoConfig;
@@ -23,15 +23,14 @@ use crate::schema_sql::user_sessions::dsl::user_sessions;
 use crate::schema_sql::user_sessions::{refresh_date, token, user_id};
 use crate::utils::InsignoError;
 
-use self::authenticated_user::AuthenticatedUser;
 pub use self::pending_user::*;
 use self::user::User;
-pub mod admin_user;
-pub mod authenticated_user;
+//pub mod admin_user;
+//pub mod authenticated_user;
 pub mod login_info;
 pub mod pending_user;
 pub mod scrypt;
-pub mod signup_info;
+pub mod signup;
 pub mod user;
 pub mod validation;
 /*
@@ -40,22 +39,6 @@ pending user -> email + db (inviare la mail e salvarla nel db)
 pending user -> user (finire registrazione)
 login info->  auth-user/admin-auth-user
 cookie -> auth-user/admin-auth-user*/
-
-#[post("/signup", format = "form", data = "<create_info>")]
-async fn signup(
-    db: Db,
-    create_info: Form<SignupInfo>,
-    mail_cfg: &State<Mailer>,
-    config: &State<InsignoConfig>,
-) -> Result<String, InsignoError> {
-    //check if all values are correct
-    let pending = PendingUser::new(create_info.into_inner(), &db, config).await?;
-
-    //send registration mail and insert it in db
-    pending.register_and_mail(&db, mail_cfg).await?;
-
-    Ok("mail inviata".to_string())
-}
 
 #[get("/verify/<cur_token>")]
 pub async fn verify(
@@ -110,7 +93,7 @@ async fn login(
 }
 
 #[post("/logout")]
-async fn logout(db: Db, cookies: &CookieJar<'_>, user: AuthenticatedUser) -> Option<()> {
+async fn logout(db: Db, cookies: &CookieJar<'_>, user: User<Authenticated>) -> Option<()> {
     cookies.remove_private(Cookie::named("insigno_auth"));
     let id = user.as_ref().id.unwrap();
     if db
@@ -125,7 +108,7 @@ async fn logout(db: Db, cookies: &CookieJar<'_>, user: AuthenticatedUser) -> Opt
 }
 
 #[post("/session")]
-fn refresh_session(_user: AuthenticatedUser) -> Option<()> {
+fn refresh_session(user: User<Authenticated>) -> Option<()> {
     Some(())
 }
 
@@ -137,12 +120,12 @@ pub struct AutenticatedUserTest {
 }
 
 #[get("/user")] //, format="form", data="<login_info>"
-fn get_auth_user(user: AuthenticatedUser) -> Json<AuthenticatedUser> {
+fn get_auth_user(user: User<Authenticated>) -> Json<User<Authenticated>> {
     Json(user)
 }
 
 #[get("/user/<id>")] //, format="form", data="<login_info>"
-pub async fn get_user(db: Db, id: i64) -> Result<Json<User>, InsignoError> {
+pub async fn get_user(db: Db, id: i64) -> Result<Json<User<Unauthenticated>>, InsignoError> {
     let user = User::get_by_id(&db, id).await?;
     Ok(Json(user))
 }
@@ -150,7 +133,7 @@ pub async fn get_user(db: Db, id: i64) -> Result<Json<User>, InsignoError> {
 pub fn get_routes() -> Vec<Route> {
     routes![
         login,
-        signup,
+        signup::signup,
         logout,
         refresh_session,
         get_auth_user,

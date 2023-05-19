@@ -11,7 +11,7 @@ use lettre::{
 use rocket::fairing::AdHoc;
 use serde::{Deserialize, Serialize};
 
-use crate::auth::signup_info::SignupInfo;
+use crate::auth::signup::SignupInfo;
 use crate::auth::user::User;
 use crate::utils::InsignoError;
 use crate::InsignoConfig;

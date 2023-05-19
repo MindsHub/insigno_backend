@@ -2,6 +2,7 @@ use std::{error::Error, fmt::Display, iter::repeat};
 
 use base64::{engine::general_purpose, Engine};
 use constant_time_eq::constant_time_eq;
+use diesel::helper_types::SqlTypeOf;
 use rand::{rngs::OsRng, RngCore};
 pub use scrypt::{scrypt, Params};
 use serde::{Deserialize, Serialize};

@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use crate::auth::authenticated_user::AuthenticatedUser;
+use crate::auth::user::Authenticated;
+use crate::auth::user::Unauthenticated;
 use crate::auth::user::User;
 use crate::utils::*;
 use crate::TrashTypeMap;
@@ -84,7 +85,7 @@ struct AddTrashField {
 #[post("/add", data = "<data>")]
 async fn add_map(
     data: Form<AddTrashField>,
-    user: AuthenticatedUser,
+    user: User<Authenticated>,
     connection: Db,
     trash_types_map: &State<TrashTypeMap>,
 ) -> Result<Json<MarkerUpdate>, InsignoError> {
@@ -109,7 +110,7 @@ async fn add_map(
                 "
             SELECT * FROM add_marker($1, $2, $3);",
             )
-            .bind::<BigInt, _>(user.as_ref().id.unwrap())
+            .bind::<BigInt, _>(user.id.unwrap())
             .bind::<Geometry, _>(Point::new(data.x, data.y, Some(4326))) //(InsignoPoint::new(data.x, data.y))
             .bind::<BigInt, _>(type_int)
             .get_result(conn)
@@ -133,8 +134,8 @@ pub struct MarkerInfo {
     point: InsignoPoint,
     creation_date: chrono::DateTime<Utc>,
     resolution_date: Option<chrono::DateTime<Utc>>,
-    created_by: Option<User>,
-    solved_by: Option<User>,
+    created_by: Option<User<Unauthenticated>>,
+    solved_by: Option<User<Unauthenticated>>,
     marker_types_id: i64,
     can_report: bool,
     images_id: Option<Vec<i64>>,
@@ -165,7 +166,7 @@ struct MarkerUpdate {
 async fn get_marker_from_id(
     marker_id: i64,
     connection: Db,
-    user: Option<AuthenticatedUser>,
+    user: Option<User<Authenticated>>,
 ) -> Result<Json<MarkerInfo>, InsignoError> {
     let m: Marker = connection
         .run(move |conn| {
@@ -198,7 +199,7 @@ async fn get_marker_from_id(
             let query = marker_reports::table.filter(marker_reports::reported_marker.eq(marker_id));
             if let Some(user) = user {
                 query
-                    .filter(marker_reports::user_f.eq(user.as_ref().id.unwrap()))
+                    .filter(marker_reports::user_f.eq(user.id.unwrap()))
                     .get_results(conn)
             } else {
                 query.get_results(conn)
@@ -222,7 +223,7 @@ struct ResolveRet {
 #[post("/resolve/<marker_id>")]
 async fn resolve_marker_from_id(
     marker_id: i64,
-    user: AuthenticatedUser,
+    user: User<Authenticated>,
     connection: Db,
 ) -> Result<Json<MarkerUpdate>, Status> {
     let y: ResolveRet = connection
@@ -233,7 +234,7 @@ async fn resolve_marker_from_id(
             SELECT * FROM resolve_marker($1, $2);",
                 )
                 .bind::<BigInt, _>(marker_id)
-                .bind::<BigInt, _>(user.as_ref().id.unwrap())
+                .bind::<BigInt, _>(user.id.unwrap())
                 .get_result(conn)
             }, //select(resolve_marker(marker_id, user.id.unwrap())).execute(conn))
         )
@@ -253,7 +254,7 @@ async fn resolve_marker_from_id(
 #[post("/report/<marker_id>")]
 async fn report_marker(
     marker_id: i64,
-    user: AuthenticatedUser,
+    user: User<Authenticated>,
     connection: Db,
 ) -> Result<(), InsignoError> {
     connection
@@ -266,7 +267,7 @@ async fn report_marker(
                         WHERE user_f=$1 AND reported_marker=$2)
                 returning *;",
             )
-            .bind::<BigInt, _>(user.as_ref().id.unwrap())
+            .bind::<BigInt, _>(user.id.unwrap())
             .bind::<BigInt, _>(marker_id);
 
             query.get_result::<MarkerReport>(conn)

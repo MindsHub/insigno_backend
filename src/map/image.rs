@@ -7,8 +7,8 @@ use std::process;
 
 use super::marker_image::MarkerImage;
 use super::marker_report::ImageToReport;
-use crate::auth::admin_user::AdminUser;
-use crate::auth::authenticated_user::AuthenticatedUser;
+use crate::auth::user::Authenticated;
+use crate::auth::user::AuthenticatedAdmin;
 use crate::auth::user::User;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
@@ -88,7 +88,7 @@ async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Insigno
 pub(crate) async fn add_image(
     content_type: &ContentType,
     data: Data<'_>,
-    user: AuthenticatedUser,
+    user: User<Authenticated>,
     connection: Db,
     config: &State<InsignoConfig>,
     limits: &Limits,
@@ -122,7 +122,7 @@ pub(crate) async fn add_image(
         .parse::<i64>()
         .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
-    let user_id = user.as_ref().id.unwrap();
+    let user_id = user.id.unwrap();
 
     // check if user own the marker
     connection
@@ -204,7 +204,7 @@ pub(crate) async fn get_image(
 #[get("/image/to_review")]
 pub(crate) async fn get_to_review(
     connection: Db,
-    _user: AdminUser,
+    _user: User<AuthenticatedAdmin>,
 ) -> Result<Json<Vec<ImageToReport>>, InsignoError> {
     let images = ImageToReport::get_to_report(&connection).await?;
     Ok(Json(images))
@@ -220,7 +220,7 @@ pub(crate) async fn review(
     image_id: i64,
     connection: Db,
     config: &State<InsignoConfig>,
-    user: AdminUser,
+    user: User<AuthenticatedAdmin>,
     verdict: Form<ReviewVerdict>,
 ) -> Result<(), InsignoError> {
     let verdict = verdict.verdict.trim().to_ascii_lowercase();
@@ -235,7 +235,7 @@ pub(crate) async fn review(
             let image = MarkerImage::delete(&connection, image_id, config).await?;
             MarkerReport::report(
                 &connection,
-                (user.as_ref() as &User).id.unwrap(),
+                user.id.unwrap(),
                 image.id.unwrap(),
             )
             .await?;

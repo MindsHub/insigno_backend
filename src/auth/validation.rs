@@ -1,9 +1,10 @@
-use std::mem;
+use std::{error::Error, mem};
 
 use crate::InsignoConfig;
 
 use super::scrypt::scrypt_simple;
 use regex::Regex;
+use scrypt::Params;
 
 pub trait Email {
     fn get_email(&mut self) -> &mut String;
@@ -35,8 +36,8 @@ pub trait Password {
 
 pub trait SanitizePassword {
     fn fmt_password(&mut self);
-    fn sanitize_password(&mut self, config: &InsignoConfig) -> Result<(), &str>;
-    fn hash_password(&mut self, config: &InsignoConfig);
+    fn sanitize_password(&mut self) -> Result<(), &str>;
+    fn hash_password(&mut self, params: &Params) -> Result<(), Box<dyn Error>>;
 }
 
 impl<T: Password + std::marker::Send> SanitizePassword for T {
@@ -44,13 +45,7 @@ impl<T: Password + std::marker::Send> SanitizePassword for T {
         let mut new_password = self.get_password().trim().to_string();
         mem::swap(self.get_password(), &mut new_password);
     }
-    fn hash_password(&mut self, config: &InsignoConfig) {
-        let params = config.scrypt.clone().into();
-
-        let mut hashed = scrypt_simple(self.get_password(), &params).unwrap();
-        mem::swap(self.get_password(), &mut hashed);
-    }
-    fn sanitize_password(&mut self, config: &InsignoConfig) -> Result<(), &str> {
+    fn sanitize_password(&mut self) -> Result<(), &str> {
         self.fmt_password();
         let password = self.get_password();
         if password.len() < 8 {
@@ -72,7 +67,12 @@ impl<T: Password + std::marker::Send> SanitizePassword for T {
         if !password.chars().any(|x| !x.is_ascii_alphanumeric()) {
             return Err("La password deve contenere almeno un carattere speciale");
         }
-        self.hash_password(config);
+        Ok(())
+    }
+
+    fn hash_password(&mut self, params: &Params) -> Result<(), Box<dyn Error>> {
+        let mut hashed_password = scrypt_simple(self.get_password(), params)?;
+        mem::swap(&mut hashed_password, self.get_password());
         Ok(())
     }
 }

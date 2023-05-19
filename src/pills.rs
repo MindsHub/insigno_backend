@@ -1,4 +1,4 @@
-use crate::auth::authenticated_user::AuthenticatedUser;
+use crate::auth::user::{Authenticated, User};
 use crate::schema_sql::pills;
 use crate::utils::InsignoError;
 use diesel::ExpressionMethods;
@@ -54,12 +54,12 @@ struct AddPill {
 async fn add_pill(
     connection: Db,
     data: Form<AddPill>,
-    user: AuthenticatedUser,
+    user: User<Authenticated>,
 ) -> Result<String, InsignoError> {
     let pill = Pill {
         id: None,
         text: data.text.clone(),
-        author: user.as_ref().name.clone(),
+        author: user.name.clone(),
         source: data.source.clone(),
         accepted: false,
     };

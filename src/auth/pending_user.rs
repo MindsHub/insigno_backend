@@ -1,7 +1,10 @@
-use std::fs;
+use std::{fs, mem};
 
 use chrono::Utc;
-use diesel::{sql_query, sql_types::*};
+use diesel::{insert_into, sql_query, sql_types::*};
+use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
+use rocket::serde::json::serde_json;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     db::Db,
@@ -11,7 +14,7 @@ use crate::{
 };
 use diesel::RunQueryDsl;
 
-use super::signup_info::SignupInfo;
+use super::signup::SignupInfo;
 
 #[cfg(not(test))]
 pub fn generate_token() -> String {
@@ -72,7 +75,7 @@ impl PendingUser {
         config: &InsignoConfig,
     ) -> Result<Self, InsignoError> {
         //it hash the password
-        value.check(connection, config).await?;
+        //value.check(connection, config).await?;
         Ok(PendingUser {
             id: None,
             name: value.name,
@@ -143,5 +146,79 @@ impl PendingUser {
             .await
             .map_err(|e| InsignoError::new(422, "token non trovato", &e.to_string()))?;
         Ok(pending_user)
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub enum PendingAction {
+    RegisterUser(i64),
+    ChangePassword(i64, String),
+}
+impl From<String> for PendingAction {
+    fn from(value: String) -> Self {
+        serde_json::from_str(&value).unwrap()
+    }
+}
+impl From<PendingAction> for String {
+    fn from(value: PendingAction) -> Self {
+        serde_json::to_string(&value).unwrap()
+    }
+}
+
+table! {
+    pending(id){
+        id->Nullable<BigInt>,
+        key->Text,
+        action->Text,
+    }
+}
+#[derive(Queryable, Clone, Insertable)]
+#[diesel(table_name = pending)]
+pub struct Pending {
+    id: Option<i64>,
+    key: String,
+    #[diesel(deserialize_as = String, serialize_as = String)]
+    action: PendingAction,
+}
+
+impl Pending {
+    pub fn new(action: PendingAction) -> Self {
+        let key = OsRng
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
+
+        Pending {
+            id: None,
+            key,
+            action,
+        }
+    }
+    pub async fn insert(&mut self, connection: &Db) -> Result<(), InsignoError> {
+        let me: Self = self.clone();
+        let mut me: Self = connection
+            .run(|conn| {
+                insert_into(pending::dsl::pending)
+                    .values(me)
+                    .get_result(conn)
+            })
+            .await
+            .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?;
+        mem::swap(&mut me, self);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::auth::pending_user::PendingAction;
+
+    #[rocket::async_test]
+    async fn test() {
+        println!(
+            "{:?}",
+            String::try_from(PendingAction::ChangePassword(15, "test".to_string()))
+        );
     }
 }
