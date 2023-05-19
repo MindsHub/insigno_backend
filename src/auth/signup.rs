@@ -49,10 +49,19 @@ impl SignupInfo {
 }
 
 impl User<Unauthenticated> {
-    fn from(mut value: SignupInfo, params: &Params) -> Result<Self, InsignoError> {
-        value
-            .hash_password(params)
-            .map_err(|e| InsignoError::new_debug(501, &e.to_string()))?;
+    async fn from(
+        mut value: SignupInfo,
+        params: InsignoScryptParams,
+    ) -> Result<Self, InsignoError> {
+        let value = spawn_blocking(move || {
+            value
+                .hash_password(&params.into())
+                .map_err(|e| InsignoError::new_debug(501, &e.to_string()))
+                .map(|_| value)
+        })
+        .await
+        .map_err(|e| InsignoError::new_debug(501, &e.to_string()))??;
+
         Ok(Self {
             id: None,
             name: value.name,
@@ -74,7 +83,7 @@ pub async fn signup(
 ) -> Result<String, InsignoError> {
     create_info.sanitize()?;
 
-    let mut user = User::from(create_info.into_inner(), &config.scrypt.clone().into())?;
+    let mut user = User::from(create_info.into_inner(), config.scrypt.clone().into()).await?;
     user.insert(&connection).await?;
     let mut pend = Pending::new(PendingAction::RegisterUser(user.id.unwrap()));
     pend.insert(&connection).await?;

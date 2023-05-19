@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use super::login_info::LoginInfo;
 use super::validation::{SanitizeEmail, SanitizePassword};
-use super::PendingUser;
+
 table! {
     users(id){
         id -> Nullable<BigInt>,
@@ -91,7 +91,7 @@ pub struct User<UserType> {
     pub phantom: PhantomData<UserType>,
 }
 
-impl<T: UserType> User<T>{
+impl<T: UserType> User<T> {
     //*this must remain private */
     fn upgrade<Z>(self) -> User<Z> {
         User {
@@ -143,7 +143,8 @@ impl<T: UserType> User<T> {
                     .get_result::<UserDiesel>(conn)
             })
             .await
-            .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?.into();
+            .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?
+            .into();
         mem::swap(&mut me, self);
         Ok(())
     }
@@ -233,15 +234,16 @@ impl<'r> FromRequest<'r> for User<AuthenticatedAdmin> {
 
     async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
         let y: Outcome<User<Authenticated>, _> = User::from_request(request).await;
-         match y {
-            Outcome::Success(x) =>{if x.is_admin{
-                Outcome::Success(x.upgrade())
-            }else{
-                InsignoError::new(401, "Unauthorized", "Unauthorized").into()
+        match y {
+            Outcome::Success(x) => {
+                if x.is_admin {
+                    Outcome::Success(x.upgrade())
+                } else {
+                    InsignoError::new(401, "Unauthorized", "Unauthorized").into()
+                }
             }
-        },
-            Outcome::Failure(x) => {Outcome::Failure(x)},
-            Outcome::Forward(_) => {Outcome::Forward(())},
-         }
+            Outcome::Failure(x) => Outcome::Failure(x),
+            Outcome::Forward(_) => Outcome::Forward(()),
+        }
     }
 }

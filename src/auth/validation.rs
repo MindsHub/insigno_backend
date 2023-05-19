@@ -1,7 +1,5 @@
 use std::{error::Error, mem};
 
-use crate::InsignoConfig;
-
 use super::scrypt::scrypt_simple;
 use regex::Regex;
 use scrypt::Params;
