@@ -38,6 +38,7 @@ mod utils;
 #[serde(crate = "rocket::serde")]
 pub struct InsignoConfig {
     media_folder: String,
+    template_folder: String,
     oldest_supported_version: String,
     smtp: SmtpConfig,
     scrypt: InsignoScryptParams,

@@ -13,6 +13,7 @@ use rocket::{Route, State};
 
 use crate::auth::login_info::LoginInfo;
 use crate::auth::signup::SignupInfo;
+use crate::auth::user::{Authenticated, Unauthenticated};
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
 use crate::InsignoConfig;
@@ -47,7 +48,7 @@ pub async fn verify(
 ) -> Result<(ContentType, String), InsignoError> {
     let pending_user = PendingUser::from_token(cur_token, &connection).await?;
     //inserting into db
-    User::new_from_pending(pending_user, &connection).await?;
+    //User::new_from_pending(pending_user, &connection).await?;
 
     let success = fs::read("./templates/account_creation.html")
         .await
@@ -65,9 +66,9 @@ async fn login(
     login_info: Form<LoginInfo>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<i64>, InsignoError> {
-    let user = User::login(login_info.into_inner(), &db).await?;
+    //let user = User::login(login_info.into_inner(), &db).await?;
 
-    let cur_user_id = user.id.unwrap();
+    let cur_user_id: i64 = todo!();
 
     let token_str = generate_token();
     let insigno_auth = format!("{cur_user_id} {token_str}");
@@ -89,13 +90,13 @@ async fn login(
     })
     .await
     .map_err(|x| InsignoError::new(500, "Db Error", &x.to_string()))?;
-    Ok(Json(user.id.unwrap()))
+    Ok(Json(todo!()))
 }
 
 #[post("/logout")]
 async fn logout(db: Db, cookies: &CookieJar<'_>, user: User<Authenticated>) -> Option<()> {
     cookies.remove_private(Cookie::named("insigno_auth"));
-    let id = user.as_ref().id.unwrap();
+    let id = user.id.unwrap();
     if db
         .run(move |conn| diesel::delete(user_sessions.filter(user_id.eq(id))).execute(conn))
         .await

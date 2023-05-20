@@ -4,5 +4,8 @@
     },
     "rust-analyzer.diagnostics.disabled": [
         "unresolved-method"
+    ],
+    "rust-analyzer.linkedProjects": [
+        "./Cargo.toml"
     ]
 }
