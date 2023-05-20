@@ -109,17 +109,17 @@ pub async fn verify(
     let pending = Pending::get_from_token(token, &connection).await?;
     match pending.action{
         PendingAction::RegisterUser(name, email, password) => {},
-        PendingAction::ChangePassword => {},
+        PendingAction::ChangePassword(_, _) => {},
     }
 
-    let success = fs::read("./templates/account_creation.html")
+    /*let success = fs::read("./templates/account_creation.html")
         .await
         .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
     let success =
-        String::from_utf8(success).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+        String::from_utf8(success).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;*/
 
-    Ok((ContentType::HTML, success))
+    Ok((ContentType::HTML, todo!()))
 }
 
 

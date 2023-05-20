@@ -45,7 +45,7 @@ impl SignupInfo {
         Ok(())
     }
 }
-
+/*
 impl User<Unauthenticated> {
     async fn from(
         String string, string
@@ -69,7 +69,7 @@ impl User<Unauthenticated> {
             phantom: std::marker::PhantomData,
         })
     }
-}
+}*/
 
 #[post("/signup", format = "form", data = "<create_info>")]
 pub async fn signup(
