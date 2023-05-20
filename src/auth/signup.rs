@@ -1,17 +1,15 @@
-use std::mem;
+use std::string;
 
-use diesel::{sql_query, sql_types::Text, RunQueryDsl};
 use rocket::{form::Form, tokio::task::spawn_blocking, State};
 use scrypt::Params;
 use serde::Deserialize;
 
-use crate::{db::Db, mail::Mailer, utils::InsignoError, InsignoConfig};
+use crate::{db::Db, utils::InsignoError, InsignoConfig, mail::MailBuilder, pending::{Pending, PendingAction}};
 
 use super::{
-    scrypt::{scrypt_simple, InsignoScryptParams},
+    scrypt::InsignoScryptParams,
     user::{Unauthenticated, User},
-    validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword},
-    Pending, PendingAction,
+    validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword}
 };
 
 #[derive(FromForm, Deserialize, Clone)]
@@ -50,8 +48,7 @@ impl SignupInfo {
 
 impl User<Unauthenticated> {
     async fn from(
-        mut value: SignupInfo,
-        params: InsignoScryptParams,
+        String string, string
     ) -> Result<Self, InsignoError> {
         let value = spawn_blocking(move || {
             value
@@ -77,18 +74,35 @@ impl User<Unauthenticated> {
 #[post("/signup", format = "form", data = "<create_info>")]
 pub async fn signup(
     mut create_info: Form<SignupInfo>,
-    mail_cfg: &State<Mailer>,
+    mailer: &State<MailBuilder>,
     config: &State<InsignoConfig>,
     connection: Db,
 ) -> Result<String, InsignoError> {
     create_info.sanitize()?;
+    let params: Params = config.scrypt.clone().into();
+    let create_info = spawn_blocking(move || {
+        create_info
+            .hash_password(&params)
+            .map_err(|e| InsignoError::new_debug(501, &e.to_string()))
+            .map(|_| create_info)
+    })
+    .await
+    .map_err(|e| InsignoError::new_debug(501, &e.to_string()))??;
 
-    let mut user = User::from(create_info.into_inner(), config.scrypt.clone().into()).await?;
-    user.insert(&connection).await?;
-    let mut pend = Pending::new(PendingAction::RegisterUser(user.id.unwrap()));
+    //create_info.hash_password(config.scrypt)?;
+    let mut pend = Pending::new(PendingAction::RegisterUser(create_info.name.clone(), create_info.email.clone(), create_info.password.clone()));
     pend.insert(&connection).await?;
-    //send registration mail and insert it in db
-    //pending.register_and_mail(&db, mail_cfg).await?;
+    let link = format!("https://insigno.mindshub.it/verify/{}", pend.token);
+    mailer.send_registration_mail(&create_info.email, &create_info.name, &link).await.map_err(|e| InsignoError::new_debug(501, &e.to_string()))?;
 
     Ok("mail inviata".to_string())
+}
+
+pub async fn complete_registration(pend: PendingAction)->Result<(), InsignoError>{
+    if let PendingAction::RegisterUser(a, b, c) = pend{
+
+    }else{
+
+    }
+    todo!()
 }

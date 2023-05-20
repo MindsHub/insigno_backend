@@ -19,17 +19,15 @@ use crate::diesel::RunQueryDsl;
 use crate::InsignoConfig;
 
 use crate::db::Db;
-use crate::mail::Mailer;
+use crate::pending::generate_token;
 use crate::schema_sql::user_sessions::dsl::user_sessions;
 use crate::schema_sql::user_sessions::{refresh_date, token, user_id};
 use crate::utils::InsignoError;
 
-pub use self::pending_user::*;
+
 use self::user::User;
-//pub mod admin_user;
-//pub mod authenticated_user;
+
 pub mod login_info;
-pub mod pending_user;
 pub mod scrypt;
 pub mod signup;
 pub mod user;
@@ -41,24 +39,7 @@ pending user -> user (finire registrazione)
 login info->  auth-user/admin-auth-user
 cookie -> auth-user/admin-auth-user*/
 
-#[get("/verify/<cur_token>")]
-pub async fn verify(
-    cur_token: String,
-    connection: Db,
-) -> Result<(ContentType, String), InsignoError> {
-    let pending_user = PendingUser::from_token(cur_token, &connection).await?;
-    //inserting into db
-    //User::new_from_pending(pending_user, &connection).await?;
 
-    let success = fs::read("./templates/account_creation.html")
-        .await
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
-
-    let success =
-        String::from_utf8(success).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
-
-    Ok((ContentType::HTML, success))
-}
 
 #[post("/login", format = "form", data = "<login_info>")]
 async fn login(
@@ -139,7 +120,6 @@ pub fn get_routes() -> Vec<Route> {
         refresh_session,
         get_auth_user,
         get_user,
-        verify,
     ]
 }
 #[cfg(test)]

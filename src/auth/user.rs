@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::mem;
 
-use super::scrypt;
+use crate::auth::scrypt::scrypt_check;
 use crate::diesel::query_dsl::methods::FilterDsl;
 use crate::diesel::ExpressionMethods;
 use crate::{db::Db, utils::InsignoError};
@@ -166,7 +166,7 @@ impl<T: UserType> User<T> {
     pub async fn check_hash(&self, password: &str) -> bool {
         let me = self.clone();
         let password = password.to_string();
-        spawn_blocking(move || scrypt::scrypt_check(&password, &me.password_hash).unwrap())
+        spawn_blocking(move || scrypt_check(&password, &me.password_hash).unwrap())
             .await
             .unwrap()
     }

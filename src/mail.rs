@@ -36,7 +36,7 @@ pub fn stage() -> AdHoc {
     })
 }
 
-struct MailBuilder {
+pub struct MailBuilder {
     registration_mail_content: String,
     registration_mail_content_plain: String,
     logo_insigno: Body,
@@ -95,7 +95,7 @@ impl MailBuilder {
             mailer,
         })
     }
-    async fn registration_mail(&self, email: &str, user_name: &str, link: &str)->Result<(), Box<dyn Error>>{
+    pub async fn send_registration_mail(&self, email: &str, user_name: &str, link: &str)->Result<(), Box<dyn Error>>{
         let plain = self
             .registration_mail_content_plain
             .replace("{user}", user_name)
@@ -164,6 +164,6 @@ mod test{
 
 
         let z = MailBuilder::new(&config).await.unwrap();
-        let mail = z.registration_mail("***REMOVED***", "test", "test.com").await;
+        let mail = z.send_registration_mail("***REMOVED***", "test", "test.com").await;
     }
 }
