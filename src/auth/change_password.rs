@@ -16,6 +16,6 @@ pub async fn change_password(
 ) -> Result<String, InsignoError> {
     let mut pending: Pending = Pending::new(PendingAction::ChangePassword(change_password_request.user_id));
     pending.insert(&db).await?;
-
+    mailer.
     Ok("Abbiamo inviato una mail all'utente interessato".to_string())
 }

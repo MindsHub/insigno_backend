@@ -233,7 +233,7 @@ mod test {
 
         let z = MailBuilder::new(&config).await.unwrap();
         let mail = z
-            .send_registration_mail("***REMOVED***", "test", "test.com")
+            .send_registration_mail("test@test.test", "test", "test.com")
             .await;
     }
 }
