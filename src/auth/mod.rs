@@ -76,6 +76,7 @@ pub fn get_routes() -> Vec<Route> {
         refresh_session,
         get_auth_user,
         get_user,
+        change_password::change_password,
     ]
 }
 #[cfg(test)]
