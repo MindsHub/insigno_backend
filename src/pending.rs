@@ -1,13 +1,14 @@
 use std::{mem};
 
+use chrono::Utc;
 use diesel::{insert_into, sql_types::Text, sql_query};
 
-use rocket::{serde::json::serde_json, http::ContentType};
+use rocket::{serde::json::serde_json, http::ContentType, fairing::AdHoc};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     db::Db,
-    utils::InsignoError,
+    utils::InsignoError, auth::signup::complete_registration,
 };
 use diesel::RunQueryDsl;
 
@@ -26,7 +27,7 @@ pub fn generate_token() -> String {
     "11111111111111111111".to_string()
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum PendingAction {
     /// name, email, password
     RegisterUser(String, String, String),
@@ -48,15 +49,17 @@ table! {
         id->Nullable<BigInt>,
         token->Text,
         action->Text,
+        request_date->Nullable<Timestamptz>,
     }
 }
-#[derive(Queryable, Clone, Insertable, QueryableByName)]
+#[derive(Queryable, Clone, Insertable, QueryableByName, Debug)]
 #[diesel(table_name = pending)]
 pub struct Pending {
     id: Option<i64>,
     pub token: String,
     #[diesel(deserialize_as = String, serialize_as = String)]
     pub action: PendingAction,
+    pub request_date: Option<chrono::DateTime<Utc>>
 }
 
 impl Pending {
@@ -67,6 +70,7 @@ impl Pending {
             id: None,
             token,
             action,
+            request_date: None,
         }
     }
     pub async fn insert(&mut self, connection: &Db) -> Result<(), InsignoError> {
@@ -80,6 +84,7 @@ impl Pending {
             .await
             .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?;
         mem::swap(&mut me, self);
+        println!("inserted {:?}", self);
         Ok(())
     }
 
@@ -89,9 +94,10 @@ impl Pending {
             return Err(InsignoError::new(422, s, s));
         }
         let token = token.to_string();
+        println!("token={}", token);
         let pending: Self = connection
             .run(|conn| {
-                sql_query("SELECT * FROM get_pending_user($1);")
+                sql_query("SELECT * FROM get_pending($1);")
                     .bind::<Text, _>(token)
                     .get_result(conn)
             })
@@ -106,10 +112,12 @@ pub async fn verify(
     token: String,
     connection: Db,
 ) -> Result<(ContentType, String), InsignoError> {
+    println!("verificando");
     let pending = Pending::get_from_token(token, &connection).await?;
+    
     match pending.action{
-        PendingAction::RegisterUser(name, email, password) => {},
-        PendingAction::ChangePassword(_, _) => {},
+        PendingAction::RegisterUser(name, email, password) => {complete_registration(PendingAction::RegisterUser(name, email, password), &connection).await},
+        PendingAction::ChangePassword(_, _) => {todo!()},
     }
 
     /*let success = fs::read("./templates/account_creation.html")
@@ -119,9 +127,14 @@ pub async fn verify(
     let success =
         String::from_utf8(success).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;*/
 
-    Ok((ContentType::HTML, todo!()))
+    
 }
 
+pub fn stage() -> AdHoc {
+    AdHoc::on_ignite("Pending stage", |rocket| async {
+        rocket.mount("/", routes![verify])
+    })
+}
 
 #[cfg(test)]
 mod test {

@@ -4,7 +4,10 @@ use std::mem;
 use crate::auth::scrypt::scrypt_check;
 use crate::diesel::query_dsl::methods::FilterDsl;
 use crate::diesel::ExpressionMethods;
+use crate::schema_sql::user_sessions::dsl::user_sessions;
+use crate::schema_sql::user_sessions::*;
 use crate::{db::Db, utils::InsignoError};
+use diesel::dsl::now;
 use diesel::sql_types::{BigInt, Text};
 use diesel::RunQueryDsl;
 use diesel::{insert_into, sql_query};
@@ -12,9 +15,6 @@ use rocket::request::{self, FromRequest, Outcome};
 use rocket::tokio::task::spawn_blocking;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
-
-use super::login_info::LoginInfo;
-use super::validation::{SanitizeEmail, SanitizePassword};
 
 table! {
     users(id){
@@ -106,6 +106,28 @@ impl<T: UserType> User<T> {
     }
 }
 
+impl User<Authenticated> {
+    pub async fn set_token (&self, token_str: &str,  db: &Db)->Result<(), InsignoError>{
+        let id = self.id.unwrap();
+        let token_str=token_str.to_string();
+        db.run(move |conn| {
+            diesel::insert_into(user_sessions)
+                .values((
+                    user_id.eq(id),
+                    token.eq(token_str.clone()),
+                    refresh_date.eq(now),
+                ))
+                .on_conflict(user_id)
+                .do_update()
+                .set((token.eq(token_str), refresh_date.eq(now)))
+                .execute(conn)
+        })
+        .await
+        .map_err(|x| InsignoError::new(500, "Db Error", &x.to_string()))?;
+        Ok(())
+    }
+}
+
 impl User<Unauthenticated> {
     pub async fn get_by_email(db: &Db, email: String) -> Result<Self, InsignoError> {
         let user: Self = db
@@ -131,10 +153,29 @@ impl User<Unauthenticated> {
             .into();
         Ok(user)
     }
+    pub async fn login(self, password: &str) -> Result<User<Authenticated>, InsignoError> {
+        if !self.check_hash(password).await {
+            let message = "email o password errati";
+            Err(InsignoError::new(403, message, message))
+        } else {
+            let me = self.upgrade();
+            Ok(me)
+        }
+    }
+    pub async fn check_hash(&self, password: &str) -> bool {
+        println!("{password}");
+        println!("{}", self.password_hash);
+        let me = self.clone();
+        let password = password.to_string();
+        spawn_blocking(move || scrypt_check(&password, &me.password_hash).unwrap())
+            .await
+            .unwrap()
+    }
 }
 
 impl<T: UserType> User<T> {
     pub async fn insert(&mut self, connection: &Db) -> Result<(), InsignoError> {
+        println!("try to insert");
         let me: UserDiesel = self.clone().into();
         let mut me: Self = connection
             .run(|conn| {
@@ -147,28 +188,6 @@ impl<T: UserType> User<T> {
             .into();
         mem::swap(&mut me, self);
         Ok(())
-    }
-
-    pub async fn login(mut v: LoginInfo, connection: &Db) -> Result<Self, InsignoError> {
-        v.fmt_password();
-        v.fmt_email();
-
-        let user = User::get_by_email(connection, v.email)
-            .await
-            .map_err(|_| InsignoError::new(401, "invalid user", "invalid user"))?;
-        if !user.check_hash(&v.password).await {
-            let message = "email o password errati";
-            Err(InsignoError::new(403, message, message))
-        } else {
-            Ok(user.upgrade())
-        }
-    }
-    pub async fn check_hash(&self, password: &str) -> bool {
-        let me = self.clone();
-        let password = password.to_string();
-        spawn_blocking(move || scrypt_check(&password, &me.password_hash).unwrap())
-            .await
-            .unwrap()
     }
 }
 

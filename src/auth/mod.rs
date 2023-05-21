@@ -1,27 +1,18 @@
-use rocket::tokio::fs;
-
-use diesel::dsl::now;
-
 use diesel::query_dsl::methods::FilterDsl;
 
 use serde::Serialize;
 
-use rocket::form::Form;
-use rocket::http::{ContentType, Cookie, CookieJar};
+use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
-use rocket::{Route, State};
+use rocket::Route;
 
-use crate::auth::login_info::LoginInfo;
-use crate::auth::signup::SignupInfo;
 use crate::auth::user::{Authenticated, Unauthenticated};
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
-use crate::InsignoConfig;
 
 use crate::db::Db;
-use crate::pending::generate_token;
 use crate::schema_sql::user_sessions::dsl::user_sessions;
-use crate::schema_sql::user_sessions::{refresh_date, token, user_id};
+use crate::schema_sql::user_sessions::user_id;
 use crate::utils::InsignoError;
 
 
@@ -41,38 +32,7 @@ cookie -> auth-user/admin-auth-user*/
 
 
 
-#[post("/login", format = "form", data = "<login_info>")]
-async fn login(
-    db: Db,
-    login_info: Form<LoginInfo>,
-    cookies: &CookieJar<'_>,
-) -> Result<Json<i64>, InsignoError> {
-    //let user = User::login(login_info.into_inner(), &db).await?;
 
-    let cur_user_id: i64 = todo!();
-
-    let token_str = generate_token();
-    let insigno_auth = format!("{cur_user_id} {token_str}");
-
-    cookies.add_private(Cookie::new("insigno_auth", insigno_auth));
-
-    // update token on login
-    db.run(move |conn| {
-        diesel::insert_into(user_sessions)
-            .values((
-                user_id.eq(cur_user_id),
-                token.eq(token_str.clone()),
-                refresh_date.eq(now),
-            ))
-            .on_conflict(user_id)
-            .do_update()
-            .set((token.eq(token_str), refresh_date.eq(now)))
-            .execute(conn)
-    })
-    .await
-    .map_err(|x| InsignoError::new(500, "Db Error", &x.to_string()))?;
-    Ok(Json(todo!()))
-}
 
 #[post("/logout")]
 async fn logout(db: Db, cookies: &CookieJar<'_>, user: User<Authenticated>) -> Option<()> {
@@ -90,7 +50,7 @@ async fn logout(db: Db, cookies: &CookieJar<'_>, user: User<Authenticated>) -> O
 }
 
 #[post("/session")]
-fn refresh_session(user: User<Authenticated>) -> Option<()> {
+fn refresh_session(_user: User<Authenticated>) -> Option<()> {
     Some(())
 }
 
@@ -114,7 +74,7 @@ pub async fn get_user(db: Db, id: i64) -> Result<Json<User<Unauthenticated>>, In
 
 pub fn get_routes() -> Vec<Route> {
     routes![
-        login,
+        login_info::login,
         signup::signup,
         logout,
         refresh_session,

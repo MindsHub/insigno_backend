@@ -1,13 +1,10 @@
-use std::string;
-
-use rocket::{form::Form, tokio::task::spawn_blocking, State};
+use rocket::{form::Form, tokio::task::spawn_blocking, State, http::ContentType};
 use scrypt::Params;
 use serde::Deserialize;
 
 use crate::{db::Db, utils::InsignoError, InsignoConfig, mail::MailBuilder, pending::{Pending, PendingAction}};
 
 use super::{
-    scrypt::InsignoScryptParams,
     user::{Unauthenticated, User},
     validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword}
 };
@@ -34,6 +31,7 @@ impl Password for SignupInfo {
         &mut self.password
     }
 }
+
 impl SignupInfo {
     pub fn sanitize(&mut self) -> Result<(), InsignoError> {
         self.sanitize_email()
@@ -98,11 +96,21 @@ pub async fn signup(
     Ok("mail inviata".to_string())
 }
 
-pub async fn complete_registration(pend: PendingAction)->Result<(), InsignoError>{
-    if let PendingAction::RegisterUser(a, b, c) = pend{
-
+pub async fn complete_registration(pend: PendingAction, connection: &Db)->Result<(ContentType, String), InsignoError>{
+    if let PendingAction::RegisterUser(name, email, password_hash) = pend{
+        let mut user = User{
+            id: None,
+            name,
+            email,
+            password_hash,
+            is_admin: false,
+            points: 0.0,
+            phantom: std::marker::PhantomData::<Unauthenticated>,
+        };
+        user.insert(connection).await?;
+        println!("registrazione completata");
+        Ok((ContentType::HTML, "registrazione completata".to_string()))
     }else{
-
+        Err(InsignoError::new_debug(500, "wrong call"))
     }
-    todo!()
 }

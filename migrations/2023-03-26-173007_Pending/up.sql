@@ -4,12 +4,13 @@ CREATE TABLE IF NOT EXISTS public.pending
     id BIGSERIAL NOT NULL,
     token character varying(30) COLLATE pg_catalog."default" NOT NULL,
     action text COLLATE pg_catalog."default" NOT NULL,
-)
+    request_date timestamp with time zone DEFAULT now()
+);
 
 ALTER TABLE IF EXISTS public.pending
     OWNER to mindshub;
 
-CREATE OR REPLACE FUNCTION get_pending_user(token TEXT) RETURNS pending AS $$
+CREATE OR REPLACE FUNCTION get_pending(token TEXT) RETURNS pending AS $$
 		DECLARE ret pending;
 	BEGIN
 		DELETE 

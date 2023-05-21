@@ -140,6 +140,7 @@ fn rocket() -> _ {
             let _ = fs::create_dir_all(cfg.media_folder.clone());
             rocket
         }))
+        .attach(pending::stage())
         .attach(stage())
         .attach(cors::Cors)
         .attach(mail::stage())
