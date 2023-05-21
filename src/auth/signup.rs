@@ -1,12 +1,18 @@
-use rocket::{form::Form, tokio::task::spawn_blocking, State, http::ContentType};
+use rocket::{form::Form, http::ContentType, tokio::task::spawn_blocking, State};
 use scrypt::Params;
 use serde::Deserialize;
 
-use crate::{db::Db, utils::InsignoError, InsignoConfig, mail::MailBuilder, pending::{Pending, PendingAction}};
+use crate::{
+    db::Db,
+    mail::MailBuilder,
+    pending::{Pending, PendingAction},
+    utils::InsignoError,
+    InsignoConfig,
+};
 
 use super::{
     user::{Unauthenticated, User},
-    validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword}
+    validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword},
 };
 
 #[derive(FromForm, Deserialize, Clone)]
@@ -88,17 +94,27 @@ pub async fn signup(
     .map_err(|e| InsignoError::new_debug(501, &e.to_string()))??;
 
     //create_info.hash_password(config.scrypt)?;
-    let mut pend = Pending::new(PendingAction::RegisterUser(create_info.name.clone(), create_info.email.clone(), create_info.password.clone()));
+    let mut pend = Pending::new(PendingAction::RegisterUser(
+        create_info.name.clone(),
+        create_info.email.clone(),
+        create_info.password.clone(),
+    ));
     pend.insert(&connection).await?;
     let link = format!("https://insigno.mindshub.it/verify/{}", pend.token);
-    mailer.send_registration_mail(&create_info.email, &create_info.name, &link).await.map_err(|e| InsignoError::new_debug(501, &e.to_string()))?;
+    mailer
+        .send_registration_mail(&create_info.email, &create_info.name, &link)
+        .await
+        .map_err(|e| InsignoError::new_debug(501, &e.to_string()))?;
 
     Ok("mail inviata".to_string())
 }
 
-pub async fn complete_registration(pend: PendingAction, connection: &Db)->Result<(ContentType, String), InsignoError>{
-    if let PendingAction::RegisterUser(name, email, password_hash) = pend{
-        let mut user = User{
+pub async fn complete_registration(
+    pend: PendingAction,
+    connection: &Db,
+) -> Result<(ContentType, String), InsignoError> {
+    if let PendingAction::RegisterUser(name, email, password_hash) = pend {
+        let mut user = User {
             id: None,
             name,
             email,
@@ -110,7 +126,7 @@ pub async fn complete_registration(pend: PendingAction, connection: &Db)->Result
         user.insert(connection).await?;
         println!("registrazione completata");
         Ok((ContentType::HTML, "registrazione completata".to_string()))
-    }else{
+    } else {
         Err(InsignoError::new_debug(500, "wrong call"))
     }
 }

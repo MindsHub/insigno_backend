@@ -15,24 +15,20 @@ use crate::schema_sql::user_sessions::dsl::user_sessions;
 use crate::schema_sql::user_sessions::user_id;
 use crate::utils::InsignoError;
 
-
 use self::user::User;
 
-pub mod login_info;
+pub mod login;
 pub mod scrypt;
 pub mod signup;
 pub mod user;
 pub mod validation;
+pub mod change_password;
 /*
 signup info -> pending user (verifica credenziali) #
 pending user -> email + db (inviare la mail e salvarla nel db)
 pending user -> user (finire registrazione)
 login info->  auth-user/admin-auth-user
 cookie -> auth-user/admin-auth-user*/
-
-
-
-
 
 #[post("/logout")]
 async fn logout(db: Db, cookies: &CookieJar<'_>, user: User<Authenticated>) -> Option<()> {
@@ -74,7 +70,7 @@ pub async fn get_user(db: Db, id: i64) -> Result<Json<User<Unauthenticated>>, In
 
 pub fn get_routes() -> Vec<Route> {
     routes![
-        login_info::login,
+        login::login,
         signup::signup,
         logout,
         refresh_session,

@@ -27,13 +27,13 @@ mod db;
 #[allow(dead_code, unused)]
 mod mail;
 mod map;
+mod pending;
 mod pills;
 mod schema_rs;
 mod schema_sql;
 #[cfg(test)]
 mod test;
 mod utils;
-mod pending;
 
 #[derive(Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]

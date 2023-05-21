@@ -1,15 +1,12 @@
-use std::{mem};
+use std::mem;
 
 use chrono::Utc;
-use diesel::{insert_into, sql_types::Text, sql_query};
+use diesel::{insert_into, sql_query, sql_types::Text};
 
-use rocket::{serde::json::serde_json, http::ContentType, fairing::AdHoc};
+use rocket::{fairing::AdHoc, http::ContentType, serde::json::serde_json};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    db::Db,
-    utils::InsignoError, auth::signup::complete_registration,
-};
+use crate::{auth::signup::complete_registration, db::Db, utils::InsignoError};
 use diesel::RunQueryDsl;
 
 #[cfg(not(test))]
@@ -31,7 +28,7 @@ pub fn generate_token() -> String {
 pub enum PendingAction {
     /// name, email, password
     RegisterUser(String, String, String),
-    ChangePassword(i64, String),
+    ChangePassword(i64),
 }
 impl From<String> for PendingAction {
     fn from(value: String) -> Self {
@@ -55,11 +52,11 @@ table! {
 #[derive(Queryable, Clone, Insertable, QueryableByName, Debug)]
 #[diesel(table_name = pending)]
 pub struct Pending {
-    id: Option<i64>,
+    pub id: Option<i64>,
     pub token: String,
     #[diesel(deserialize_as = String, serialize_as = String)]
     pub action: PendingAction,
-    pub request_date: Option<chrono::DateTime<Utc>>
+    pub request_date: Option<chrono::DateTime<Utc>>,
 }
 
 impl Pending {
@@ -88,7 +85,7 @@ impl Pending {
         Ok(())
     }
 
-    pub async fn get_from_token(token: String, connection: &Db)->Result<Self, InsignoError>{
+    pub async fn get_from_token(token: String, connection: &Db) -> Result<Self, InsignoError> {
         if !token.chars().all(|x| x.is_ascii_alphanumeric()) {
             let s = "token invalido";
             return Err(InsignoError::new(422, s, s));
@@ -108,16 +105,21 @@ impl Pending {
 }
 
 #[get("/verify/<token>")]
-pub async fn verify(
-    token: String,
-    connection: Db,
-) -> Result<(ContentType, String), InsignoError> {
+pub async fn verify(token: String, connection: Db) -> Result<(ContentType, String), InsignoError> {
     println!("verificando");
     let pending = Pending::get_from_token(token, &connection).await?;
-    
-    match pending.action{
-        PendingAction::RegisterUser(name, email, password) => {complete_registration(PendingAction::RegisterUser(name, email, password), &connection).await},
-        PendingAction::ChangePassword(_, _) => {todo!()},
+
+    match pending.action {
+        PendingAction::RegisterUser(name, email, password) => {
+            complete_registration(
+                PendingAction::RegisterUser(name, email, password),
+                &connection,
+            )
+            .await
+        }
+        PendingAction::ChangePassword(_) => {
+            todo!()
+        }
     }
 
     /*let success = fs::read("./templates/account_creation.html")
@@ -126,26 +128,10 @@ pub async fn verify(
 
     let success =
         String::from_utf8(success).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;*/
-
-    
 }
 
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Pending stage", |rocket| async {
         rocket.mount("/", routes![verify])
     })
-}
-
-#[cfg(test)]
-mod test {
-    use crate::pending::PendingAction;
-
-
-    #[rocket::async_test]
-    async fn test() {
-        println!(
-            "{:?}",
-            String::try_from(PendingAction::ChangePassword(15, "test".to_string()))
-        );
-    }
 }

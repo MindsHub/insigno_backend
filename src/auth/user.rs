@@ -107,9 +107,9 @@ impl<T: UserType> User<T> {
 }
 
 impl User<Authenticated> {
-    pub async fn set_token (&self, token_str: &str,  db: &Db)->Result<(), InsignoError>{
+    pub async fn set_token(&self, token_str: &str, db: &Db) -> Result<(), InsignoError> {
         let id = self.id.unwrap();
-        let token_str=token_str.to_string();
+        let token_str = token_str.to_string();
         db.run(move |conn| {
             diesel::insert_into(user_sessions)
                 .values((
