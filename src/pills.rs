@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 
 use super::db::Db;
 
+/** Pills of wisdom from our users.
+ * contain a field that became true only after it gets verified by an admin
+ */
 #[derive(Serialize, Deserialize, Clone, Queryable, Debug, Insertable)]
 #[diesel(table_name = pills)]
 struct Pill {

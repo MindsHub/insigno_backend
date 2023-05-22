@@ -104,6 +104,8 @@ mod test {
         // try to get types list
         let response = client.get(("/user/1").to_string()).dispatch().await;
         assert_eq!(response.status(), Status::Ok);
+        let message = response.into_string().await.unwrap();
+
     }
     #[rocket::async_test]
     async fn test_get_auth_user() {
