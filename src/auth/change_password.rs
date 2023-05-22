@@ -87,7 +87,7 @@ pub async fn complete_change_password(
         let mut user = User::get_by_id(connection, user_id).await?;
         user.password_hash = password_hash;
         user.update(connection).await?;
-        Ok((ContentType::HTML, "registrazione completata".to_string()))
+        Ok((ContentType::HTML, "Password cambiata con successo".to_string()))
     } else {
         Err(InsignoError::new_debug(500, "wrong call"))
     }

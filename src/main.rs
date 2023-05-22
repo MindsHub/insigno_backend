@@ -14,14 +14,14 @@
  * - [auth]: signup, login, account verification...
  * - [map]: marker handling
  * - [test]: defines some methods used for testing all around the crate.
- * 
+ *
  * In addition to that in this crate you could find the test script.
  * some comands that you should run before using it.
  * - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` install rustup
- * - `sudo apt install docker.io` in test scrypt we use docker 
+ * - `sudo apt install docker.io` in test scrypt we use docker
  * - `cargo install cargo-watch cargo-tarpaulin` install some cargo cool thing
  * - `cargo install diesel-cli --no-default-features --features "postgres"`
- * 
+ *
  * */
 use std::{collections::BTreeMap, fs};
 
