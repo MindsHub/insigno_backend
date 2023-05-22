@@ -37,7 +37,6 @@ use std::str;
 
 use super::marker_report::MarkerReport;
 fn convert_image(input: &Path, output: &Path) -> Result<(), InsignoError> {
-    println!("out={}", output.to_str().unwrap());
     if input.exists() {
         let raw_out = process::Command::new("ffmpeg")
             .args([

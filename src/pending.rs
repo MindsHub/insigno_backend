@@ -6,7 +6,11 @@ use diesel::{insert_into, sql_query, sql_types::Text};
 use rocket::{fairing::AdHoc, http::ContentType, serde::json::serde_json};
 use serde::{Deserialize, Serialize};
 
-use crate::{auth::{signup::complete_registration, change_password::complete_change_password}, db::Db, utils::InsignoError};
+use crate::{
+    auth::{change_password::complete_change_password, signup::complete_registration},
+    db::Db,
+    utils::InsignoError,
+};
 use diesel::RunQueryDsl;
 
 #[cfg(not(test))]
@@ -82,7 +86,6 @@ impl Pending {
             .await
             .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?;
         mem::swap(&mut me, self);
-        println!("inserted {:?}", self);
         Ok(())
     }
 
@@ -92,7 +95,6 @@ impl Pending {
             return Err(InsignoError::new(422, s, s));
         }
         let token = token.to_string();
-        println!("token={}", token);
         let pending: Self = connection
             .run(|conn| {
                 sql_query("SELECT * FROM get_pending($1);")
@@ -107,7 +109,6 @@ impl Pending {
 
 #[get("/verify/<token>")]
 pub async fn verify(token: String, connection: Db) -> Result<(ContentType, String), InsignoError> {
-    println!("verificando");
     let pending = Pending::get_from_token(token, &connection).await?;
 
     match pending.action {

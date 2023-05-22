@@ -40,7 +40,9 @@ impl UserType for Unauthenticated {}
 impl UserType for Authenticated {}
 impl UserType for AuthenticatedAdmin {}
 
-#[derive(Debug, Clone, Default, QueryId, Deserialize, Insertable, Queryable, QueryableByName, AsChangeset)]
+#[derive(
+    Debug, Clone, Default, QueryId, Deserialize, Insertable, Queryable, QueryableByName, AsChangeset,
+)]
 #[diesel(table_name = users)]
 struct UserDiesel {
     pub id: Option<i64>,
@@ -186,13 +188,18 @@ impl<T: UserType> User<T> {
         mem::swap(&mut me, self);
         Ok(())
     }
-    pub async fn update(&mut self, connection: &Db)->Result<(), InsignoError>{
+    pub async fn update(&mut self, connection: &Db) -> Result<(), InsignoError> {
         let me: UserDiesel = self.clone().into();
         let mut me: Self = connection
             .run(|conn| {
-                diesel::update(users::dsl::users).set(me).get_result::<UserDiesel>(conn)
-            }).await
-            .map_err(|e| InsignoError::new(422, "impossibile cambiare la password", &e.to_string()))?
+                diesel::update(users::dsl::users)
+                    .set(me)
+                    .get_result::<UserDiesel>(conn)
+            })
+            .await
+            .map_err(|e| {
+                InsignoError::new(422, "impossibile cambiare la password", &e.to_string())
+            })?
             .into();
         mem::swap(&mut me, self);
         Ok(())

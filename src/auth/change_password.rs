@@ -1,4 +1,4 @@
-use rocket::{form::Form, tokio::task::spawn_blocking, State, http::ContentType};
+use rocket::{form::Form, http::ContentType, tokio::task::spawn_blocking, State};
 
 use crate::{
     db::Db,
@@ -62,8 +62,10 @@ pub async fn change_password(
     .map_err(|e| InsignoError::new_debug(501, &e.to_string()))??;
     let _: Result<(), InsignoError> = async move {
         let user = User::get_by_email(&db, change_password_request.email.clone()).await?;
-        let mut pending: Pending =
-            Pending::new(PendingAction::ChangePassword(user.id.unwrap(), change_password_request.password.clone()));
+        let mut pending: Pending = Pending::new(PendingAction::ChangePassword(
+            user.id.unwrap(),
+            change_password_request.password.clone(),
+        ));
         pending.insert(&db).await?;
         let link = format!("https://insigno.mindshub.it/verify/{}", pending.token);
         mailer
@@ -77,10 +79,13 @@ pub async fn change_password(
     Ok("Abbiamo inviato una mail all'utente interessato".to_string())
 }
 
-pub async fn complete_change_password(pend: PendingAction, connection: &Db)->Result<(ContentType, String), InsignoError>{
+pub async fn complete_change_password(
+    pend: PendingAction,
+    connection: &Db,
+) -> Result<(ContentType, String), InsignoError> {
     if let PendingAction::ChangePassword(user_id, password_hash) = pend {
         let mut user = User::get_by_id(connection, user_id).await?;
-        user.password_hash=password_hash;
+        user.password_hash = password_hash;
         user.update(connection).await?;
         Ok((ContentType::HTML, "registrazione completata".to_string()))
     } else {

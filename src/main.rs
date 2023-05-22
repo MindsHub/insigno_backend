@@ -1,3 +1,28 @@
+/*! Welcome to INSIGNO, an app for taking care of the environment while having fun.
+ * This is our backend service for managing all the request that our app needs.
+ * For code managment reasons, we split our codebase in different modules, each one in charge of a single app aspect.
+ * In particular:
+ * - [self]: sticks all the modules together!
+ * - [schema_sql]: defines our database structure(needed by diesel, probably we will remove that file in a future release)
+ * - [schema_rs]: rust counterpart of schema_sql. This file will be DEFINETLY removed in a future release
+ * - [cors]: handles all cors request
+ * - [db]: it connects to our postres with diesel and rocket_sync_db_pool.
+ * - [mail]: send super cool (html) mail using lettre
+ * - [pending]: handles all the different types of pending request that we will possibly ever need (for now mail-verification), and forward them to the correct handler
+ * - [pills]: manages our super interesting pills.
+ * - [utils]: manages some utility used in all the crate. Smaller this file is, the better.
+ * - [auth]: signup, login, account verification...
+ * - [map]: marker handling
+ * - [test]: defines some methods used for testing all around the crate.
+ * 
+ * In addition to that in this crate you could find the test script.
+ * some comands that you should run before using it.
+ * - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` install rustup
+ * - `sudo apt install docker.io` in test scrypt we use docker 
+ * - `cargo install cargo-watch cargo-tarpaulin` install some cargo cool thing
+ * - `cargo install diesel-cli --no-default-features --features "postgres"`
+ * 
+ * */
 use std::{collections::BTreeMap, fs};
 
 use auth::scrypt::InsignoScryptParams;
@@ -13,6 +38,7 @@ use rocket::{
     serde::Deserialize,
     State,
 };
+use rocket_prometheus::PrometheusMetrics;
 use schema_sql::marker_types;
 use utils::InsignoError;
 
@@ -34,9 +60,10 @@ mod schema_sql;
 #[cfg(test)]
 mod test;
 mod utils;
-
+/**here is where we store all our configuration needed at runtime
+ * it implements Deserialize for interfacing with figiment deserializer
+*/
 #[derive(Deserialize, Clone)]
-#[serde(crate = "rocket::serde")]
 pub struct InsignoConfig {
     media_folder: String,
     template_folder: String,
@@ -44,20 +71,21 @@ pub struct InsignoConfig {
     smtp: SmtpConfig,
     scrypt: InsignoScryptParams,
 }
+
+/** Wouldn't be wonderful if we could have an easy struct for mapping trash-id to trash-names?
+ */
 pub struct TrashTypeMap {
     pub to_string: BTreeMap<i64, String>,
     pub to_i64: BTreeMap<String, i64>,
 }
 
-pub fn stage() -> AdHoc {
+/**this function is needed for init our TrashTypeMap  */
+fn stage() -> AdHoc {
     AdHoc::on_ignite("Insigno config", |rocket| async {
         //generate trash_types_map
-        //let value = rocket.figment().find_value("databases.db.url").unwrap();
-        //let url = value.as_str().unwrap();
         let config = rocket_sync_db_pools::Config::from("db", &rocket).unwrap();
 
         let mut conn = PgConnection::establish(&config.url).unwrap();
-        println!("{:?}", &config.url);
         let sorted = marker_types::table
             .load::<(i64, String, f64)>(&mut conn)
             .unwrap()
@@ -74,6 +102,9 @@ pub fn stage() -> AdHoc {
     })
 }
 
+/**
+ * is my app version compatible with the server api version? Only an http-get knows...
+ */
 #[get("/compatibile?<version_str>")]
 async fn compatibile(
     version_str: String,
@@ -105,26 +136,31 @@ async fn compatibile(
     }
 }
 
+/**
+ * here is where all the magic appens.
+ * calling this function we are initializing all our parameter, loading values, connecting to db...
+ */
 #[launch]
 fn rocket() -> _ {
-    use rocket_prometheus::PrometheusMetrics;
-
+    // we need a prometheus object that implements /metric for us (and for Graphana)
     let prometheus = PrometheusMetrics::new();
+
+    /*  figiment is our config manager. here we define defaults parameter and how overwrite them.
+    in particular:
+    - default values
+    - values from Insigno.toml
+    - values from INSIGNO_ env variables*/
     let figment = Figment::from(rocket::Config::default())
         .merge(Serialized::defaults(InsignoScryptParams::default()).key("scrypt"))
-        //.merge(Toml::file("Rocket.toml").nested())
         .merge(Toml::file("Insigno.toml").nested())
         .merge(Env::prefixed("INSIGNO_").global());
-
+    // Gimme the CONFIG
     let insigno_config: InsignoConfig = figment.extract().unwrap();
-    let databases = figment.find_value("databases").unwrap();
-    //.select(Profile::from_env_or("INSIGNO_PROFILE", "default"));
 
-    /*rocket::custom(figment)
-        .mount("/", routes![/* .. */])
-        .attach(AdHoc::config::<Config>())
-    };*/
-    println!("{:?}", databases);
+    // we extract database config for appending to Rocket.toml config (it's needed for rocket_sync_db_pool)
+    let databases = figment.find_value("databases").unwrap();
+
+    // virtualy add DatabaseConfig to Roket.toml
     let rocket_figment = Config::figment().merge(Serialized::defaults(databases).key("databases"));
     rocket::custom(rocket_figment)
         .attach(db::stage())
@@ -133,7 +169,6 @@ fn rocket() -> _ {
         .mount("/", auth::get_routes())
         .mount("/", routes![compatibile])
         .manage(insigno_config)
-        //.attach(AdHoc::config::<InsignoConfig>())
         .attach(AdHoc::on_ignite("checking config", |rocket| async {
             // if media folder does not exist it creates it
             let cfg: &InsignoConfig = rocket.state().unwrap();
@@ -142,21 +177,11 @@ fn rocket() -> _ {
         }))
         .attach(pending::stage())
         .attach(stage())
-        .attach(cors::Cors)
         .attach(mail::stage())
+        //Cors request handler
+        .attach(cors::Cors)
         .mount("/", cors::get_routes())
+        //attach prometheus view
         .attach(prometheus.clone())
         .mount("/metrics", prometheus)
-    //.manage(users)
 }
-/*
-#[get("/prova")]
-async fn prova(config: &State<InsignoConfig>, db: Db)->Result<(), InsignoError>{
-    let mut u = SignupInfo{ name: "Alezen".to_string(), email: "insigno@mindshub.it".to_string(), password: "PippoBaudo1!".to_string()};
-    u.check(&db).await?;
-    let pending = PendingUser::new(u.into_inner(), &db).await?;
-
-    //send registration mail and insert it in db
-    pending.register_and_mail(&db, mail_cfg).await?;
-    Ok(())
-}   */
