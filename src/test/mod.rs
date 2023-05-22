@@ -11,7 +11,6 @@ pub fn test_reset_db() {
     println!("cleaning db");
     let figment = Config::figment().merge(Toml::file("Insigno.toml").nested());
     let value = figment.find_value("databases.db.url").unwrap();
-    println!("{value:?}");
     let url = value.as_str().unwrap();
 
     let output = Command::new("diesel")
@@ -19,7 +18,6 @@ pub fn test_reset_db() {
         .output()
         .unwrap();
 
-    //println!("{}", );
     assert!(
         output.status.success(),
         "{:?}",
@@ -37,8 +35,6 @@ pub async fn test_signup(client: &Client) -> i64 {
         .dispatch()
         .await;
     assert_eq!(response.status(), Status::Ok);
-    let text = response.into_string().await.unwrap();
-    println!("{}", text);
 
     let response = client.get("/verify/11111111111111111111").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
@@ -52,7 +48,6 @@ pub async fn test_signup(client: &Client) -> i64 {
         .await;
     //let y = response.body();
     let text = response.into_string().await.unwrap();
-    println!("{}", text);
     //assert_eq!(response.status(), Status::Ok);
     //response.into_string().await.unwrap().parse::<i64>().unwrap()
     text.parse::<i64>().unwrap()

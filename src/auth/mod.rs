@@ -17,12 +17,12 @@ use crate::utils::InsignoError;
 
 use self::user::User;
 
+pub mod change_password;
 pub mod login;
 pub mod scrypt;
 pub mod signup;
 pub mod user;
 pub mod validation;
-pub mod change_password;
 /*
 signup info -> pending user (verifica credenziali) #
 pending user -> email + db (inviare la mail e salvarla nel db)

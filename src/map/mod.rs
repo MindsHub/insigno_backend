@@ -415,7 +415,6 @@ mod test {
         let response = client.get("/map/get_near?x=0.0&y=0.0").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
 
-        //println!("{}", response.into_string().await.unwrap());
         let js: Value =
             serde_json::from_str(&response.into_string().await.unwrap()).expect("not a json");
         let arr = js.as_array().expect("not an array");

@@ -188,32 +188,3 @@ pub fn scrypt_check(password: &str, hashed_value: &str) -> Result<bool, ScryptEr
     // hashed password.
     Ok(constant_time_eq(&output, &hash))
 }
-
-/*#[cfg(test)]
-pub mod test {
-    use std::time::Instant;
-
-    use rand::{rngs::OsRng, RngCore, Rng, thread_rng, distributions::Alphanumeric};
-    use super::*;
-    #[test]
-    pub fn sicurezza(){
-
-        for i in 0..100000{
-            println!("{i}");
-            let mut rng = thread_rng();
-            let len = (20) as usize;
-            let passw: String = rng.sample_iter(&Alphanumeric)
-                .take(len)
-                .map(char::from)
-                .collect();
-            let par = Params::new(17, 8, 1, 32).unwrap();
-            let start_encode = Instant::now();
-            let hashed_passw = scrypt_simple(&passw, &par).unwrap();
-            let encode_time = start_encode.elapsed().as_millis();
-            let start_decode = Instant::now();
-            assert!(scrypt_check(&passw, &hashed_passw).unwrap());
-            println!("encode {} decode {}, {}", encode_time, start_decode.elapsed().as_millis(), hashed_passw);
-        }
-
-    }
-}*/

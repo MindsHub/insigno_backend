@@ -40,7 +40,7 @@ impl UserType for Unauthenticated {}
 impl UserType for Authenticated {}
 impl UserType for AuthenticatedAdmin {}
 
-#[derive(Debug, Clone, Default, QueryId, Deserialize, Insertable, Queryable, QueryableByName)]
+#[derive(Debug, Clone, Default, QueryId, Deserialize, Insertable, Queryable, QueryableByName, AsChangeset)]
 #[diesel(table_name = users)]
 struct UserDiesel {
     pub id: Option<i64>,
@@ -163,8 +163,6 @@ impl User<Unauthenticated> {
         }
     }
     pub async fn check_hash(&self, password: &str) -> bool {
-        println!("{password}");
-        println!("{}", self.password_hash);
         let me = self.clone();
         let password = password.to_string();
         spawn_blocking(move || scrypt_check(&password, &me.password_hash).unwrap())
@@ -175,7 +173,6 @@ impl User<Unauthenticated> {
 
 impl<T: UserType> User<T> {
     pub async fn insert(&mut self, connection: &Db) -> Result<(), InsignoError> {
-        println!("try to insert");
         let me: UserDiesel = self.clone().into();
         let mut me: Self = connection
             .run(|conn| {
@@ -185,6 +182,17 @@ impl<T: UserType> User<T> {
             })
             .await
             .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?
+            .into();
+        mem::swap(&mut me, self);
+        Ok(())
+    }
+    pub async fn update(&mut self, connection: &Db)->Result<(), InsignoError>{
+        let me: UserDiesel = self.clone().into();
+        let mut me: Self = connection
+            .run(|conn| {
+                diesel::update(users::dsl::users).set(me).get_result::<UserDiesel>(conn)
+            }).await
+            .map_err(|e| InsignoError::new(422, "impossibile cambiare la password", &e.to_string()))?
             .into();
         mem::swap(&mut me, self);
         Ok(())

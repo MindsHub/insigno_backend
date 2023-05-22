@@ -49,31 +49,6 @@ impl SignupInfo {
         Ok(())
     }
 }
-/*
-impl User<Unauthenticated> {
-    async fn from(
-        String string, string
-    ) -> Result<Self, InsignoError> {
-        let value = spawn_blocking(move || {
-            value
-                .hash_password(&params.into())
-                .map_err(|e| InsignoError::new_debug(501, &e.to_string()))
-                .map(|_| value)
-        })
-        .await
-        .map_err(|e| InsignoError::new_debug(501, &e.to_string()))??;
-
-        Ok(Self {
-            id: None,
-            name: value.name,
-            email: value.email,
-            password_hash: value.password,
-            is_admin: false,
-            points: 0.0,
-            phantom: std::marker::PhantomData,
-        })
-    }
-}*/
 
 #[post("/signup", format = "form", data = "<create_info>")]
 pub async fn signup(
@@ -93,7 +68,6 @@ pub async fn signup(
     .await
     .map_err(|e| InsignoError::new_debug(501, &e.to_string()))??;
 
-    //create_info.hash_password(config.scrypt)?;
     let mut pend = Pending::new(PendingAction::RegisterUser(
         create_info.name.clone(),
         create_info.email.clone(),
@@ -124,7 +98,6 @@ pub async fn complete_registration(
             phantom: std::marker::PhantomData::<Unauthenticated>,
         };
         user.insert(connection).await?;
-        println!("registrazione completata");
         Ok((ContentType::HTML, "registrazione completata".to_string()))
     } else {
         Err(InsignoError::new_debug(500, "wrong call"))

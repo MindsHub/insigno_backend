@@ -6,7 +6,7 @@ use diesel::{insert_into, sql_query, sql_types::Text};
 use rocket::{fairing::AdHoc, http::ContentType, serde::json::serde_json};
 use serde::{Deserialize, Serialize};
 
-use crate::{auth::signup::complete_registration, db::Db, utils::InsignoError};
+use crate::{auth::{signup::complete_registration, change_password::complete_change_password}, db::Db, utils::InsignoError};
 use diesel::RunQueryDsl;
 
 #[cfg(not(test))]
@@ -28,7 +28,8 @@ pub fn generate_token() -> String {
 pub enum PendingAction {
     /// name, email, password
     RegisterUser(String, String, String),
-    ChangePassword(i64),
+    /// user_id, new_hash
+    ChangePassword(i64, String),
 }
 impl From<String> for PendingAction {
     fn from(value: String) -> Self {
@@ -117,17 +118,14 @@ pub async fn verify(token: String, connection: Db) -> Result<(ContentType, Strin
             )
             .await
         }
-        PendingAction::ChangePassword(_) => {
-            todo!()
+        PendingAction::ChangePassword(user_id, password_hash) => {
+            complete_change_password(
+                PendingAction::ChangePassword(user_id, password_hash),
+                &connection,
+            )
+            .await
         }
     }
-
-    /*let success = fs::read("./templates/account_creation.html")
-        .await
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
-
-    let success =
-        String::from_utf8(success).map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;*/
 }
 
 pub fn stage() -> AdHoc {
