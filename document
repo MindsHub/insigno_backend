@@ -1,1 +1,2 @@
-cargo doc --no-deps --open
+cargo rustdoc -- --show-coverage -Z unstable-options
+cargo doc --no-deps --open -Z unstable-options

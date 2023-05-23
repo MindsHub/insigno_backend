@@ -1,12 +1,12 @@
 /*! Welcome to INSIGNO, an app for taking care of the environment while having fun.
  * This is our backend service for managing all the request that our app needs.
- * For code managment reasons, we split our codebase in different modules, each one in charge of a single app aspect.
+ * For code management reasons, we split our codebase in different modules, each one in charge of a single app aspect.
  * In particular:
  * - [self]: sticks all the modules together!
  * - [schema_sql]: defines our database structure(needed by diesel, probably we will remove that file in a future release)
- * - [schema_rs]: rust counterpart of schema_sql. This file will be DEFINETLY removed in a future release
+ * - [schema_rs]: rust counterpart of schema_sql. This file will be DEFINITELY removed in a future release
  * - [cors]: handles all cors request
- * - [db]: it connects to our postres with diesel and rocket_sync_db_pool.
+ * - [db]: it connects to our postgres with diesel and rocket_sync_db_pool.
  * - [mail]: send super cool (html) mail using lettre
  * - [pending]: handles all the different types of pending request that we will possibly ever need (for now mail-verification), and forward them to the correct handler
  * - [pills]: manages our super interesting pills.
@@ -16,12 +16,24 @@
  * - [test]: defines some methods used for testing all around the crate.
  *
  * In addition to that in this crate you could find the test script.
- * some comands that you should run before using it.
+ * some command's that you should run before using it.
  * - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` install rustup
  * - `sudo apt install docker.io` in test scrypt we use docker
  * - `cargo install cargo-watch cargo-tarpaulin` install some cargo cool thing
  * - `cargo install diesel-cli --no-default-features --features "postgres"`
  *
+ * Down there you could see a roadmap of the next implementations:
+ * - [x] login/signup
+ * - [x] change password
+ * - [ ] mitigate ddos attacks
+ * - [ ] from Insigno.toml it should be straightforward to implement custom server
+ * - [ ] dockerize, and keep it easily scalable
+ * - [ ] remove utils, schema_sql and schema_rs
+ * - [ ] split container in multiple independent crate (faster compilation and better organization)
+ * - [ ] cool way to assign points, we want to boost responsible use of the app
+ * - [ ] better pgsql query, now we prefer to use raw diesel and implement function db-side
+ * - [ ] TESTING
+ * - [ ] DOCUMENTING
  * */
 use std::{collections::BTreeMap, fs};
 
