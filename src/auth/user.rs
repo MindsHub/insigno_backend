@@ -206,7 +206,20 @@ impl<T: UserType> User<T> {
     }
 }
 
-impl<T: UserType> Serialize for User<T> {
+impl Serialize for User<Authenticated> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_struct("User", 3)?;
+        s.serialize_field("id", &self.id)?;
+        s.serialize_field("name", &self.name)?;
+        s.serialize_field("points", &self.points)?;
+        s.serialize_field("is_admin", &self.is_admin)?;
+        s.end()
+    }
+}
+impl Serialize for User<Unauthenticated> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
