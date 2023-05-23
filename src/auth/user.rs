@@ -108,7 +108,7 @@ impl<T: UserType> User<T> {
 
 impl User<Authenticated> {
     pub async fn set_token(&self, token_str: &str, db: &Db) -> Result<(), InsignoError> {
-        let id = self.id.unwrap();
+        let id = self.get_id();
         let token_str = token_str.to_string();
         db.run(move |conn| {
             diesel::insert_into(user_sessions)
@@ -172,6 +172,9 @@ impl User<Unauthenticated> {
 }
 
 impl<T: UserType> User<T> {
+    pub fn get_id(&self)->i64{
+        self.id.unwrap()
+    }
     pub async fn insert(&mut self, connection: &Db) -> Result<(), InsignoError> {
         let me: UserDiesel = self.clone().into();
         let mut me: Self = connection

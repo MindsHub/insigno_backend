@@ -33,7 +33,7 @@ cookie -> auth-user/admin-auth-user*/
 #[post("/logout")]
 async fn logout(db: Db, cookies: &CookieJar<'_>, user: User<Authenticated>) -> Option<()> {
     cookies.remove_private(Cookie::named("insigno_auth"));
-    let id = user.id.unwrap();
+    let id = user.get_id();
     if db
         .run(move |conn| diesel::delete(user_sessions.filter(user_id.eq(id))).execute(conn))
         .await

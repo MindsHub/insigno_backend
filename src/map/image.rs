@@ -121,7 +121,7 @@ pub(crate) async fn add_image(
         .parse::<i64>()
         .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
 
-    let user_id = user.id.unwrap();
+    let user_id = user.get_id();
 
     // check if user own the marker
     connection
@@ -232,7 +232,7 @@ pub(crate) async fn review(
         }
         "delete_report" => {
             let image = MarkerImage::delete(&connection, image_id, config).await?;
-            MarkerReport::report(&connection, user.id.unwrap(), image.id.unwrap()).await?;
+            MarkerReport::report(&connection, user.get_id(), image.id.unwrap()).await?;
         }
         "skip" => {}
         _ => {

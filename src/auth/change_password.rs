@@ -63,7 +63,7 @@ pub async fn change_password(
     let _: Result<(), InsignoError> = async move {
         let user = User::get_by_email(&db, change_password_request.email.clone()).await?;
         let mut pending: Pending = Pending::new(PendingAction::ChangePassword(
-            user.id.unwrap(),
+            user.get_id(),
             change_password_request.password.clone(),
         ));
         pending.insert(&db).await?;

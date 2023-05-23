@@ -43,7 +43,6 @@ pub async fn login(
     mut login_info: Form<LoginInfo>,
     cookies: &CookieJar<'_>,
 ) -> Result<Json<i64>, InsignoError> {
-    //let user = User::login(login_info.into_inner(), &db).await?;
     login_info.sanitize()?;
     let user = User::get_by_email(&db, login_info.email.clone())
         .await
@@ -51,11 +50,11 @@ pub async fn login(
     let user = user.login(&login_info.password).await?; //this is not hashed
 
     let token_str = generate_token();
-    let insigno_auth = format!("{} {token_str}", user.id.unwrap());
+    let insigno_auth = format!("{} {token_str}", user.get_id());
 
     cookies.add_private(Cookie::new("insigno_auth", insigno_auth));
 
     // update token
     user.set_token(&token_str, &db).await?;
-    Ok(Json(user.id.unwrap()))
+    Ok(Json(user.get_id()))
 }

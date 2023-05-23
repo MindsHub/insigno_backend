@@ -110,7 +110,7 @@ async fn add_map(
                 "
             SELECT * FROM add_marker($1, $2, $3);",
             )
-            .bind::<BigInt, _>(user.id.unwrap())
+            .bind::<BigInt, _>(user.get_id())
             .bind::<Geometry, _>(Point::new(data.x, data.y, Some(4326))) //(InsignoPoint::new(data.x, data.y))
             .bind::<BigInt, _>(type_int)
             .get_result(conn)
@@ -234,9 +234,9 @@ async fn resolve_marker_from_id(
             SELECT * FROM resolve_marker($1, $2);",
                 )
                 .bind::<BigInt, _>(marker_id)
-                .bind::<BigInt, _>(user.id.unwrap())
+                .bind::<BigInt, _>(user.get_id())
                 .get_result(conn)
-            }, //select(resolve_marker(marker_id, user.id.unwrap())).execute(conn))
+            },
         )
         .await
         .map_err(|tmp| match tmp.to_string().as_str() {
@@ -267,7 +267,7 @@ async fn report_marker(
                         WHERE user_f=$1 AND reported_marker=$2)
                 returning *;",
             )
-            .bind::<BigInt, _>(user.id.unwrap())
+            .bind::<BigInt, _>(user.get_id())
             .bind::<BigInt, _>(marker_id);
 
             query.get_result::<MarkerReport>(conn)

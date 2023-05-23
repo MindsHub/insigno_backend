@@ -6,6 +6,6 @@
         "unresolved-method"
     ],
     "rust-analyzer.linkedProjects": [
-        "./Cargo.toml"
+        "./Cargo.toml",
     ]
 }
