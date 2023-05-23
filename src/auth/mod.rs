@@ -105,7 +105,7 @@ mod test {
         let response = client.get(("/user/1").to_string()).dispatch().await;
         assert_eq!(response.status(), Status::Ok);
         let message = response.into_string().await.unwrap();
-
+        assert_eq!(message, r#"{"id":1,"name":"IlMagicoTester","points":0.0}"#);
     }
     #[rocket::async_test]
     async fn test_get_auth_user() {
@@ -123,6 +123,11 @@ mod test {
         // try to get types list
         let response = client.get("/user").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
+        let message = response.into_string().await.unwrap();
+        assert_eq!(
+            message,
+            r#"{"id":1,"name":"IlMagicoTester","points":0.0,"is_admin":false}"#
+        );
     }
 
     #[rocket::async_test]

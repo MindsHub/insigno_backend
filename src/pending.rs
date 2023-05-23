@@ -28,7 +28,7 @@ pub fn generate_token() -> String {
     "11111111111111111111".to_string()
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone)]
 pub enum PendingAction {
     /// name, email, password
     RegisterUser(String, String, String),
@@ -54,7 +54,7 @@ table! {
         request_date->Nullable<Timestamptz>,
     }
 }
-#[derive(Queryable, Clone, Insertable, QueryableByName, Debug)]
+#[derive(Queryable, Insertable, QueryableByName, Clone)]
 #[diesel(table_name = pending)]
 pub struct Pending {
     pub id: Option<i64>,

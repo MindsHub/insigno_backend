@@ -1,6 +1,5 @@
 use rocket::{form::Form, http::ContentType, tokio::task::spawn_blocking, State};
 use scrypt::Params;
-use serde::Deserialize;
 
 use crate::{
     db::Db,
@@ -15,7 +14,7 @@ use super::{
     validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword},
 };
 
-#[derive(FromForm, Deserialize, Clone)]
+#[derive(FromForm)]
 pub struct SignupInfo {
     pub name: String,
     pub email: String,

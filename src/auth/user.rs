@@ -14,7 +14,7 @@ use diesel::{insert_into, sql_query};
 use rocket::request::{self, FromRequest, Outcome};
 use rocket::tokio::task::spawn_blocking;
 use serde::ser::SerializeStruct;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 table! {
     users(id){
@@ -40,9 +40,7 @@ impl UserType for Unauthenticated {}
 impl UserType for Authenticated {}
 impl UserType for AuthenticatedAdmin {}
 
-#[derive(
-    Debug, Clone, Default, QueryId, Deserialize, Insertable, Queryable, QueryableByName, AsChangeset,
-)]
+#[derive(Insertable, Queryable, QueryableByName, AsChangeset)]
 #[diesel(table_name = users)]
 struct UserDiesel {
     pub id: Option<i64>,

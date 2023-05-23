@@ -3,7 +3,6 @@ use rocket::{
     http::{Cookie, CookieJar},
     serde::json::Json,
 };
-use serde::Serialize;
 
 use crate::{db::Db, pending::generate_token, utils::InsignoError};
 
@@ -12,7 +11,7 @@ use super::{
     validation::{Email, Password, SanitizeEmail, SanitizePassword},
 };
 
-#[derive(Serialize, FromForm)]
+#[derive(FromForm)]
 pub struct LoginInfo {
     pub email: String,
     pub password: String,
