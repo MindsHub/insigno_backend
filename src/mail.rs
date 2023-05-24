@@ -49,13 +49,13 @@ pub struct MailBuilder {
     mailer: AsyncSmtpTransport<Tokio1Executor>,
 }
 impl MailBuilder {
-    /*#[cfg(not(test))]
+    #[cfg(not(test))]
     async fn send(&self, message: Message) -> Result<(), Box<dyn Error>> {
         self.mailer.send(message).await?;
         Ok(())
     }
 
-    #[cfg(test)]*/
+    #[cfg(test)]
     async fn send(&self, message: Message) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
