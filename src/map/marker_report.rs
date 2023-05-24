@@ -36,7 +36,7 @@ impl MarkerReport {
                 .execute(conn)
             })
             .await
-            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+            .map_err(|e| InsignoError::new(500).debug(e))?;
         Ok(())
     }
 }
@@ -63,7 +63,7 @@ impl ImageToReport {
                 .get_results(conn)
             })
             .await
-            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+            .map_err(|e| InsignoError::new(500).debug(e))?;
         Ok(res)
     }
 }

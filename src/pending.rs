@@ -28,7 +28,7 @@ pub fn generate_token() -> String {
     "11111111111111111111".to_string()
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum PendingAction {
     /// name, email, password
     RegisterUser(String, String, String),
@@ -54,7 +54,7 @@ table! {
         request_date->Nullable<Timestamptz>,
     }
 }
-#[derive(Queryable, Insertable, QueryableByName, Clone)]
+#[derive(Queryable, Insertable, QueryableByName, Clone, Debug)]
 #[diesel(table_name = pending)]
 pub struct Pending {
     pub id: Option<i64>,
@@ -84,15 +84,14 @@ impl Pending {
                     .get_result(conn)
             })
             .await
-            .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?;
+            .map_err(|e| InsignoError::new(422).client("impossibile creare l'account").debug(e))?;
         mem::swap(&mut me, self);
         Ok(())
     }
 
     pub async fn get_from_token(token: String, connection: &Db) -> Result<Self, InsignoError> {
         if !token.chars().all(|x| x.is_ascii_alphanumeric()) {
-            let s = "token invalido";
-            return Err(InsignoError::new(422, s, s));
+            return Err(InsignoError::new(422).both("token_invalido"));
         }
         let token = token.to_string();
         let pending: Self = connection
@@ -102,7 +101,7 @@ impl Pending {
                     .get_result(conn)
             })
             .await
-            .map_err(|e| InsignoError::new(422, "token non trovato", &e.to_string()))?;
+            .map_err(|e| InsignoError::new(422).client("token non trovato").debug(e))?;
         Ok(pending)
     }
 }

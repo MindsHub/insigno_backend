@@ -43,24 +43,23 @@ fn convert_image(input: &Path, output: &Path) -> Result<(), InsignoError> {
                 "-i",
                 input
                     .to_str()
-                    .ok_or(InsignoError::new_debug(500, "invalid path"))?,
+                    .ok_or(InsignoError::new(500).debug("invalid path"))?,
                 "-vf",
                 "scale=w=2500:h=2500:force_original_aspect_ratio=decrease",
                 output
                     .to_str()
-                    .ok_or(InsignoError::new_debug(500, "invalid path"))?,
+                    .ok_or(InsignoError::new(500).debug("invalid path"))?,
             ])
             .output()
-            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+            .map_err(|e| InsignoError::new(500).debug(e))?;
         if !raw_out.status.success() {
-            return Err(InsignoError::new_debug(
-                500,
-                str::from_utf8(&raw_out.stderr).unwrap(),
-            ))?;
+            return Err(InsignoError::new(500).debug(str::from_utf8(&raw_out.stderr).unwrap())
+                //str::from_utf8(&raw_out.stderr).unwrap(),
+            )?;
         }
         Ok(())
     } else {
-        Err(InsignoError::new_debug(500, "input path does not exits"))?
+        Err(InsignoError::new(500).debug("input path does not exits"))?
     }
 }
 
@@ -78,7 +77,7 @@ async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Insigno
             insert_into(mi).values(&img).get_result::<MarkerImage>(conn)
         })
         .await
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+        .map_err(|e| InsignoError::new(500).debug(e))?;
 
     Ok(())
 }
@@ -97,29 +96,29 @@ pub(crate) async fn add_image(
         MultipartFormDataField::file("image")
             .size_limit(limits.get("data-form").unwrap().as_u64())
             .content_type_by_string(Some(mime::IMAGE_STAR))
-            .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?,
+            .map_err(|e| InsignoError::new(500).debug(e))?,
         MultipartFormDataField::text("refers_to_id"),
     ]);
     options.max_data_bytes = limits.get("data-form").unwrap().as_u64();
     let multipart_form_data = MultipartFormData::parse(content_type, data, options)
         .await
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+        .map_err(|e| InsignoError::new(500).debug(e))?;
 
     // cast data to normal values
     let photo_path = multipart_form_data
         .files
         .get("image")
-        .ok_or(InsignoError::new_debug(500, "image field not found"))? //str_to_debug("image field not found"))?
+        .ok_or(InsignoError::new(500).debug("image field not found"))? //str_to_debug("image field not found"))?
         .get(0)
-        .ok_or(InsignoError::new_debug(500, "err"))?; //str_to_debug("err"))?; //at drop it cleans the file
+        .ok_or(InsignoError::new(500).debug("err"))?; //str_to_debug("err"))?; //at drop it cleans the file
 
     let id = multipart_form_data
         .texts
         .get("refers_to_id")
-        .ok_or(InsignoError::new_debug(500, "image field not found"))?[0]
+        .ok_or(InsignoError::new(500).debug("image field not found"))?[0]
         .text
         .parse::<i64>()
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+        .map_err(|e| InsignoError::new(500).debug(e))?;
 
     let user_id = user.get_id();
 
@@ -132,7 +131,7 @@ pub(crate) async fn add_image(
                 .load::<Marker>(conn)
         })
         .await
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?;
+        .map_err(|e| InsignoError::new(500).debug(e))?;
 
     //generate unique name and convert
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
@@ -140,9 +139,9 @@ pub(crate) async fn add_image(
 
     let name = new_pos
         .strip_prefix(&config.media_folder)
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?
+        .map_err(|e| InsignoError::new(500).debug(e))?
         .to_str()
-        .ok_or(InsignoError::new_debug(500, "err"))?
+        .ok_or(InsignoError::new(500).debug("err"))?
         .to_string();
 
     // try to save it in database
@@ -164,7 +163,7 @@ pub async fn _list_image(marker_id: i64, connection: &Db) -> Result<Vec<i64>, In
                 .load::<MarkerImage>(conn)
         })
         .await
-        .map_err(|x| InsignoError::new_debug(404, &x.to_string()))?;
+        .map_err(|x| InsignoError::new(404).debug(x))?;
     Ok(res.iter().map(|x| x.id.unwrap()).collect())
 }
 
@@ -186,9 +185,9 @@ pub(crate) async fn get_image(
                 .load::<MarkerImage>(conn)
         })
         .await
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))?
+        .map_err(|e| InsignoError::new(500).debug(e))?
         .get(0)
-        .ok_or(InsignoError::new_debug(404, "image field not found"))?
+        .ok_or(InsignoError::new(404).debug("image field not found"))?
         .clone();
     let mut path = PathBuf::new();
     path.push(config.media_folder.clone());
@@ -197,7 +196,7 @@ pub(crate) async fn get_image(
     //print!("{:?}", path);
     NamedFile::open(path)
         .await
-        .map_err(|e| InsignoError::new_debug(500, &e.to_string()))
+        .map_err(|e| InsignoError::new(500).debug(e))
 }
 
 #[get("/image/to_review")]
@@ -236,11 +235,7 @@ pub(crate) async fn review(
         }
         "skip" => {}
         _ => {
-            return Err(InsignoError::new(
-                422,
-                "opzione non riconosciuta",
-                "opzione non riconosciuta",
-            ));
+            return Err(InsignoError::new(422).both("opzione non riconosciuta"));
         }
     }
 

@@ -50,7 +50,7 @@ impl MarkerImage {
                 .execute(conn)
             })
             .await
-            .map_err(|e| InsignoError::new(500, "impossibile verificare", &e.to_string()))?;
+            .map_err(|e| InsignoError::new(500).client("impossibile verificare").debug(e))?;
         Ok(())
     }
 
@@ -72,11 +72,7 @@ impl MarkerImage {
             })
             .await
             .map_err(|e| {
-                InsignoError::new(
-                    404,
-                    "impossibile cancellare, id non trovato",
-                    &e.to_string(),
-                )
+                InsignoError::new(404).client("impossibile cancellare, id non trovato").debug(e)
             })?;
         let img_path = Path::new(&config.media_folder).join(&img.path);
         let _ = fs::remove_file(img_path).await;

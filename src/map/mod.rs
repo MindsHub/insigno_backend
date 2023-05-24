@@ -66,11 +66,9 @@ async fn get_near(
         })
         .await
         .map_err(|e| {
-            InsignoError::new(
-                500,
-                "An error occured while tring to get marker near you",
-                &e.to_string(),
-            )
+            InsignoError::new(500)
+                .client("An error occured while tring to get marker near you")
+                .debug(e)
         })?;
     Ok(Json(res))
 }
@@ -116,7 +114,7 @@ async fn add_map(
             .get_result(conn)
         })
         .await
-        .map_err(|x| InsignoError::new(404, "id not found", &x.to_string()))?;
+        .map_err(|x| InsignoError::new(404).client("id not found").debug(x))?;
     Ok(Json(MarkerUpdate {
         id: created_id.add_marker,
         earned_points: 1.0,
@@ -175,13 +173,9 @@ async fn get_marker_from_id(
                 .load::<Marker>(conn)
         })
         .await
-        .map_err(|x| InsignoError::new_debug(404, &x.to_string()))?
+        .map_err(|x| InsignoError::new(404).debug(x))?
         .get(0)
-        .ok_or(InsignoError::new(
-            404,
-            "marker not found",
-            "marker not found",
-        ))?
+        .ok_or(InsignoError::new(404).both("marker not found"))?
         .clone();
     let creation_user = User::get_by_id(&connection, m.created_by).await?;
     let solved_by_user = if let Some(s) = m.solved_by {
@@ -192,7 +186,7 @@ async fn get_marker_from_id(
     let mut m: MarkerInfo = m.into();
     m.created_by = Some(creation_user);
     m.solved_by = solved_by_user;
-    m.images_id = Some(_list_image(marker_id, &connection).await?);
+    m.images_id = Some(_list_image(marker_id, &connection).await?.to_vec());
 
     let v: Vec<MarkerReport> = connection
         .run(move |conn| {
@@ -206,7 +200,7 @@ async fn get_marker_from_id(
             }
         })
         .await
-        .map_err(|x| InsignoError::new(404, "", &x.to_string()))?;
+        .map_err(|x| InsignoError::new(404).debug(x))?;
     if v.is_empty() {
         m.can_report = true;
     }
@@ -273,12 +267,11 @@ async fn report_marker(
             query.get_result::<MarkerReport>(conn)
         })
         .await
-        .map_err(|x| {
-            InsignoError::new(
-                422,
-                "Impossible to report. Maybe you already reported",
-                &x.to_string(),
-            )
+        .map_err(|e| {
+            InsignoError::new(422)
+                .client("Impossible to report. Maybe you already reported")
+                .debug(e)
+            
         })?;
 
     Ok(())

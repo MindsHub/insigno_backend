@@ -40,11 +40,11 @@ impl Password for SignupInfo {
 impl SignupInfo {
     pub fn sanitize(&mut self) -> Result<(), InsignoError> {
         self.sanitize_email()
-            .map_err(|x| InsignoError::new(401, x, x))?;
+            .map_err(|x| InsignoError::new(401).both(x))?;
         self.sanitize_name()
-            .map_err(|x| InsignoError::new(401, x, x))?;
+            .map_err(|x| InsignoError::new(401).both(x))?;
         self.sanitize_password()
-            .map_err(|x| InsignoError::new(401, x, x))?;
+            .map_err(|x| InsignoError::new(401).both(x))?;
         Ok(())
     }
 }
@@ -61,11 +61,11 @@ pub async fn signup(
     let create_info = spawn_blocking(move || {
         create_info
             .hash_password(&params)
-            .map_err(|e| InsignoError::new_debug(501, &e.to_string()))
+            .map_err(|e| InsignoError::new(501).debug(e))
             .map(|_| create_info)
     })
     .await
-    .map_err(|e| InsignoError::new_debug(501, &e.to_string()))??;
+    .map_err(|e| InsignoError::new(501).debug(e))??;
 
     let mut pend = Pending::new(PendingAction::RegisterUser(
         create_info.name.clone(),
@@ -77,7 +77,7 @@ pub async fn signup(
     mailer
         .send_registration_mail(&create_info.email, &create_info.name, &link)
         .await
-        .map_err(|e| InsignoError::new_debug(501, &e.to_string()))?;
+        .map_err(|e| InsignoError::new(501).debug(e))?;
 
     Ok("mail inviata".to_string())
 }
@@ -99,6 +99,6 @@ pub async fn complete_registration(
         user.insert(connection).await?;
         Ok((ContentType::HTML, "registrazione completata".to_string()))
     } else {
-        Err(InsignoError::new_debug(500, "wrong call"))
+        Err(InsignoError::new(500).debug("wrong call"))
     }
 }

@@ -32,9 +32,9 @@ impl Password for ChangePasswordRequest {
 impl ChangePasswordRequest {
     fn sanitize(&mut self) -> Result<(), InsignoError> {
         self.sanitize_email()
-            .map_err(|x| InsignoError::new(401, x, x))?;
+            .map_err(|x| InsignoError::new(401).both(x))?;
         self.sanitize_password()
-            .map_err(|x| InsignoError::new(401, x, x))?;
+            .map_err(|x| InsignoError::new(401).both(x))?;
         Ok(())
     }
 }
@@ -55,11 +55,11 @@ pub async fn change_password(
     let change_password_request = spawn_blocking(move || {
         change_password_request
             .hash_password(&params)
-            .map_err(|e| InsignoError::new_debug(501, &e.to_string()))
+            .map_err(|e| InsignoError::new(501).debug(e))
             .map(|_| change_password_request)
     })
     .await
-    .map_err(|e| InsignoError::new_debug(501, &e.to_string()))??;
+    .map_err(|e| InsignoError::new(501).debug(e))??;
     let _: Result<(), InsignoError> = async move {
         let user = User::get_by_email(&db, change_password_request.email.clone()).await?;
         let mut pending: Pending = Pending::new(PendingAction::ChangePassword(
@@ -71,7 +71,7 @@ pub async fn change_password(
         mailer
             .send_change_password_mail(&user.email, &user.name, &link)
             .await
-            .map_err(|_| InsignoError::new_code(500))?;
+            .map_err(|e| InsignoError::new(500).debug(e))?;
         Ok(())
     }
     .await;
@@ -92,6 +92,6 @@ pub async fn complete_change_password(
             "Password cambiata con successo".to_string(),
         ))
     } else {
-        Err(InsignoError::new_debug(500, "wrong call"))
+        Err(InsignoError::new(500).debug(format!("called ChangePassword with wrong data: {pend:?}")))
     }
 }

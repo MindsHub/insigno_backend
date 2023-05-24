@@ -41,24 +41,24 @@ pub struct InsignoError {
 
 #[allow(dead_code)]
 impl InsignoError {
-    pub fn new_code(v: i32) -> Self {
+    pub fn client<T: ToString>(mut self, s: T)->Self{
+        self.client=Some(s.to_string());
+        self
+    }
+    pub fn debug<T: ToString>(mut self, s: T)->Self{
+        self.debug=Some(s.to_string());
+        self
+    }
+    pub fn both<T: ToString>(mut self, s: T)->Self{
+        self.debug=Some(s.to_string());
+        self.client=Some(s.to_string());
+        self
+    }
+
+    pub fn new(v: i32) -> Self {
         InsignoError {
             debug: None,
             client: None,
-            code: Status::from_code(v as u16).unwrap(),
-        }
-    }
-    pub fn new_debug(v: i32, s: &str) -> Self {
-        InsignoError {
-            debug: Some(s.to_string()),
-            client: None,
-            code: Status { code: v as u16 },
-        }
-    }
-    pub fn new(v: i32, client: &str, debug: &str) -> Self {
-        InsignoError {
-            debug: Some(debug.to_string()),
-            client: Some(client.to_string()),
             code: Status { code: v as u16 },
         }
     }
@@ -72,19 +72,17 @@ impl<T> From<InsignoError> for request::Outcome<T, InsignoError> {
 
 impl<'r> Responder<'r, 'static> for InsignoError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
-        let deb_str = self.debug.unwrap_or(
-            self.client
-                .clone()
-                .unwrap_or("no string provided".to_string()),
-        );
-        let bt = Backtrace::force_capture();
-        let mut file = File::options()
-            .append(true)
-            .create(true)
-            .open("./log")
-            .unwrap();
-        let to_write = Local::now().to_string() + " " + &deb_str + "\n" + &bt.to_string() + "\n";
-        file.write_all(to_write.as_bytes()).unwrap();
+        if let Some(s) = self.debug{
+            let bt = Backtrace::force_capture();
+            let mut file = File::options()
+                .append(true)
+                .create(true)
+                .open("./log")
+                .unwrap();
+            let to_write = Local::now().to_string() + " " + &s + "\n" + &bt.to_string() + "\n";
+            file.write_all(to_write.as_bytes()).unwrap();
+        }
+        
 
         use rocket::response::{content, status};
         if let Some(v) = self.client {

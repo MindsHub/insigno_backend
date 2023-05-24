@@ -30,9 +30,9 @@ impl Password for LoginInfo {
 impl LoginInfo {
     pub fn sanitize(&mut self) -> Result<(), InsignoError> {
         self.sanitize_email()
-            .map_err(|x| InsignoError::new(401, x, x))?;
+            .map_err(|x| InsignoError::new(401).both(x))?;
         self.sanitize_password()
-            .map_err(|x| InsignoError::new(401, x, x))?;
+            .map_err(|x| InsignoError::new(401).both(x))?;
         Ok(())
     }
 }
@@ -46,7 +46,7 @@ pub async fn login(
     login_info.sanitize()?;
     let user = User::get_by_email(&db, login_info.email.clone())
         .await
-        .map_err(|_| InsignoError::new(401, "not found", "not found"))?;
+        .map_err(|_| InsignoError::new(401).both("not found"))?;
     let user = user.login(&login_info.password).await?; //this is not hashed
 
     let token_str = generate_token();

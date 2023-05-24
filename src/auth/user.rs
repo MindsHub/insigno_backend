@@ -123,7 +123,7 @@ impl User<Authenticated> {
                 .execute(conn)
         })
         .await
-        .map_err(|x| InsignoError::new(500, "Db Error", &x.to_string()))?;
+        .map_err(|e| InsignoError::new(500).debug(e))?;
         Ok(())
     }
 }
@@ -137,7 +137,7 @@ impl User<Unauthenticated> {
                     .get_result::<UserDiesel>(conn)
             })
             .await
-            .map_err(|e| InsignoError::new_debug(404, &e.to_string()))?
+            .map_err(|e| InsignoError::new(404).debug(e))?
             .into();
         Ok(user)
     }
@@ -149,14 +149,13 @@ impl User<Unauthenticated> {
                     .get_result::<UserDiesel>(conn)
             })
             .await
-            .map_err(|e| InsignoError::new_debug(404, &e.to_string()))?
+            .map_err(|e| InsignoError::new(404).debug(e))?
             .into();
         Ok(user)
     }
     pub async fn login(self, password: &str) -> Result<User<Authenticated>, InsignoError> {
         if !self.check_hash(password).await {
-            let message = "email o password errati";
-            Err(InsignoError::new(403, message, message))
+            Err(InsignoError::new(403).client("email o password errati"))
         } else {
             let me = self.upgrade();
             Ok(me)
@@ -184,7 +183,7 @@ impl<T: UserType> User<T> {
                     .get_result::<UserDiesel>(conn)
             })
             .await
-            .map_err(|e| InsignoError::new(422, "impossibile creare l'account", &e.to_string()))?
+            .map_err(|e| InsignoError::new(422).client("impossibile creare l'account").debug(e))?
             .into();
         mem::swap(&mut me, self);
         Ok(())
@@ -199,7 +198,7 @@ impl<T: UserType> User<T> {
             })
             .await
             .map_err(|e| {
-                InsignoError::new(422, "impossibile cambiare la password", &e.to_string())
+                InsignoError::new(500).debug(e)
             })?
             .into();
         mem::swap(&mut me, self);
@@ -243,7 +242,7 @@ impl<'r> FromRequest<'r> for User<Authenticated> {
         let insigno_auth = match cookie.get_private("insigno_auth") {
             Some(a) => a,
             None => {
-                return InsignoError::new_debug(401, "insigno_auth cookie not found").into();
+                return InsignoError::new(401).debug("insigno_auth cookie not found").into();
             }
         }
         .value()
@@ -253,7 +252,7 @@ impl<'r> FromRequest<'r> for User<Authenticated> {
         let id: i64 = vec[0].parse().unwrap();
         let tok = vec[1].to_string();
         if !tok.chars().all(|x| x.is_ascii_alphanumeric()) {
-            return InsignoError::new_debug(401, "sql injection?").into();
+            return InsignoError::new(401).debug("sql injection?").into();
         }
 
         let auth: Result<UserDiesel, _> = connection
@@ -270,7 +269,7 @@ impl<'r> FromRequest<'r> for User<Authenticated> {
                 return request::Outcome::Success(a.into());
             }
             Err(e) => {
-                return InsignoError::new(401, "Authentication error", &e.to_string()).into();
+                return InsignoError::new(401).client("Authentication error").debug(e).into();
             }
         }
     }
@@ -287,7 +286,7 @@ impl<'r> FromRequest<'r> for User<AuthenticatedAdmin> {
                 if x.is_admin {
                     Outcome::Success(x.upgrade())
                 } else {
-                    InsignoError::new(401, "Unauthorized", "Unauthorized").into()
+                    InsignoError::new(401).both("Unauthorized").into()
                 }
             }
             Outcome::Failure(x) => Outcome::Failure(x),

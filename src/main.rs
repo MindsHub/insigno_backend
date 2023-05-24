@@ -40,6 +40,7 @@ use std::{collections::BTreeMap, fs};
 use auth::scrypt::InsignoScryptParams;
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use mail::SmtpConfig;
+use prometheus::process_collector::ProcessCollector;
 use rocket::config::Config;
 use rocket::{
     fairing::*,
@@ -148,6 +149,7 @@ async fn compatibile(
     }
 }
 
+
 /**
  * here is where all the magic appens.
  * calling this function we are initializing all our parameter, loading values, connecting to db...
@@ -156,7 +158,9 @@ async fn compatibile(
 fn rocket() -> _ {
     // we need a prometheus object that implements /metric for us (and for Graphana)
     let prometheus = PrometheusMetrics::new();
-
+    prometheus
+        .registry()
+        .register(Box::new(ProcessCollector::for_self())).unwrap();
     /*  figiment is our config manager. here we define defaults parameter and how overwrite them.
     in particular:
     - default values
