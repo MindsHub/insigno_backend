@@ -185,3 +185,4 @@ cython_debug/
 monitoring/
 
 Insigno.toml
+fuzz

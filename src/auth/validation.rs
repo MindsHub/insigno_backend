@@ -90,7 +90,7 @@ impl<T: Name> SanitizeName for T {
         self.fmt_name();
         let name = self.get_name().to_string();
         let name_len = name.len();
-        if name_len < 3 && 20 < name_len {
+        if name_len < 3 || 20 < name_len {
             return Err("Nome utente invalido. Deve essere lungo tra 3 e 20 caratteri (e possibilmente simile al nome)");
         }
         if !name
