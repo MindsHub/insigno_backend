@@ -1,0 +1,3 @@
+cargo fuzz run fuzz_target_1 --jobs=16 -- -max_total_time=60
+cargo fuzz coverage fuzz_target_1
+cargo cov -- show target/x86_64-unknown-linux-gnu/coverage/x86_64-unknown-linux-gnu/release/fuzz_target_1  --instr-profile=coverage/fuzz_target_1/coverage.profdata --format=html --line-coverage-gt=0.5 ../src > test.html
