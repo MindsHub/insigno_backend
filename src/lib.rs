@@ -174,7 +174,7 @@ pub fn rocket() -> _ {
         .merge(Env::prefixed("INSIGNO_").global());
     // Gimme the CONFIG
     let mut insigno_config: InsignoConfig = figment.extract().unwrap();
-    insigno_config.scrypt.sem=Some(Arc::new(Semaphore::new(4)));
+    insigno_config.scrypt.sem=Some(Arc::new(Semaphore::new(3)));
     // we extract database config for appending to Rocket.toml config (it's needed for rocket_sync_db_pool)
     let databases = figment.find_value("databases").unwrap();
 
