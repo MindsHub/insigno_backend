@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install nightly --profile minimal
-    - run: rustup override set nightly
+    - run: rustup toolchain install stable --profile minimal
+    #- run: rustup override set nightly
     - name: Build
       run: cargo build --release
     - name: Upload binaries to release
@@ -63,6 +63,7 @@ jobs:
         script: |
           cd insigno/
           nohup ./insigno > nohup.out 2> nohup.err < /dev/null &
+  
   document:
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
