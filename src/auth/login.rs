@@ -31,8 +31,7 @@ impl LoginInfo {
     pub fn sanitize(&mut self) -> Result<(), InsignoError> {
         self.sanitize_email()
             .map_err(|x| InsignoError::new(401).both(x))?;
-        self.sanitize_password()
-            .map_err(|x| InsignoError::new(401).both(x))?;
+        self.fmt_password();
         Ok(())
     }
 }
