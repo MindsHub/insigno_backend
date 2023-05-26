@@ -1,3 +1,5 @@
+use std::mem;
+
 use rocket::{form::Form, http::ContentType, tokio::task::spawn_blocking, State};
 
 use crate::{
@@ -51,7 +53,8 @@ pub async fn change_password(
     config: &State<InsignoConfig>,
 ) -> Result<String, InsignoError> {
     change_password_request.sanitize()?;
-    let params = config.scrypt.clone().into();
+    let permit = config.scrypt.clone().await;
+    let params = permit.get_params();
     let change_password_request = spawn_blocking(move || {
         change_password_request
             .hash_password(&params)
@@ -60,6 +63,7 @@ pub async fn change_password(
     })
     .await
     .map_err(|e| InsignoError::new(501).debug(e))??;
+    mem::drop(permit);
     let _: Result<(), InsignoError> = async move {
         let user = User::get_by_email(&db, change_password_request.email.clone()).await?;
         let mut pending: Pending = Pending::new(PendingAction::ChangePassword(

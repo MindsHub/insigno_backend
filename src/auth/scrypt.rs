@@ -1,31 +1,56 @@
-use std::{error::Error, fmt::Display, iter::repeat};
+
+use std::{error::Error, fmt::Display, iter::repeat, sync::Arc};
 
 use base64::{engine::general_purpose, Engine};
 use constant_time_eq::constant_time_eq;
 use rand::{rngs::OsRng, RngCore};
 pub use scrypt::{scrypt, Params};
 use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Clone)]
-pub(crate) struct InsignoScryptParams {
+use rocket::tokio::sync::{Semaphore, SemaphorePermit};
+#[derive(Deserialize, Serialize)]
+pub(crate) struct InsignoScryptParams<'a> {
     pub(crate) log_n: u8,
     pub(crate) r: u32,
     pub(crate) p: u32,
     pub(crate) len: usize,
+    #[serde(skip)]
+    pub(crate) sem: Option<Arc<Semaphore>>,
+    #[serde(skip)]
+    pub(crate) _perm: Option<SemaphorePermit<'a>>,
 }
-impl Default for InsignoScryptParams {
+impl Default for InsignoScryptParams<'_> {
     fn default() -> Self {
         Self {
             log_n: 15,
             r: 8,
             p: 1,
             len: 30,
+            sem: None,
+            _perm: None,
         }
     }
 }
-impl From<InsignoScryptParams> for Params {
-    fn from(val: InsignoScryptParams) -> Params {
-        Params::new(val.log_n, val.r, val.p, val.len).unwrap()
+impl<'a> InsignoScryptParams<'a>{
+    pub async fn clone(&'a self) -> InsignoScryptParams<'a> {
+        if let Some(a) = &self.sem{
+            let _perm = a.acquire().await.ok();
+            return Self { log_n: self.log_n.clone(),
+                r: self.r.clone(), 
+                p: self.p.clone(), 
+                len: self.len.clone(), 
+                sem: None, 
+                _perm};
+        }else{
+            panic!("something wrong append, have you init InsignoScryptParams?")
+        }
+        
+        
+    }
+}
+
+impl InsignoScryptParams<'_> {
+    pub fn get_params(&self) -> Params {
+        Params::new(self.log_n, self.r, self.p, self.len).unwrap()
     }
 }
 

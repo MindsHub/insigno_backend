@@ -35,6 +35,7 @@
  * - [ ] TESTING
  * - [ ] DOCUMENTING
  * */
+use std::sync::Arc;
 use std::{collections::BTreeMap, fs};
 
 use auth::scrypt::InsignoScryptParams;
@@ -42,6 +43,7 @@ use diesel::{Connection, PgConnection, RunQueryDsl};
 use mail::SmtpConfig;
 use prometheus::process_collector::ProcessCollector;
 use rocket::config::Config;
+use rocket::tokio::sync::Semaphore;
 use rocket::{
     fairing::*,
     figment::{
@@ -76,13 +78,13 @@ mod utils;
 /**here is where we store all our configuration needed at runtime
  * it implements Deserialize for interfacing with figiment deserializer
 */
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize)]
 pub struct InsignoConfig {
     media_folder: String,
     template_folder: String,
     oldest_supported_version: String,
     smtp: SmtpConfig,
-    scrypt: InsignoScryptParams,
+    scrypt: InsignoScryptParams<'static>,
 }
 
 /** Wouldn't be wonderful if we could have an easy struct for mapping trash-id to trash-names?
@@ -171,8 +173,8 @@ pub fn rocket() -> _ {
         .merge(Toml::file("Insigno.toml").nested())
         .merge(Env::prefixed("INSIGNO_").global());
     // Gimme the CONFIG
-    let insigno_config: InsignoConfig = figment.extract().unwrap();
-
+    let mut insigno_config: InsignoConfig = figment.extract().unwrap();
+    insigno_config.scrypt.sem=Some(Arc::new(Semaphore::new(4)));
     // we extract database config for appending to Rocket.toml config (it's needed for rocket_sync_db_pool)
     let databases = figment.find_value("databases").unwrap();
 
