@@ -1,5 +1,6 @@
+use std::mem;
+
 use rocket::{form::Form, http::ContentType, tokio::task::spawn_blocking, State};
-use scrypt::Params;
 
 use crate::{
     db::Db,
@@ -57,7 +58,8 @@ pub async fn signup(
     connection: Db,
 ) -> Result<String, InsignoError> {
     create_info.sanitize()?;
-    let params: Params = config.scrypt.clone().into();
+    let permit = config.scrypt.clone().await;
+    let params= permit.get_params();
     let create_info = spawn_blocking(move || {
         create_info
             .hash_password(&params)
@@ -66,6 +68,7 @@ pub async fn signup(
     })
     .await
     .map_err(|e| InsignoError::new(501).debug(e))??;
+    mem::drop(permit);
 
     let mut pend = Pending::new(PendingAction::RegisterUser(
         create_info.name.clone(),

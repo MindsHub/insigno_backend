@@ -46,6 +46,7 @@ pub async fn test_signup(client: &Client) -> i64 {
         .body(data)
         .dispatch()
         .await;
+    assert_eq!(response.status(), Status::Ok);
     //let y = response.body();
     let text = response.into_string().await.unwrap();
     //assert_eq!(response.status(), Status::Ok);
@@ -85,16 +86,6 @@ pub async fn test_add_image(marker_id: i64, path: &str, c: &Client) {
         .dispatch()
         .await;
     assert_eq!(response.status(), Status::Ok);
-}
-
-struct InsignoTest {
-    f: Box<dyn Fn()>,
-}
-
-impl Drop for InsignoTest {
-    fn drop(&mut self) {
-        (self.f)()
-    }
 }
 /*
 #[macro_export]

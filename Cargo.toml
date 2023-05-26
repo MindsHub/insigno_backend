@@ -5,6 +5,14 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name="insignobin"
+path = "src/main.rs"
+
+[lib]
+name="insignolib"
+path = "src/lib.rs"
+
 [dependencies]
 diesel = {version="2.0.3", default-features = false, features = ["chrono", "postgres"] }
 postgis_diesel = {version="2.1.0", default-features = false}

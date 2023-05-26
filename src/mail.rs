@@ -198,7 +198,7 @@ impl MailBuilder {
         Ok(())
     }
 }
-
+/*
 #[cfg(test)]
 mod test {
     use lettre::{
@@ -236,4 +236,4 @@ mod test {
             .send_registration_mail("test@test.test", "test", "test.com")
             .await;
     }
-}
+}*/

@@ -403,7 +403,7 @@ mod test {
         test_add_point(&client).await;
 
         //add image
-        test_add_image(1, "./test_data/add_image.jpg", &client).await;
+        test_add_image(1, "./tests/test_data/add_image.jpg", &client).await;
         //1 point query
         let response = client.get("/map/get_near?x=0.0&y=0.0").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
