@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["change_password","complete_change_password"],"struct":["ChangePasswordRequest"]};

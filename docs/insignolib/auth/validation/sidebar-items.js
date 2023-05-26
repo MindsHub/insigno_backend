@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"trait":["Email","Name","Password","SanitizeEmail","SanitizeName","SanitizePassword"]};

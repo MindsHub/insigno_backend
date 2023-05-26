@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["main","rocket"],"macro":["erase_tables"],"mod":["auth"],"struct":["InsignoConfig","TrashTypeMap"]};

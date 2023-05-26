@@ -1,3 +1,0 @@
-(function() {var implementors = {
-"insignolib":[["impl&lt;S&gt; AliasAppearsInFromClause&lt;S, <a class=\"struct\" href=\"insignolib/auth/user/users/struct.table.html\" title=\"struct insignolib::auth::user::users::table\">table</a>&gt; for <a class=\"struct\" href=\"insignolib/auth/user/users/struct.table.html\" title=\"struct insignolib::auth::user::users::table\">table</a><span class=\"where fmt-newline\">where\n    S: AliasSource&lt;Target = <a class=\"struct\" href=\"insignolib/auth/user/users/struct.table.html\" title=\"struct insignolib::auth::user::users::table\">table</a>&gt;,</span>"]]
-};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
