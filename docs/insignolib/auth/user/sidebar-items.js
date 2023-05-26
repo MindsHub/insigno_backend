@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Authenticated","AuthenticatedAdmin","Unauthenticated"],"mod":["users"],"struct":["User"],"trait":["UserType"]};

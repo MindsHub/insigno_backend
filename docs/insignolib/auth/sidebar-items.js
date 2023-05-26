@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["get_routes","get_user"],"mod":["change_password","login","scrypt","signup","user","validation"],"struct":["AutenticatedUserTest"]};

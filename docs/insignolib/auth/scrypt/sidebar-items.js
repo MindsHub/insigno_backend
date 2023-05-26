@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["scrypt","scrypt_check","scrypt_simple"],"struct":["Params","ScryptError"]};
