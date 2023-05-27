@@ -237,20 +237,18 @@ impl Serialize for User<Unauthenticated> {
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User<Authenticated> {
     type Error = InsignoError;
-
     async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
         let connection = request.guard::<Db>().await.unwrap();
         let cookie = request.cookies();
-        let insigno_auth = match cookie.get_private("insigno_auth") {
+        let insigno_auth_cookie = match cookie.get_private("insigno_auth") {
             Some(a) => a,
             None => {
                 return InsignoError::new(401)
                     .debug("insigno_auth cookie not found")
                     .into();
             }
-        }
-        .value()
-        .to_string();
+        };
+        let insigno_auth= insigno_auth_cookie.value().to_string();
         let vec: Vec<&str> = insigno_auth.split(' ').collect();
 
         let id: i64 = vec[0].parse().unwrap();
@@ -273,6 +271,7 @@ impl<'r> FromRequest<'r> for User<Authenticated> {
                 return request::Outcome::Success(a.into());
             }
             Err(e) => {
+                cookie.remove_private(insigno_auth_cookie);
                 return InsignoError::new(401)
                     .client("Authentication error")
                     .debug(e)

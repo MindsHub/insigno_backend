@@ -1,46 +1,46 @@
 /*! Welcome to INSIGNO, an app for taking care of the environment while having fun.
-* This is our backend service for managing all the request that our app needs.
-* For code management reasons, we split our codebase in different modules, each one in charge of a single app aspect.
-* In particular:
-* - [self]: sticks all the modules together!
-* - [schema_sql]: defines our database structure(needed by diesel, probably we will remove that file in a future release)
-* - [schema_rs]: rust counterpart of schema_sql. This file will be DEFINITELY removed in a future release
-* - [cors]: handles all cors request
-* - [db]: it connects to our postgres with diesel and rocket_sync_db_pool.
-* - [mail]: send super cool (html) mail using lettre
-* - [pending]: handles all the different types of pending request that we will possibly ever need (for now mail-verification), and forward them to the correct handler
-* - [pills]: manages our super interesting pills.
-* - [utils]: manages some utility used in all the crate. Smaller this file is, the better.
-* - [auth]: signup, login, account verification...
-* - [map]: marker handling
-* - [test]: defines some methods used for testing all around the crate.
-*
-* In addition to that in this crate you could find the test script.
-* some command's that you should run before using it.
-* - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` install rustup
-* - `sudo apt install docker.io` in test scrypt we use docker
-* - `cargo install cargo-watch cargo-tarpaulin` install some cargo cool thing
-* - `cargo install diesel-cli --no-default-features --features "postgres"`
-*
-* Stylistic Roadmap:
-* - [ ] remove italian comments
-* - [ ] DOCUMENTING
-* - [ ] TESTING
-* - [ ] remove utils, schema_sql and schema_rs
-* - [ ] split container in multiple independent crate (faster compilation and better organization)
-*
-* Roadmap of the next implementations:
-* - [x] login/signup
-* - [x] change password
-* - [ ] localization (server side? app side?)
-* - [ ] manage groups of users
-* - [ ] cool way to assign points, we want to boost responsible use of the app
-* - [ ] mitigate ddos attacks
-* - [ ] from Insigno.toml it should be straightforward to implement custom server
-* - [ ] dockerize, and keep it easily scalable
-* - [ ] better pgsql query, now we prefer to use raw diesel and implement function db-side
+This is our backend service for managing all the request that our app needs.
+For code management reasons, we split our codebase in different modules, each one in charge of a single app aspect.
+In particular:
+- [self]: Sticks all the modules together!
+- [schema_sql]: Defines our database structure(needed by diesel, probably we will remove that file in a future release)
+- [schema_rs]: Rust counterpart of schema_sql. This file will be DEFINITELY removed in a future release
+- [cors]: Handles all cors request
+- [db]: It connects to our postgres with diesel and rocket_sync_db_pool.
+- [mail]: Send super cool (html) mail using lettre
+- [pending]: Handles all the different types of pending request that we will possibly ever need (for now mail-verification), and forward them to the correct handler
+- [pills]: Manages our super interesting pills.
+- [utils]: Manages some utility used in all the crate. Smaller this file is, the better.
+- [auth]: Signup, login, account verification...
+- [map]: Marker handling
+- [test]: Defines some methods used for testing all around the crate.
 
-* */
+In addition to that in this crate you could find the test script.
+some command's that you should run before using it.
+- `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` install rustup
+- `sudo apt install docker.io` in test scrypt we use docker
+- `cargo install cargo-watch cargo-tarpaulin` install some cargo cool thing
+- `cargo install diesel-cli --no-default-features --features "postgres"`
+
+Stylistic Roadmap:
+- [x] Remove italian comments
+- [ ] DOCUMENTING
+- [ ] TESTING
+- [ ] Remove utils, schema_sql and schema_rs
+- [ ] Split container in multiple independent crate (faster compilation and better organization)
+
+Roadmap of the next implementations:
+- [x] Login/Signup
+- [x] Change password
+- [ ] Localization (server side? app side?)
+- [ ] Manage groups of users
+- [ ] Cool way to assign points, we want to boost responsible use of the app
+- [ ] Mitigate ddos attacks
+- [ ] From Insigno.toml it should be straightforward to implement custom server
+- [ ] Dockerize, and keep it easily scalable
+- [ ] Better pgsql query, now we prefer to use raw diesel and implement function db-side
+
+*/
 use std::sync::Arc;
 use std::{collections::BTreeMap, fs};
 
@@ -81,7 +81,8 @@ mod schema_sql;
 #[cfg(test)]
 mod test;
 mod utils;
-/**here is where we store all our configuration needed at runtime
+/**
+ * Here is where we store all our configuration needed at runtime
  * it implements Deserialize for interfacing with figiment deserializer
 */
 #[derive(Deserialize)]
@@ -93,7 +94,8 @@ pub struct InsignoConfig {
     scrypt: InsignoScryptParams<'static>,
 }
 
-/** Wouldn't be wonderful if we could have an easy struct for mapping trash-id to trash-names?
+/**
+ * Wouldn't be wonderful if we could have an easy struct for mapping trash-id to trash-names?
  */
 pub struct TrashTypeMap {
     pub to_string: BTreeMap<i64, String>,
@@ -124,8 +126,8 @@ fn stage() -> AdHoc {
 }
 
 /**
- * is my app version compatible with the server api version? Only this http-get knows...
- */
+is my app version compatible with the server api version? Only this http-get knows...
+*/
 #[get("/compatibile?<version_str>")]
 async fn compatibile(
     version_str: String,
@@ -158,9 +160,9 @@ async fn compatibile(
 }
 
 /**
- * here is where all the magic appens.
- * calling this function we are initializing all our parameter, loading values, connecting to db...
- */
+ here is where all the magic appens.
+ calling this function we are initializing all our parameter, loading values, connecting to db...
+*/
 #[launch]
 pub fn rocket() -> _ {
     // we need a prometheus object that implements /metric for us (and for Graphana)
@@ -169,7 +171,7 @@ pub fn rocket() -> _ {
         .registry()
         .register(Box::new(ProcessCollector::for_self()))
         .unwrap();
-    /*  figiment is our config manager. here we define defaults parameter and how overwrite them.
+    /*figiment is our config manager. here we define defaults parameter and how overwrite them.
     in particular:
     - default values
     - values from Insigno.toml

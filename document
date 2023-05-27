@@ -1,5 +1,5 @@
 cargo rustdoc --lib -- --show-coverage -Z unstable-options 
-cargo doc --no-deps -Z unstable-options --lib
+cargo doc --no-deps -Z unstable-options --lib --document-private-items
 rm -rf ./docs
 echo "<meta http-equiv=\"refresh\" content=\"0; url=insignolib\">" > target/doc/index.html
 cp -r target/doc ./docs

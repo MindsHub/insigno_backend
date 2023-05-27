@@ -1,3 +1,8 @@
+/*!
+# Authentication black-magic 🪄
+We want a customizzable user that support password-based authentication and mail verification
+
+ */
 use diesel::query_dsl::methods::FilterDsl;
 
 use serde::Serialize;
@@ -23,15 +28,16 @@ pub mod scrypt;
 pub mod signup;
 pub mod user;
 pub mod validation;
-/*
-signup info -> pending user (verifica credenziali) #
-pending user -> email + db (inviare la mail e salvarla nel db)
-pending user -> user (finire registrazione)
-login info->  auth-user/admin-auth-user
-cookie -> auth-user/admin-auth-user*/
 
+/**
+# When a user want's to logout, it calls this function
+It takes:
+ - User cookies (for clearing our authentication token)
+ - Authenticated user dataguard (unauthenticated users SHALL NOT PASS! 🧙‍♂️)
+ - a Db connection (we must remove the token from user_session)
+ */
 #[post("/logout")]
-async fn logout(db: Db, cookies: &CookieJar<'_>, user: User<Authenticated>) -> Option<()> {
+pub async fn logout(cookies: &CookieJar<'_>, user: User<Authenticated>, db: Db) -> Option<()> {
     cookies.remove_private(Cookie::named("insigno_auth"));
     let id = user.get_id();
     if db
@@ -45,29 +51,47 @@ async fn logout(db: Db, cookies: &CookieJar<'_>, user: User<Authenticated>) -> O
     }
 }
 
+/**
+# Refresh session token
+It needs only an authenticated user dataguard, that already refreshes the token
+ */
 #[post("/session")]
 fn refresh_session(_user: User<Authenticated>) -> Option<()> {
     Some(())
 }
 
+/**
+# PLEASE, REMOVE ME! (now i'm needed only for testing)
+ */
 #[derive(Serialize)]
-pub struct AutenticatedUserTest {
+struct AutenticatedUserTest {
     id: i64,
     name: String,
     points: f64,
 }
 
+/**
+# Get authenticated user information.
+It uses the deserialize implementation
+ */
 #[get("/user")] //, format="form", data="<login_info>"
 fn get_auth_user(user: User<Authenticated>) -> Json<User<Authenticated>> {
     Json(user)
 }
 
+/**
+# Get user information for another user.
+It uses the deserialize implementation
+ */
 #[get("/user/<id>")] //, format="form", data="<login_info>"
 pub async fn get_user(db: Db, id: i64) -> Result<Json<User<Unauthenticated>>, InsignoError> {
     let user = User::get_by_id(&db, id).await?;
     Ok(Json(user))
 }
 
+/**
+# Map routes for Rocket 
+ */
 pub fn get_routes() -> Vec<Route> {
     routes![
         login::login,
