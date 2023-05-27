@@ -37,7 +37,11 @@ async fn get_random_pill(connection: Db) -> Result<Option<Json<Pill>>, InsignoEr
                 .load(c)
         })
         .await
-        .map_err(|e| InsignoError::new(404).client("impossible to obtain pill").debug(e))?;
+        .map_err(|e| {
+            InsignoError::new(404)
+                .client("impossible to obtain pill")
+                .debug(e)
+        })?;
 
     let pill = res.into_iter().next();
     if let Some(p) = pill {

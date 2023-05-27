@@ -39,11 +39,6 @@ async fn get_near(
     srid: Option<u32>,
     include_resolved: Option<bool>,
 ) -> Result<Json<Vec<Marker>>, InsignoError> {
-    /*let tmp_point = Point {
-        x,
-        y,
-        srid: Some(srid.unwrap_or(4326)),
-    };*/
     let cur_point = Point {
         x,
         y,
@@ -221,17 +216,15 @@ async fn resolve_marker_from_id(
     connection: Db,
 ) -> Result<Json<MarkerUpdate>, Status> {
     let y: ResolveRet = connection
-        .run(
-            move |conn| {
-                sql_query(
-                    "
+        .run(move |conn| {
+            sql_query(
+                "
             SELECT * FROM resolve_marker($1, $2);",
-                )
-                .bind::<BigInt, _>(marker_id)
-                .bind::<BigInt, _>(user.get_id())
-                .get_result(conn)
-            },
-        )
+            )
+            .bind::<BigInt, _>(marker_id)
+            .bind::<BigInt, _>(user.get_id())
+            .get_result(conn)
+        })
         .await
         .map_err(|tmp| match tmp.to_string().as_str() {
             "marker_non_trovato" => Status::NotFound,
@@ -271,7 +264,6 @@ async fn report_marker(
             InsignoError::new(422)
                 .client("Impossible to report. Maybe you already reported")
                 .debug(e)
-            
         })?;
 
     Ok(())

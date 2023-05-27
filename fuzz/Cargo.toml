@@ -9,9 +9,11 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+#futures= "0.3.28"
+tokio="1.28.1"
 
 [dependencies.insigno]
-path = "../../"
+path = "../"
 
 # Prevent this from interfering with workspaces
 [workspace]

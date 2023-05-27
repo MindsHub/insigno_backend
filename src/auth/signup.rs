@@ -59,7 +59,7 @@ pub async fn signup(
 ) -> Result<String, InsignoError> {
     create_info.sanitize()?;
     let permit = config.scrypt.clone().await;
-    let params= permit.get_params();
+    let params = permit.get_params();
     let create_info = spawn_blocking(move || {
         create_info
             .hash_password(&params)
@@ -103,5 +103,24 @@ pub async fn complete_registration(
         Ok((ContentType::HTML, "registrazione completata".to_string()))
     } else {
         Err(InsignoError::new(500).debug("wrong call"))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::rocket;
+    use rocket::{http::ContentType, local::asynchronous::Client};
+    #[rocket::async_test]
+    async fn test_empty_string() {
+        let client = Client::tracked(rocket())
+            .await
+            .expect("valid rocket instance");
+
+        let _response = client
+            .post("/signup")
+            .header(ContentType::Form)
+            .body("")
+            .dispatch()
+            .await;
     }
 }

@@ -48,7 +48,7 @@ pub struct MailBuilder {
     logo_ala: Body,
     mailer: AsyncSmtpTransport<Tokio1Executor>,
 }
-impl MailBuilder { 
+impl MailBuilder {
     #[cfg(not(test))]
     async fn send(&self, message: Message) -> Result<(), Box<dyn Error>> {
         self.mailer.send(message).await?;

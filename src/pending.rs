@@ -84,7 +84,11 @@ impl Pending {
                     .get_result(conn)
             })
             .await
-            .map_err(|e| InsignoError::new(422).client("impossibile creare l'account").debug(e))?;
+            .map_err(|e| {
+                InsignoError::new(422)
+                    .client("impossibile creare l'account")
+                    .debug(e)
+            })?;
         mem::swap(&mut me, self);
         Ok(())
     }

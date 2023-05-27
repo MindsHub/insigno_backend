@@ -1,40 +1,46 @@
 /*! Welcome to INSIGNO, an app for taking care of the environment while having fun.
- * This is our backend service for managing all the request that our app needs.
- * For code management reasons, we split our codebase in different modules, each one in charge of a single app aspect.
- * In particular:
- * - [self]: sticks all the modules together!
- * - [schema_sql]: defines our database structure(needed by diesel, probably we will remove that file in a future release)
- * - [schema_rs]: rust counterpart of schema_sql. This file will be DEFINITELY removed in a future release
- * - [cors]: handles all cors request
- * - [db]: it connects to our postgres with diesel and rocket_sync_db_pool.
- * - [mail]: send super cool (html) mail using lettre
- * - [pending]: handles all the different types of pending request that we will possibly ever need (for now mail-verification), and forward them to the correct handler
- * - [pills]: manages our super interesting pills.
- * - [utils]: manages some utility used in all the crate. Smaller this file is, the better.
- * - [auth]: signup, login, account verification...
- * - [map]: marker handling
- * - [test]: defines some methods used for testing all around the crate.
- *
- * In addition to that in this crate you could find the test script.
- * some command's that you should run before using it.
- * - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` install rustup
- * - `sudo apt install docker.io` in test scrypt we use docker
- * - `cargo install cargo-watch cargo-tarpaulin` install some cargo cool thing
- * - `cargo install diesel-cli --no-default-features --features "postgres"`
- *
- * Down there you could see a roadmap of the next implementations:
- * - [x] login/signup
- * - [x] change password
- * - [ ] mitigate ddos attacks
- * - [ ] from Insigno.toml it should be straightforward to implement custom server
- * - [ ] dockerize, and keep it easily scalable
- * - [ ] remove utils, schema_sql and schema_rs
- * - [ ] split container in multiple independent crate (faster compilation and better organization)
- * - [ ] cool way to assign points, we want to boost responsible use of the app
- * - [ ] better pgsql query, now we prefer to use raw diesel and implement function db-side
- * - [ ] TESTING
- * - [ ] DOCUMENTING
- * */
+* This is our backend service for managing all the request that our app needs.
+* For code management reasons, we split our codebase in different modules, each one in charge of a single app aspect.
+* In particular:
+* - [self]: sticks all the modules together!
+* - [schema_sql]: defines our database structure(needed by diesel, probably we will remove that file in a future release)
+* - [schema_rs]: rust counterpart of schema_sql. This file will be DEFINITELY removed in a future release
+* - [cors]: handles all cors request
+* - [db]: it connects to our postgres with diesel and rocket_sync_db_pool.
+* - [mail]: send super cool (html) mail using lettre
+* - [pending]: handles all the different types of pending request that we will possibly ever need (for now mail-verification), and forward them to the correct handler
+* - [pills]: manages our super interesting pills.
+* - [utils]: manages some utility used in all the crate. Smaller this file is, the better.
+* - [auth]: signup, login, account verification...
+* - [map]: marker handling
+* - [test]: defines some methods used for testing all around the crate.
+*
+* In addition to that in this crate you could find the test script.
+* some command's that you should run before using it.
+* - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh` install rustup
+* - `sudo apt install docker.io` in test scrypt we use docker
+* - `cargo install cargo-watch cargo-tarpaulin` install some cargo cool thing
+* - `cargo install diesel-cli --no-default-features --features "postgres"`
+*
+* Stylistic Roadmap:
+* - [ ] remove italian comments
+* - [ ] DOCUMENTING
+* - [ ] TESTING
+* - [ ] remove utils, schema_sql and schema_rs
+* - [ ] split container in multiple independent crate (faster compilation and better organization)
+*
+* Roadmap of the next implementations:
+* - [x] login/signup
+* - [x] change password
+* - [ ] localization (server side? app side?)
+* - [ ] manage groups of users
+* - [ ] cool way to assign points, we want to boost responsible use of the app
+* - [ ] mitigate ddos attacks
+* - [ ] from Insigno.toml it should be straightforward to implement custom server
+* - [ ] dockerize, and keep it easily scalable
+* - [ ] better pgsql query, now we prefer to use raw diesel and implement function db-side
+
+* */
 use std::sync::Arc;
 use std::{collections::BTreeMap, fs};
 
@@ -58,7 +64,7 @@ use schema_sql::marker_types;
 use utils::InsignoError;
 
 #[macro_use]
-extern crate rocket;
+pub extern crate rocket;
 #[macro_use]
 extern crate diesel;
 
@@ -118,7 +124,7 @@ fn stage() -> AdHoc {
 }
 
 /**
- * is my app version compatible with the server api version? Only an http-get knows...
+ * is my app version compatible with the server api version? Only this http-get knows...
  */
 #[get("/compatibile?<version_str>")]
 async fn compatibile(
@@ -151,7 +157,6 @@ async fn compatibile(
     }
 }
 
-
 /**
  * here is where all the magic appens.
  * calling this function we are initializing all our parameter, loading values, connecting to db...
@@ -162,7 +167,8 @@ pub fn rocket() -> _ {
     let prometheus = PrometheusMetrics::new();
     prometheus
         .registry()
-        .register(Box::new(ProcessCollector::for_self())).unwrap();
+        .register(Box::new(ProcessCollector::for_self()))
+        .unwrap();
     /*  figiment is our config manager. here we define defaults parameter and how overwrite them.
     in particular:
     - default values
@@ -174,7 +180,7 @@ pub fn rocket() -> _ {
         .merge(Env::prefixed("INSIGNO_").global());
     // Gimme the CONFIG
     let mut insigno_config: InsignoConfig = figment.extract().unwrap();
-    insigno_config.scrypt.sem=Some(Arc::new(Semaphore::new(3)));
+    insigno_config.scrypt.sem = Some(Arc::new(Semaphore::new(3)));
     // we extract database config for appending to Rocket.toml config (it's needed for rocket_sync_db_pool)
     let databases = figment.find_value("databases").unwrap();
 

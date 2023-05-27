@@ -53,8 +53,8 @@ fn convert_image(input: &Path, output: &Path) -> Result<(), InsignoError> {
             .output()
             .map_err(|e| InsignoError::new(500).debug(e))?;
         if !raw_out.status.success() {
-            return Err(InsignoError::new(500).debug(str::from_utf8(&raw_out.stderr).unwrap())
-                //str::from_utf8(&raw_out.stderr).unwrap(),
+            return Err(
+                InsignoError::new(500).debug(str::from_utf8(&raw_out.stderr).unwrap()), //str::from_utf8(&raw_out.stderr).unwrap(),
             )?;
         }
         Ok(())

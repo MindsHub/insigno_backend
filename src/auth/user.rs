@@ -171,7 +171,7 @@ impl User<Unauthenticated> {
 }
 
 impl<T: UserType> User<T> {
-    pub fn get_id(&self)->i64{
+    pub fn get_id(&self) -> i64 {
         self.id.unwrap()
     }
     pub async fn insert(&mut self, connection: &Db) -> Result<(), InsignoError> {
@@ -183,7 +183,11 @@ impl<T: UserType> User<T> {
                     .get_result::<UserDiesel>(conn)
             })
             .await
-            .map_err(|e| InsignoError::new(422).client("impossibile creare l'account").debug(e))?
+            .map_err(|e| {
+                InsignoError::new(422)
+                    .client("impossibile creare l'account")
+                    .debug(e)
+            })?
             .into();
         mem::swap(&mut me, self);
         Ok(())
@@ -197,9 +201,7 @@ impl<T: UserType> User<T> {
                     .get_result::<UserDiesel>(conn)
             })
             .await
-            .map_err(|e| {
-                InsignoError::new(500).debug(e)
-            })?
+            .map_err(|e| InsignoError::new(500).debug(e))?
             .into();
         mem::swap(&mut me, self);
         Ok(())
@@ -242,7 +244,9 @@ impl<'r> FromRequest<'r> for User<Authenticated> {
         let insigno_auth = match cookie.get_private("insigno_auth") {
             Some(a) => a,
             None => {
-                return InsignoError::new(401).debug("insigno_auth cookie not found").into();
+                return InsignoError::new(401)
+                    .debug("insigno_auth cookie not found")
+                    .into();
             }
         }
         .value()
@@ -269,7 +273,10 @@ impl<'r> FromRequest<'r> for User<Authenticated> {
                 return request::Outcome::Success(a.into());
             }
             Err(e) => {
-                return InsignoError::new(401).client("Authentication error").debug(e).into();
+                return InsignoError::new(401)
+                    .client("Authentication error")
+                    .debug(e)
+                    .into();
             }
         }
     }

@@ -1,4 +1,3 @@
-use insignolib;
-pub fn main(){
+pub fn main() {
     insignolib::main();
 }

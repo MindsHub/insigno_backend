@@ -96,6 +96,7 @@ pub async fn complete_change_password(
             "Password cambiata con successo".to_string(),
         ))
     } else {
-        Err(InsignoError::new(500).debug(format!("called ChangePassword with wrong data: {pend:?}")))
+        Err(InsignoError::new(500)
+            .debug(format!("called ChangePassword with wrong data: {pend:?}")))
     }
 }
