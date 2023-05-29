@@ -73,10 +73,7 @@ impl<T> From<InsignoError> for request::Outcome<T, InsignoError> {
 impl<'r> Responder<'r, 'static> for InsignoError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
         if let Some(s) = self.debug {
-            #[cfg(test)]
-            {
-                println!("{s}");
-            }
+            
             let bt = Backtrace::force_capture();
             let mut file = File::options()
                 .append(true)
@@ -84,6 +81,10 @@ impl<'r> Responder<'r, 'static> for InsignoError {
                 .open("./log")
                 .unwrap();
             let to_write = Local::now().to_string() + " " + &s + "\n" + &bt.to_string() + "\n";
+            #[cfg(test)]
+            {
+                println!("{to_write}");
+            }
             file.write_all(to_write.as_bytes()).unwrap();
         }
 
