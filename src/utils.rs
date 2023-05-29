@@ -46,7 +46,14 @@ impl InsignoError {
         self
     }
     pub fn debug<T: ToString>(mut self, s: T) -> Self {
-        self.debug = Some(s.to_string());
+        let s= s.to_string();
+        
+        #[cfg(test)]
+        {
+            let bt = Backtrace::force_capture();
+            println!("{s}\n{bt}");
+        }
+        self.debug = Some(s);
         self
     }
     pub fn both<T: ToString>(mut self, s: T) -> Self {
@@ -81,10 +88,7 @@ impl<'r> Responder<'r, 'static> for InsignoError {
                 .open("./log")
                 .unwrap();
             let to_write = Local::now().to_string() + " " + &s + "\n" + &bt.to_string() + "\n";
-            #[cfg(test)]
-            {
-                println!("{to_write}");
-            }
+            
             file.write_all(to_write.as_bytes()).unwrap();
         }
 
