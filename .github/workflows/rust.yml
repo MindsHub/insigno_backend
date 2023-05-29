@@ -7,7 +7,7 @@ on:
 env:
     CARGO_TERM_COLOR: always
 
-  
+
 jobs:
   test:
     # service containers to run with `build-test`
@@ -52,7 +52,7 @@ jobs:
       - name: list shit
         run: pwd && ls -la && ls -la ./tests/test_data/
       - name: Install-diesel-Cli
-        run: sudo apt-get install -y libpq-dev ffmpeg && cargo install diesel_cli --no-default-features --features "postgres"
+        run: sudo apt update && sudo apt install -y libpq-dev ffmpeg && cargo install diesel_cli --no-default-features --features "postgres"
       #- name: Make migrations
       #  run: diesel database reset --database-url="postgres://mindshub:test@localhost:5432/insignorocketdb"
       - name: "CI testing"
@@ -138,7 +138,7 @@ jobs:
         host: ${{secrets.SSH_HOST}}
         username: ${{secrets.SSH_USER}}
         password: ${{secrets.SSH_PASS}}
-        port: ${{secrets.SSH_PORT}} 
+        port: ${{secrets.SSH_PORT}}
         script: |
           if pgrep insigno; then pkill insigno; fi
     - name: Copy exec via SSH
@@ -170,4 +170,3 @@ jobs:
         script: |
           cd insigno/
           nohup ./insigno > nohup.out 2> nohup.err < /dev/null &
-  
