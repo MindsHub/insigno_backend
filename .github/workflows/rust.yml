@@ -47,11 +47,12 @@ jobs:
           prefix-key: "v0-rust"
           shared-key: "test"
           key: "test"
+          cache-on-failure: "true"
           cache-directories: "."
       - name: Install-diesel-Cli
         run: sudo apt-get install -y libpq-dev && cargo install diesel_cli --no-default-features --features "postgres"
       - name: Make migrations
-        run: diesel database reset --database-url="postgres://mindshub:test@localhost:5432/insignorocketdb"
+        run: diesel database reset --database-url="postgres://mindshub:test@postgres:5432/insignorocketdb"
       - name: "CI testing"
         run: cargo test --jobs=1
 
