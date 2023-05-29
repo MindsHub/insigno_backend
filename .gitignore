@@ -5,7 +5,7 @@ Cargo.lock
 **/*.rs.bk
 *.pdb
 .env
-Rocket.toml
+#Rocket.toml
 
 # temporaneo
 pills.json
@@ -184,5 +184,5 @@ cython_debug/
 
 monitoring/
 
-Insigno.toml
+#Insigno.toml
 docs
