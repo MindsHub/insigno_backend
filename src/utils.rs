@@ -47,7 +47,6 @@ impl InsignoError {
     }
     pub fn debug<T: ToString>(mut self, s: T) -> Self {
         let s= s.to_string();
-        
         #[cfg(test)]
         {
             let bt = Backtrace::force_capture();
