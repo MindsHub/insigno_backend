@@ -71,6 +71,8 @@ jobs:
         cache-directories: "."
     - name: Build
       run: cargo build --release --bin insigno
+    - name: list shit
+      run: pwd && ls -la && ls -la ./target/release
 
   document:
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
