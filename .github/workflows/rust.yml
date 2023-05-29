@@ -15,7 +15,7 @@ jobs:
       # label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:latest
+        image: postgis/postgis:15-3.3
         # service environment variables
         # `POSTGRES_HOST` is `postgres`
         env:
