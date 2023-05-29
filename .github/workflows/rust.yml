@@ -71,8 +71,42 @@ jobs:
         cache-directories: "."
     - name: Build
       run: cargo build --release
-  
-  deplay:
+
+  document:
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: rustup toolchain install nightly --profile minimal
+      - run: rustup override set nightly
+      - name: Cache rust
+        uses: Swatinem/rust-cache@v2.3.0
+        with:
+          cache-all-crates: "true"
+          prefix-key: "v0-rust-doc"
+          shared-key: "test"
+          key: "test"
+      - name: BuildDoc
+        run: ./document
+      - name: parse
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: "docs"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
+  deploy:
     runs-on: ubuntu-22.04
     needs: [build, test, document]
     steps:
@@ -135,36 +169,3 @@ jobs:
           cd insigno/
           nohup ./insigno > nohup.out 2> nohup.err < /dev/null &
   
-  document:
-    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
-    permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-
-    # Deploy to the github-pages environment
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    # Specify runner + deployment step
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: rustup toolchain install nightly --profile minimal
-      - run: rustup override set nightly
-      - name: Cache rust
-        uses: Swatinem/rust-cache@v2.3.0
-        with:
-          cache-all-crates: "true"
-          prefix-key: "v0-rust-doc"
-          shared-key: "test"
-          key: "test"
-      - name: BuildDoc
-        run: ./document
-      - name: parse
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: "docs"
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2

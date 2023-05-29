@@ -108,10 +108,11 @@ pub async fn complete_registration(
 
 #[cfg(test)]
 mod test {
-    use crate::rocket;
+    use crate::{rocket, test::test_reset_db};
     use rocket::{http::ContentType, local::asynchronous::Client};
     #[rocket::async_test]
     async fn test_empty_string() {
+        test_reset_db();
         let client = Client::tracked(rocket())
             .await
             .expect("valid rocket instance");

@@ -73,6 +73,10 @@ impl<T> From<InsignoError> for request::Outcome<T, InsignoError> {
 impl<'r> Responder<'r, 'static> for InsignoError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
         if let Some(s) = self.debug {
+            #[cfg(test)]
+            {
+                println!("{s}");
+            }
             let bt = Backtrace::force_capture();
             let mut file = File::options()
                 .append(true)
