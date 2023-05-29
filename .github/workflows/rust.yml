@@ -51,10 +51,10 @@ jobs:
           cache-directories: "."
       - name: Install-diesel-Cli
         run: sudo apt-get install -y libpq-dev && cargo install diesel_cli --no-default-features --features "postgres"
-      - name: Make migrations
-        run: diesel database reset --database-url="postgres://mindshub:test@localhost:5432/insignorocketdb"
+      #- name: Make migrations
+      #  run: diesel database reset --database-url="postgres://mindshub:test@localhost:5432/insignorocketdb"
       - name: "CI testing"
-        run: cargo test --jobs=1
+        run: cargo test -- --test-threads=1
 
   build:
     runs-on: ubuntu-22.04

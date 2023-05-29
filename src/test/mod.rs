@@ -12,7 +12,6 @@ pub fn test_reset_db() {
     let figment = Config::figment().merge(Toml::file("Insigno.toml").nested());
     let value = figment.find_value("databases.db.url").unwrap();
     let url = value.as_str().unwrap();
-
     let output = Command::new("diesel")
         .args(["database", "reset", &format!("--database-url={url}")])
         .output()

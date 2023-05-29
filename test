@@ -16,4 +16,4 @@ then
     trap 'sudo docker stop postgres; sudo docker container rm -f postgres; exit' INT
 fi
 #cargo test -- --test-threads=1
-cargo watch -s "DATABASE_URL=\"postgres://mindshub:test@localhost:5432/insignorocketdb\" cargo tarpaulin --target-dir=target/tarpaulin --skip-clean -- --test-threads=1"
+cargo watch -s "cargo tarpaulin --target-dir=target/tarpaulin --skip-clean -- --test-threads=1"
