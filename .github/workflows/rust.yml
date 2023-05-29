@@ -61,14 +61,24 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: rustup toolchain install stable --profile minimal
-    - name: Cache rust
-      uses: Swatinem/rust-cache@v2.3.0
+    - name: Cache builds
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-build
       with:
-        cache-all-crates: "true"
-        prefix-key: "v0-rust"
-        shared-key: "build"
-        key: "build"
-        cache-directories: "."
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: |
+          target/
+          ~/.cargo
+        key: build
+    #- name: Cache rust
+    #  uses: Swatinem/rust-cache@v2.3.0
+    #  with:
+    #    cache-all-crates: "true"
+    #    prefix-key: "v0-rust"
+    #    shared-key: "build"
+    #    key: "build"
+    #    cache-directories: ".\n"
     - name: Build
       run: cargo build --release --bin insigno
     - name: list shit
@@ -113,16 +123,26 @@ jobs:
     needs: [build, test, document]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
-    - name: Cache rust
-      uses: Swatinem/rust-cache@v2.3.0
+    - run: rustup toolchain install stable --profile minimal7
+    - name: Cache builds
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-build
       with:
-        cache-all-crates: "true"
-        prefix-key: "v0-rust"
-        shared-key: "build"
-        key: "build"
-        cache-directories: "."
-        save-if: "false"
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: |
+          target/
+          ~/.cargo
+        key: build
+    #- name: Cache rust
+    #  uses: Swatinem/rust-cache@v2.3.0
+    #  with:
+    #    cache-all-crates: "true"
+    #    prefix-key: "v0-rust"
+    #    shared-key: "build"
+    #    key: "build"
+    #    cache-directories: "."
+    #    save-if: "false"
     - name: list shit
       run: pwd && ls -la && ls -la ./target/release
     - name: Upload binaries to release
