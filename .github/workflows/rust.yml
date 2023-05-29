@@ -49,8 +49,6 @@ jobs:
           key: "test"
           cache-on-failure: "true"
           cache-directories: "."
-      - name: list shit
-        run: pwd && ls -la && ls -la ./tests/test_data/
       - name: Install-diesel-Cli
         run: sudo apt update && sudo apt install -y libpq-dev ffmpeg && cargo install diesel_cli --no-default-features --features "postgres"
       #- name: Make migrations
@@ -123,6 +121,8 @@ jobs:
         key: "build"
         cache-directories: "."
         save-if: "false"
+    - name: list shit
+      run: pwd && ls -la && ls -la ./target
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
