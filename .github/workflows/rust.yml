@@ -49,6 +49,8 @@ jobs:
           key: "test"
           cache-on-failure: "true"
           cache-directories: "."
+      - name: list shit
+        run: pwd && ls -la && ls -la ./tests/test_data/
       - name: Install-diesel-Cli
         run: sudo apt-get install -y libpq-dev && cargo install diesel_cli --no-default-features --features "postgres"
       #- name: Make migrations
