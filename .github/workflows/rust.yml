@@ -70,7 +70,7 @@ jobs:
         key: "build"
         cache-directories: "."
     - name: Build
-      run: cargo build --release
+      run: cargo build --release --bin insigno
 
   document:
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
