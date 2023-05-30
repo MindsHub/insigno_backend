@@ -124,7 +124,9 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: build-result
-        path: target/release/insigno
+        path: target/release
+    - name: change permission
+      run: chomd 777 target/release/insigno
     - name: Deploy to GitHub Pages
       uses: actions/deploy-pages@v2
       id: deployment
