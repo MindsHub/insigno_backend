@@ -50,6 +50,8 @@ jobs:
           cache-on-failure: "true"
           cache-directories: ".\n~.cargo"
       - name: Install deps
+        run: sudo apt update
+      - name: Install deps
         uses: tecolicom/actions-use-apt-tools@v1
         with:
           tools: libpq-dev ffmpeg
