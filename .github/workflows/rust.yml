@@ -125,8 +125,6 @@ jobs:
       with:
         name: build-result
         path: target/release
-    - name: change permission
-      run: chomd 777 target/release/insigno
     - name: Deploy to GitHub Pages
       uses: actions/deploy-pages@v2
       id: deployment
@@ -179,4 +177,5 @@ jobs:
         port: ${{secrets.SSH_PORT}}
         script: |
           cd insigno/
+          chmod +x ./insigno
           nohup ./insigno > nohup.out 2> nohup.err < /dev/null &
