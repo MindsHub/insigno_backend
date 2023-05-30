@@ -49,10 +49,12 @@ jobs:
           key: "test"
           cache-on-failure: "true"
           cache-directories: "."
+      - name: Install deps
+        run: sudo apt update && sudo apt install -y libpq-dev ffmpeg
       - name: Install-diesel-Cli
-        run: sudo apt update && sudo apt install -y libpq-dev ffmpeg && cargo install diesel_cli --no-default-features --features "postgres"
-      #- name: Make migrations
-      #  run: diesel database reset --database-url="postgres://mindshub:test@localhost:5432/insignorocketdb"
+        run:  cargo install diesel_cli --no-default-features --features "postgres"
+      - name: Make migrations
+        run: diesel database reset --database-url="postgres://mindshub:test@localhost:5432/insignorocketdb"
       - name: "CI testing"
         run: cargo test -- --test-threads=1
 
@@ -61,16 +63,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: rustup toolchain install stable --profile minimal
-    - name: Cache builds
-      uses: actions/cache@v3
-      env:
-        cache-name: cache-build
-      with:
-        # npm cache files are stored in `~/.npm` on Linux/macOS
-        path: |
-          target/
-          ~/.cargo
-        key: build
     - name: Cache rust
       uses: Swatinem/rust-cache@v2.3.0
       with:
@@ -87,16 +79,6 @@ jobs:
         path: target/release/insigno
 
   document:
-    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
-    permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-
-    # Deploy to the github-pages environment
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     # Specify runner + deployment step
     runs-on: ubuntu-latest
     steps:
@@ -117,10 +99,18 @@ jobs:
         with:
           name: "documentation"
           path: "docs"
-      
         
 
   deploy:
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-22.04
     needs: [build, test, document]
     steps:
