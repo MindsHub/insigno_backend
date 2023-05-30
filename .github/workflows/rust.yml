@@ -71,18 +71,20 @@ jobs:
           target/
           ~/.cargo
         key: build
-    #- name: Cache rust
-    #  uses: Swatinem/rust-cache@v2.3.0
-    #  with:
-    #    cache-all-crates: "true"
-    #    prefix-key: "v0-rust"
-    #    shared-key: "build"
-    #    key: "build"
-    #    cache-directories: ".\n"
+    - name: Cache rust
+      uses: Swatinem/rust-cache@v2.3.0
+      with:
+        cache-all-crates: "true"
+        prefix-key: "v0-rust"
+        shared-key: "build"
+        key: "build"
+        cache-directories: "."
     - name: Build
       run: cargo build --release --bin insigno
-    - name: list shit
-      run: pwd && ls -la && ls -la ./target/release
+    - uses: actions/upload-artifact@v3
+      with:
+        name: build-result
+        path: target/release/insigno
 
   document:
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
@@ -113,38 +115,25 @@ jobs:
       - name: parse
         uses: actions/upload-pages-artifact@v1
         with:
+          name: "documentation"
           path: "docs"
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+      
+        
 
   deploy:
     runs-on: ubuntu-22.04
     needs: [build, test, document]
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
-    - name: Cache builds
-      uses: actions/cache@v3
-      env:
-        cache-name: cache-build
+    - uses: actions/download-artifact@v3
       with:
-        # npm cache files are stored in `~/.npm` on Linux/macOS
-        path: |
-          target/
-          ~/.cargo
-        key: build
-    #- name: Cache rust
-    #  uses: Swatinem/rust-cache@v2.3.0
-    #  with:
-    #    cache-all-crates: "true"
-    #    prefix-key: "v0-rust"
-    #    shared-key: "build"
-    #    key: "build"
-    #    cache-directories: "."
-    #    save-if: "false"
-    - name: list shit
-      run: pwd && ls -la && ls -la ./target/release
+        name: build-result
+        path: target/release/insigno
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v2
+      id: deployment
+      with:
+        artifact_name: "documentation"
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
@@ -154,6 +143,7 @@ jobs:
         tag: ${{github.ref}}
         overwrite: true
         body: "Release file"
+        release_name: ""
     - name: Kill Server
       uses: appleboy/ssh-action@v0.1.8
       with:
