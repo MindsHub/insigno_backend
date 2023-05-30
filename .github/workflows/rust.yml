@@ -54,7 +54,7 @@ jobs:
       - name: Install deps
         uses: tecolicom/actions-use-apt-tools@v1
         with:
-          tools: libpq-dev ffmpeg
+          tools: ffmpeg
       - name: Install-diesel-Cli
         run:  cargo install diesel_cli --no-default-features --features "postgres"
       - name: Make migrations
