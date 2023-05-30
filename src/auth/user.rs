@@ -213,11 +213,12 @@ impl Serialize for User<Authenticated> {
     where
         S: serde::Serializer,
     {
-        let mut s = serializer.serialize_struct("User", 3)?;
+        let mut s = serializer.serialize_struct("User", 5)?;
         s.serialize_field("id", &self.id)?;
         s.serialize_field("name", &self.name)?;
         s.serialize_field("points", &self.points)?;
         s.serialize_field("is_admin", &self.is_admin)?;
+        s.serialize_field("email", &self.email)?;
         s.end()
     }
 }
