@@ -47,16 +47,19 @@ jobs:
           prefix-key: "v0-rust"
           shared-key: "test"
           key: "test"
-          cache-on-failure: "true"
-          cache-directories: ".\n~.cargo"
-      - name: Install deps
-        run: sudo apt update
-      - name: Install deps
-        uses: tecolicom/actions-use-apt-tools@v1
+          #cache-on-failure: "true"
+          #cache-directories: ".\n~.cargo"
+#      - name: Install deps
+#        run: sudo apt update
+      - uses: FedericoCarboni/setup-ffmpeg@v2
+        id: setup-ffmpeg
+      - name: Install Diesel-cli
+        uses: baptiste0928/cargo-install@v2
         with:
-          tools: ffmpeg
-      - name: Install-diesel-Cli
-        run:  cargo install diesel_cli --no-default-features --features "postgres"
+          crate: diesel_cli
+          #version: "^0.5"  #
+      #- name: Install-diesel-Cli
+      #  run:  cargo install diesel_cli --no-default-features --features "postgres"
       - name: Make migrations
         run: diesel database reset --database-url="postgres://mindshub:test@localhost:5432/insignorocketdb"
       - name: "CI testing"
