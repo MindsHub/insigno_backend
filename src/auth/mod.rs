@@ -150,7 +150,7 @@ mod test {
         let message = response.into_string().await.unwrap();
         assert_eq!(
             message,
-            r#"{"id":1,"name":"IlMagicoTester","points":0.0,"is_admin":false}"#
+            r#"{"id":1,"name":"IlMagicoTester","points":0.0,"is_admin":false,"email":"test@test.com"}"#
         );
     }
 
