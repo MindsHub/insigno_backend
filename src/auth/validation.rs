@@ -1,3 +1,10 @@
+/*!
+#Validation
+Here we use a rust coding pattern:
+- We define a trait with some getter (eg Email)
+- We define another trait with some logic (eg SanitizeEmail)
+- And we could provide a generic impl of the second trait where the first trait is defined
+ */
 use std::{error::Error, mem};
 
 use super::scrypt::scrypt_simple;
