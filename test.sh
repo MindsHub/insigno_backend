@@ -1,3 +1,4 @@
+#!/bin/sh
 set -o xtrace # print commands being executed
 
 sudo docker stop postgres
