@@ -197,6 +197,7 @@ impl<T: UserType> User<T> {
         let mut me: Self = connection
             .run(|conn| {
                 diesel::update(users::dsl::users)
+                    .filter(users::id.eq(me.id))
                     .set(me)
                     .get_result::<UserDiesel>(conn)
             })
