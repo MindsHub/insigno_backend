@@ -24,23 +24,6 @@ pub struct MarkerType {
 pub struct InsignoPoint {
     point: Point,
 }
-/*
-impl<DB: Backend<RawValue = [u8]>> FromSql<Geometry, DB> for InsignoPoint {
-
-}
-
-impl<DB: Backend<RawValue = [u8]>> FromSql<Geometry, DB> for InsignoPoint {
-    fn from_sql(bytes: Option<&DB::RawValue>) -> deserialize::Result<Self> {
-        <Point as FromSql<Geometry, Pg>>::from_sql(bytes)
-            .map(|value| InsignoPoint { point: value })
-    }
-}
-
-impl ToSql<Geometry, Pg> for InsignoPoint {
-    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
-        <Point as ToSql<Geometry, Pg>>::to_sql(&self.point, out)
-    }
-}*/
 
 impl Serialize for InsignoPoint {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -112,8 +95,3 @@ pub struct UserSession {
     pub token: String,
     pub refresh_date: chrono::DateTime<Utc>,
 }
-/*marker_reports(id){
-    id -> BigInt,
-    from -> BigInt,
-    reported_marker -> BigInt,
-} */

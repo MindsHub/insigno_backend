@@ -58,11 +58,11 @@ pub async fn change_password(
     let change_password_request = spawn_blocking(move || {
         change_password_request
             .hash_password(&params)
-            .map_err(|e| InsignoError::new(501).debug(e))
+            .map_err(|e| InsignoError::new(500).debug(e))
             .map(|_| change_password_request)
     })
     .await
-    .map_err(|e| InsignoError::new(501).debug(e))??;
+    .map_err(|e| InsignoError::new(500).debug(e))??;
     mem::drop(permit);
     let _: Result<(), InsignoError> = async move {
         let user = User::get_by_email(&db, change_password_request.email.clone()).await?;

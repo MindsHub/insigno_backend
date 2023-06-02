@@ -185,7 +185,7 @@ pub fn rocket() -> _ {
     insigno_config.scrypt.sem = Some(Arc::new(Semaphore::new(3)));
     // we extract database config for appending to Rocket.toml config (it's needed for rocket_sync_db_pool)
     let databases = figment.find_value("databases").unwrap();
-
+    println!("{:?}", databases);
     // virtualy add DatabaseConfig to Roket.toml
     let rocket_figment = Config::figment().merge(Serialized::defaults(databases).key("databases"));
     rocket::custom(rocket_figment)
