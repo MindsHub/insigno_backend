@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use rocket::tokio::fs;
 
@@ -63,7 +64,11 @@ impl MailBuilder {
 
 impl MailBuilder {
     async fn new(config: &InsignoConfig) -> Result<Self, Box<dyn Error>> {
-        let mail_config = PoolConfig::new().min_idle(1);
+        let mail_config = PoolConfig::new()
+        .min_idle(0)
+        .max_size(10)
+        .idle_timeout(Duration::from_secs(60));
+
         let creds = Credentials::new(
             config.smtp.user.to_string(),
             config.smtp.password.to_string(),
