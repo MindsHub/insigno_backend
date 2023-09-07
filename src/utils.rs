@@ -46,7 +46,7 @@ impl InsignoError {
         self
     }
     pub fn debug<T: ToString>(mut self, s: T) -> Self {
-        let s= s.to_string();
+        let s = s.to_string();
         #[cfg(test)]
         {
             let bt = Backtrace::force_capture();
@@ -79,7 +79,6 @@ impl<T> From<InsignoError> for request::Outcome<T, InsignoError> {
 impl<'r> Responder<'r, 'static> for InsignoError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
         if let Some(s) = self.debug {
-            
             let bt = Backtrace::force_capture();
             let mut file = File::options()
                 .append(true)
@@ -87,7 +86,7 @@ impl<'r> Responder<'r, 'static> for InsignoError {
                 .open("./log")
                 .unwrap();
             let to_write = Local::now().to_string() + " " + &s + "\n" + &bt.to_string() + "\n";
-            
+
             file.write_all(to_write.as_bytes()).unwrap();
         }
 

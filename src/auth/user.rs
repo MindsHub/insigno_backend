@@ -250,7 +250,7 @@ impl<'r> FromRequest<'r> for User<Authenticated> {
                     .into();
             }
         };
-        let insigno_auth= insigno_auth_cookie.value().to_string();
+        let insigno_auth = insigno_auth_cookie.value().to_string();
         let vec: Vec<&str> = insigno_auth.split(' ').collect();
 
         let id: i64 = vec[0].parse().unwrap();

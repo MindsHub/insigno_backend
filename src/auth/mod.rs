@@ -90,7 +90,7 @@ pub async fn get_user(db: Db, id: i64) -> Result<Json<User<Unauthenticated>>, In
 }
 
 /**
-# Map routes for Rocket 
+# Map routes for Rocket
  */
 pub fn get_routes() -> Vec<Route> {
     routes![

@@ -65,9 +65,9 @@ impl MailBuilder {
 impl MailBuilder {
     async fn new(config: &InsignoConfig) -> Result<Self, Box<dyn Error>> {
         let mail_config = PoolConfig::new()
-        .min_idle(0)
-        .max_size(10)
-        .idle_timeout(Duration::from_secs(60));
+            .min_idle(0)
+            .max_size(10)
+            .idle_timeout(Duration::from_secs(60));
 
         let creds = Credentials::new(
             config.smtp.user.to_string(),
