@@ -56,7 +56,7 @@ pub async fn logout(cookies: &CookieJar<'_>, user: User<Authenticated>, db: Db) 
 It needs only an authenticated user dataguard, that already refreshes the token
  */
 #[post("/session")]
-fn refresh_session(_user: User<Authenticated>) -> Option<()> {
+fn refresh_session(_user: User<Authenticated>) -> Option<()> { //<>
     Some(())
 }
 
@@ -150,7 +150,7 @@ mod test {
         let message = response.into_string().await.unwrap();
         assert_eq!(
             message,
-            r#"{"id":1,"name":"IlMagicoTester","points":0.0,"is_admin":false,"email":"test@test.com"}"#
+            r#"{"id":1,"name":"IlMagicoTester","points":0.0,"is_admin":false,"email":"test@test.com","is_adult":false}"#
         );
     }
 

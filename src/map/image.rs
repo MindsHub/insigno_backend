@@ -7,6 +7,7 @@ use std::process;
 
 use super::marker_image::MarkerImage;
 use super::marker_report::ImageToReport;
+use crate::auth::user::Adult;
 use crate::auth::user::Authenticated;
 use crate::auth::user::AuthenticatedAdmin;
 use crate::auth::user::User;
@@ -199,10 +200,11 @@ pub(crate) async fn get_image(
         .map_err(|e| InsignoError::new(500).debug(e))
 }
 
+#[allow(unused_variables)]
 #[get("/image/to_review")]
 pub(crate) async fn get_to_review(
     connection: Db,
-    _user: User<AuthenticatedAdmin>,
+    user: User<Authenticated, Adult>,
 ) -> Result<Json<Vec<ImageToReport>>, InsignoError> {
     let images = ImageToReport::get_to_report(&connection).await?;
     Ok(Json(images))
@@ -218,7 +220,7 @@ pub(crate) async fn review(
     image_id: i64,
     connection: Db,
     config: &State<InsignoConfig>,
-    user: User<AuthenticatedAdmin>,
+    user: User<Authenticated, Adult>,
     verdict: Form<ReviewVerdict>,
 ) -> Result<(), InsignoError> {
     let verdict = verdict.verdict.trim().to_ascii_lowercase();
@@ -278,4 +280,7 @@ mod test {
         let response = client.get("/map/image/1").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
     }
+
+
+    
 }

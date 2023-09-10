@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -o xtrace # print commands being executed
 
 sudo docker stop postgres
@@ -17,7 +17,7 @@ done;
 #cargo tarpaulin --command build --skip-clean --target-dir=target/tarpaulin
 #DATABASE_URL=
 
-if [[ $# -ne 1 ]]; then
+if [[ $# != 1 ]]; then
     # terminate gracefully when the user uses Ctrl+C (unless an argument was passed)
     trap 'sudo docker stop postgres; sudo docker container rm -f postgres; exit' INT
 elif [[ $1 == "once" ]]; then

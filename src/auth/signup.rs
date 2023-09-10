@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    user::{Unauthenticated, User},
+    user::{User, UserDiesel, Authenticated},
     validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword},
 };
 
@@ -20,6 +20,7 @@ pub struct SignupInfo {
     pub name: String,
     pub email: String,
     pub password: String,
+    pub is_adult: bool,
 }
 // validation on this struct
 impl Email for SignupInfo {
@@ -74,6 +75,7 @@ pub async fn signup(
         create_info.name.clone(),
         create_info.email.clone(),
         create_info.password.clone(),
+        create_info.is_adult.clone(),
     ));
     pend.insert(&connection).await?;
     let link = format!("https://insigno.mindshub.it/verify/{}", pend.token);
@@ -89,16 +91,17 @@ pub async fn complete_registration(
     pend: PendingAction,
     connection: &Db,
 ) -> Result<(ContentType, String), InsignoError> {
-    if let PendingAction::RegisterUser(name, email, password_hash) = pend {
-        let mut user = User {
+    if let PendingAction::RegisterUser(name, email, password_hash, is_adult) = pend {
+        let mut user: User<Authenticated> = UserDiesel {
             id: None,
             name,
             email,
-            password_hash,
+            password: password_hash,
+            //password_hash,
             is_admin: false,
             points: 0.0,
-            phantom: std::marker::PhantomData::<Unauthenticated>,
-        };
+            is_adult,
+        }.try_into()?;
         user.insert(connection).await?;
         Ok((ContentType::HTML, "registrazione completata".to_string()))
     } else {

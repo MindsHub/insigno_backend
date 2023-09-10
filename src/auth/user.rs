@@ -24,48 +24,100 @@ table! {
         password -> Text,
         is_admin -> Bool,
         points -> Double,
+        is_adult -> Bool,
     }
 }
 
 #[derive(Clone)]
-pub enum Unauthenticated {}
+pub struct Adult;
+#[derive(Clone)]
+pub struct Underage;
+#[derive(Clone)]
+pub struct Anyage;
+pub trait UserAge: Clone + Send {
+    fn is_adult()->bool;
+}
+impl UserAge for Underage{
+    fn is_adult()->bool {
+        false
+    }
+}
+impl UserAge for Adult{
+    fn is_adult()->bool {
+        true
+    }
+}
+impl UserAge for Anyage{
+    fn is_adult()->bool {
+        false
+    }
+}
+
 
 #[derive(Clone)]
-pub enum Authenticated {}
+pub struct Unauthenticated;
+
 #[derive(Clone)]
-pub enum AuthenticatedAdmin {}
+pub struct Authenticated;
+
+#[derive(Clone)]
+pub struct AuthenticatedAdmin;
 
 pub trait UserType: Clone + Send {}
 impl UserType for Unauthenticated {}
 impl UserType for Authenticated {}
-impl UserType for AuthenticatedAdmin {}
+impl UserType for AuthenticatedAdmin{}
 
 #[derive(Insertable, Queryable, QueryableByName, AsChangeset)]
 #[diesel(table_name = users)]
-struct UserDiesel {
+pub (in crate) struct UserDiesel {
     pub id: Option<i64>,
     pub name: String,
     pub email: String,
     pub password: String,
     pub is_admin: bool,
     pub points: f64,
+    pub is_adult: bool,
 }
 
-impl<T: UserType> From<UserDiesel> for User<T> {
-    fn from(value: UserDiesel) -> User<T> {
-        Self {
-            id: value.id,
-            name: value.name,
-            email: value.email,
-            password_hash: value.password,
-            is_admin: value.is_admin,
-            points: value.points,
-            phantom: PhantomData,
+#[derive(Clone)]
+pub struct User<UserType, UserAge=Anyage> {
+    pub id: Option<i64>,
+    pub name: String,
+    pub email: String,
+    pub password_hash: String,
+    pub is_admin: bool,
+    pub points: f64,
+    //pub is_adult: bool,
+    pub phantom: PhantomData<UserType>,
+    pub phantom_age: PhantomData<UserAge>,
+}
+
+impl<A: UserAge, T: UserType> TryFrom<UserDiesel> for User<T, A>{
+    type Error = InsignoError;
+    fn try_from(value: UserDiesel) -> Result<User<T, A>, Self::Error> {
+        if !value.is_adult && A::is_adult(){
+            panic!("wtf");
+            Err(InsignoError::new(403).both("you don't have the correct age to view this"))
+            //when is not an adult, and it ask for an adult
+        }else{
+            Ok(Self {
+                id: value.id,
+                name: value.name,
+                email: value.email,
+                password_hash: value.password,
+                is_admin: value.is_admin,
+                points: value.points,
+                //is_adult: value.is_adult,
+                phantom: PhantomData,
+                phantom_age: PhantomData,
+            })
         }
+        
     }
 }
-impl<T: UserType> From<User<T>> for UserDiesel {
-    fn from(value: User<T>) -> Self {
+impl<T: UserType, A: UserAge> From<User<T, A>> for UserDiesel {
+    fn from(value: User<T, A>) -> Self {
         Self {
             id: value.id,
             name: value.name,
@@ -73,6 +125,7 @@ impl<T: UserType> From<User<T>> for UserDiesel {
             password: value.password_hash,
             is_admin: value.is_admin,
             points: value.points,
+            is_adult: A::is_adult(),
         }
     }
 }
@@ -80,19 +133,11 @@ impl<T: UserType> From<User<T>> for UserDiesel {
 /** generic user interface for db (not authenticated)*/
 //pub struct Rocket<P: Phase>(pub(crate) P::State);
 
-#[derive(Clone)]
-pub struct User<UserType> {
-    pub id: Option<i64>,
-    pub name: String,
-    pub email: String,
-    pub password_hash: String,
-    pub is_admin: bool,
-    pub points: f64,
-    pub phantom: PhantomData<UserType>,
-}
+
 
 impl<T: UserType> User<T> {
     //*this must remain private */
+    // we just ignore age, because even with an update it is the same
     fn upgrade<Z>(self) -> User<Z> {
         User {
             id: self.id,
@@ -102,11 +147,12 @@ impl<T: UserType> User<T> {
             is_admin: self.is_admin,
             points: self.points,
             phantom: PhantomData,
+            phantom_age: PhantomData,
         }
     }
 }
 
-impl User<Authenticated> {
+impl<Age: UserAge> User<Authenticated, Age> {
     pub async fn set_token(&self, token_str: &str, db: &Db) -> Result<(), InsignoError> {
         let id = self.get_id();
         let token_str = token_str.to_string();
@@ -138,7 +184,7 @@ impl User<Unauthenticated> {
             })
             .await
             .map_err(|e| InsignoError::new(404).debug(e))?
-            .into();
+            .try_into()?;
         Ok(user)
     }
     pub async fn get_by_id(db: &Db, id_user: i64) -> Result<Self, InsignoError> {
@@ -150,7 +196,7 @@ impl User<Unauthenticated> {
             })
             .await
             .map_err(|e| InsignoError::new(404).debug(e))?
-            .into();
+            .try_into()?;
         Ok(user)
     }
     pub async fn login(self, password: &str) -> Result<User<Authenticated>, InsignoError> {
@@ -170,7 +216,7 @@ impl User<Unauthenticated> {
     }
 }
 
-impl<T: UserType> User<T> {
+impl<T: UserType, Age: UserAge>  User<T, Age> {
     pub fn get_id(&self) -> i64 {
         self.id.unwrap()
     }
@@ -188,7 +234,7 @@ impl<T: UserType> User<T> {
                     .client("impossibile creare l'account")
                     .debug(e)
             })?
-            .into();
+            .try_into()?;
         mem::swap(&mut me, self);
         Ok(())
     }
@@ -203,13 +249,13 @@ impl<T: UserType> User<T> {
             })
             .await
             .map_err(|e| InsignoError::new(500).debug(e))?
-            .into();
+            .try_into()?;
         mem::swap(&mut me, self);
         Ok(())
     }
 }
 
-impl Serialize for User<Authenticated> {
+impl<A: UserAge> Serialize for User<Authenticated, A> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -220,6 +266,7 @@ impl Serialize for User<Authenticated> {
         s.serialize_field("points", &self.points)?;
         s.serialize_field("is_admin", &self.is_admin)?;
         s.serialize_field("email", &self.email)?;
+        s.serialize_field("is_adult", &A::is_adult())?;
         s.end()
     }
 }
@@ -237,7 +284,7 @@ impl Serialize for User<Unauthenticated> {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for User<Authenticated> {
+impl<'r, Age: UserAge> FromRequest<'r> for User<Authenticated, Age> {
     type Error = InsignoError;
     async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
         let connection = request.guard::<Db>().await.unwrap();
@@ -270,7 +317,10 @@ impl<'r> FromRequest<'r> for User<Authenticated> {
 
         match auth {
             Ok(a) => {
-                return request::Outcome::Success(a.into());
+                return request::Outcome::Success(match a.try_into(){
+                    Ok(a) => {a},
+                    Err(x) => {return x.into();},
+                });
             }
             Err(e) => {
                 cookie.remove_private(insigno_auth_cookie);
@@ -284,7 +334,7 @@ impl<'r> FromRequest<'r> for User<Authenticated> {
 }
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for User<AuthenticatedAdmin> {
+impl<'r, > FromRequest<'r> for User<AuthenticatedAdmin> {
     type Error = InsignoError;
 
     async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
