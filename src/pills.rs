@@ -61,8 +61,9 @@ struct AddPill {
 async fn add_pill(
     connection: Db,
     data: Form<AddPill>,
-    user: User<Authenticated>,
+    user: Result<User<Authenticated>, InsignoError>,
 ) -> Result<String, InsignoError> {
+    let user = user?;
     let pill = Pill {
         id: None,
         text: data.text.clone(),
@@ -90,11 +91,9 @@ mod test {
     use crate::db::Db;
     use crate::diesel::ExpressionMethods;
     use crate::diesel::RunQueryDsl;
-    use crate::pills::AddPill;
     use crate::rocket;
     use crate::test::*;
     use rocket::http::{ContentType, Status};
-    use rocket::serde::json::serde_json;
 
     #[rocket::async_test]
     async fn test_pills() {
@@ -110,14 +109,15 @@ mod test {
         assert_eq!(response.await.status(), Status::NotFound);
 
         // unautenticate add
-        let new_pill = AddPill {
+        /*let new_pill = AddPill {
             text: "test".to_string(),
             source: "test".to_string(),
         };
-        let input: String = serde_json::to_string(&new_pill).unwrap();
+        let input: String = serde_json::to_string(&new_pill).unwrap();*/
+        let input = "text=test&source=test";
         let response = client
             .post("/pills/add")
-            .header(ContentType::JSON)
+            .header(ContentType::Form)
             .body(input.clone())
             .dispatch();
         assert_eq!(response.await.status(), Status::Unauthorized);

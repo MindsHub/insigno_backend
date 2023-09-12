@@ -9,7 +9,7 @@ use super::marker_image::MarkerImage;
 use super::marker_report::ImageToReport;
 use crate::auth::user::Adult;
 use crate::auth::user::Authenticated;
-use crate::auth::user::AuthenticatedAdmin;
+
 use crate::auth::user::User;
 use crate::diesel::ExpressionMethods;
 use crate::diesel::RunQueryDsl;
@@ -87,11 +87,12 @@ async fn save_image(connection: Db, name: String, id: i64) -> Result<(), Insigno
 pub(crate) async fn add_image(
     content_type: &ContentType,
     data: Data<'_>,
-    user: User<Authenticated>,
+    user: Result<User<Authenticated>, InsignoError>,
     connection: Db,
     config: &State<InsignoConfig>,
     limits: &Limits,
 ) -> Result<(), InsignoError> {
+    let user = user?;
     // parse multipart data
     let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::file("image")
@@ -204,8 +205,9 @@ pub(crate) async fn get_image(
 #[get("/image/to_review")]
 pub(crate) async fn get_to_review(
     connection: Db,
-    user: User<Authenticated, Adult>,
+    user: Result<User<Authenticated, Adult>, InsignoError>,
 ) -> Result<Json<Vec<ImageToReport>>, InsignoError> {
+    let user = user?;
     let images = ImageToReport::get_to_report(&connection).await?;
     Ok(Json(images))
 }
@@ -220,9 +222,11 @@ pub(crate) async fn review(
     image_id: i64,
     connection: Db,
     config: &State<InsignoConfig>,
-    user: User<Authenticated, Adult>,
+    user: Result<User<Authenticated, Adult>, InsignoError>,
     verdict: Form<ReviewVerdict>,
 ) -> Result<(), InsignoError> {
+    let user = user?;
+
     let verdict = verdict.verdict.trim().to_ascii_lowercase();
     match verdict.as_str() {
         "ok" => {
@@ -280,7 +284,4 @@ mod test {
         let response = client.get("/map/image/1").dispatch().await;
         assert_eq!(response.status(), Status::Ok);
     }
-
-
-    
 }

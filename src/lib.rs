@@ -159,6 +159,29 @@ async fn compatibile(
     }
 }
 
+/*#[catch(403)]
+fn not_found() -> &'static str {
+    "Nothing here, sorry!"
+}*/
+
+#[derive(Responder)]
+#[response(status = 418, content_type = "json")]
+struct Test(&'static str);
+
+/*
+impl<'r> Responder<'r, 'static> for Test {
+    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
+
+        use rocket::response::{status};
+        status::Conflict(Some("wtf".to_string()))
+        //status::Custom(rocket::http::Status::new(403),content::RawJson("{ \"hi\": \"world\" }")).respond_to(req)
+    }
+}*/
+#[get("/test")]
+fn test_prova() -> Result<(), InsignoError> {
+    Err(InsignoError::new(401).both("wtf"))
+}
+
 /**
  here is where all the magic appens.
  calling this function we are initializing all our parameter, loading values, connecting to db...
@@ -185,7 +208,6 @@ pub fn rocket() -> _ {
     insigno_config.scrypt.sem = Some(Arc::new(Semaphore::new(3)));
     // we extract database config for appending to Rocket.toml config (it's needed for rocket_sync_db_pool)
     let databases = figment.find_value("databases").unwrap();
-    println!("{:?}", databases);
     // virtualy add DatabaseConfig to Roket.toml
     let rocket_figment = Config::figment().merge(Serialized::defaults(databases).key("databases"));
     rocket::custom(rocket_figment)
@@ -210,4 +232,6 @@ pub fn rocket() -> _ {
         //attach prometheus view
         .attach(prometheus.clone())
         .mount("/metrics", prometheus)
+        .mount("/", routes![test_prova])
+    //.register("/", catchers![not_found])
 }

@@ -37,7 +37,12 @@ It takes:
  - a Db connection (we must remove the token from user_session)
  */
 #[post("/logout")]
-pub async fn logout(cookies: &CookieJar<'_>, user: User<Authenticated>, db: Db) -> Option<()> {
+pub async fn logout(
+    cookies: &CookieJar<'_>,
+    user: Result<User<Authenticated>, InsignoError>,
+    db: Db,
+) -> Result<(), InsignoError> {
+    let user = user?;
     cookies.remove_private(Cookie::named("insigno_auth"));
     let id = user.get_id();
     if db
@@ -45,9 +50,9 @@ pub async fn logout(cookies: &CookieJar<'_>, user: User<Authenticated>, db: Db) 
         .await
         .is_ok()
     {
-        Some(())
+        Ok(())
     } else {
-        None
+        Err(InsignoError::new(401).client("you are not logged in"))
     }
 }
 
@@ -56,7 +61,8 @@ pub async fn logout(cookies: &CookieJar<'_>, user: User<Authenticated>, db: Db) 
 It needs only an authenticated user dataguard, that already refreshes the token
  */
 #[post("/session")]
-fn refresh_session(_user: User<Authenticated>) -> Option<()> { //<>
+fn refresh_session(_user: User<Authenticated>) -> Option<()> {
+    //<>
     Some(())
 }
 
@@ -150,7 +156,7 @@ mod test {
         let message = response.into_string().await.unwrap();
         assert_eq!(
             message,
-            r#"{"id":1,"name":"IlMagicoTester","points":0.0,"is_admin":false,"email":"test@test.com","is_adult":false}"#
+            r#"{"id":1,"name":"IlMagicoTester","points":0.0,"is_admin":false,"email":"test@test.com","is_adult":false,"last_revision":"2023-04-01T12:00:00Z"}"#
         );
     }
 

@@ -7,6 +7,7 @@ use crate::diesel::ExpressionMethods;
 use crate::schema_sql::user_sessions::dsl::user_sessions;
 use crate::schema_sql::user_sessions::*;
 use crate::{db::Db, utils::InsignoError};
+use chrono::Utc;
 use diesel::dsl::now;
 use diesel::sql_types::{BigInt, Text};
 use diesel::RunQueryDsl;
@@ -25,6 +26,7 @@ table! {
         is_admin -> Bool,
         points -> Double,
         is_adult -> Bool,
+        last_revision-> Nullable<Timestamptz>,
     }
 }
 
@@ -35,24 +37,23 @@ pub struct Underage;
 #[derive(Clone)]
 pub struct Anyage;
 pub trait UserAge: Clone + Send {
-    fn is_adult()->bool;
+    fn is_adult() -> bool;
 }
-impl UserAge for Underage{
-    fn is_adult()->bool {
+impl UserAge for Underage {
+    fn is_adult() -> bool {
         false
     }
 }
-impl UserAge for Adult{
-    fn is_adult()->bool {
+impl UserAge for Adult {
+    fn is_adult() -> bool {
         true
     }
 }
-impl UserAge for Anyage{
-    fn is_adult()->bool {
+impl UserAge for Anyage {
+    fn is_adult() -> bool {
         false
     }
 }
-
 
 #[derive(Clone)]
 pub struct Unauthenticated;
@@ -66,11 +67,11 @@ pub struct AuthenticatedAdmin;
 pub trait UserType: Clone + Send {}
 impl UserType for Unauthenticated {}
 impl UserType for Authenticated {}
-impl UserType for AuthenticatedAdmin{}
+impl UserType for AuthenticatedAdmin {}
 
 #[derive(Insertable, Queryable, QueryableByName, AsChangeset)]
 #[diesel(table_name = users)]
-pub (in crate) struct UserDiesel {
+pub(crate) struct UserDiesel {
     pub id: Option<i64>,
     pub name: String,
     pub email: String,
@@ -78,29 +79,30 @@ pub (in crate) struct UserDiesel {
     pub is_admin: bool,
     pub points: f64,
     pub is_adult: bool,
+    pub last_revision: Option<chrono::DateTime<Utc>>,
 }
 
 #[derive(Clone)]
-pub struct User<UserType, UserAge=Anyage> {
+pub struct User<UserType, UserAge = Anyage> {
     pub id: Option<i64>,
     pub name: String,
     pub email: String,
     pub password_hash: String,
     pub is_admin: bool,
     pub points: f64,
-    //pub is_adult: bool,
+    pub last_revision: Option<chrono::DateTime<Utc>>,
+
     pub phantom: PhantomData<UserType>,
     pub phantom_age: PhantomData<UserAge>,
 }
 
-impl<A: UserAge, T: UserType> TryFrom<UserDiesel> for User<T, A>{
+impl<A: UserAge, T: UserType> TryFrom<UserDiesel> for User<T, A> {
     type Error = InsignoError;
     fn try_from(value: UserDiesel) -> Result<User<T, A>, Self::Error> {
-        if !value.is_adult && A::is_adult(){
-            panic!("wtf");
+        if !value.is_adult && A::is_adult() {
             Err(InsignoError::new(403).both("you don't have the correct age to view this"))
             //when is not an adult, and it ask for an adult
-        }else{
+        } else {
             Ok(Self {
                 id: value.id,
                 name: value.name,
@@ -108,12 +110,12 @@ impl<A: UserAge, T: UserType> TryFrom<UserDiesel> for User<T, A>{
                 password_hash: value.password,
                 is_admin: value.is_admin,
                 points: value.points,
+                last_revision: value.last_revision,
                 //is_adult: value.is_adult,
                 phantom: PhantomData,
                 phantom_age: PhantomData,
             })
         }
-        
     }
 }
 impl<T: UserType, A: UserAge> From<User<T, A>> for UserDiesel {
@@ -125,6 +127,7 @@ impl<T: UserType, A: UserAge> From<User<T, A>> for UserDiesel {
             password: value.password_hash,
             is_admin: value.is_admin,
             points: value.points,
+            last_revision: value.last_revision,
             is_adult: A::is_adult(),
         }
     }
@@ -132,8 +135,6 @@ impl<T: UserType, A: UserAge> From<User<T, A>> for UserDiesel {
 
 /** generic user interface for db (not authenticated)*/
 //pub struct Rocket<P: Phase>(pub(crate) P::State);
-
-
 
 impl<T: UserType> User<T> {
     //*this must remain private */
@@ -146,6 +147,7 @@ impl<T: UserType> User<T> {
             password_hash: self.password_hash,
             is_admin: self.is_admin,
             points: self.points,
+            last_revision: self.last_revision,
             phantom: PhantomData,
             phantom_age: PhantomData,
         }
@@ -216,7 +218,7 @@ impl User<Unauthenticated> {
     }
 }
 
-impl<T: UserType, Age: UserAge>  User<T, Age> {
+impl<T: UserType, Age: UserAge> User<T, Age> {
     pub fn get_id(&self) -> i64 {
         self.id.unwrap()
     }
@@ -267,6 +269,7 @@ impl<A: UserAge> Serialize for User<Authenticated, A> {
         s.serialize_field("is_admin", &self.is_admin)?;
         s.serialize_field("email", &self.email)?;
         s.serialize_field("is_adult", &A::is_adult())?;
+        s.serialize_field("last_revision", &self.last_revision)?;
         s.end()
     }
 }
@@ -286,14 +289,14 @@ impl Serialize for User<Unauthenticated> {
 #[rocket::async_trait]
 impl<'r, Age: UserAge> FromRequest<'r> for User<Authenticated, Age> {
     type Error = InsignoError;
-    async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r rocket::Request<'_>) -> Outcome<Self, Self::Error> {
         let connection = request.guard::<Db>().await.unwrap();
         let cookie = request.cookies();
         let insigno_auth_cookie = match cookie.get_private("insigno_auth") {
             Some(a) => a,
             None => {
                 return InsignoError::new(401)
-                    .debug("insigno_auth cookie not found")
+                    .both("insigno_auth cookie not found")
                     .into();
             }
         };
@@ -303,7 +306,7 @@ impl<'r, Age: UserAge> FromRequest<'r> for User<Authenticated, Age> {
         let id: i64 = vec[0].parse().unwrap();
         let tok = vec[1].to_string();
         if !tok.chars().all(|x| x.is_ascii_alphanumeric()) {
-            return InsignoError::new(401).debug("sql injection?").into();
+            return InsignoError::new(401).both("sql injection?").into();
         }
 
         let auth: Result<UserDiesel, _> = connection
@@ -317,9 +320,11 @@ impl<'r, Age: UserAge> FromRequest<'r> for User<Authenticated, Age> {
 
         match auth {
             Ok(a) => {
-                return request::Outcome::Success(match a.try_into(){
-                    Ok(a) => {a},
-                    Err(x) => {return x.into();},
+                return request::Outcome::Success(match a.try_into() {
+                    Ok(a) => a,
+                    Err(x) => {
+                        return x.into();
+                    }
                 });
             }
             Err(e) => {
@@ -334,10 +339,10 @@ impl<'r, Age: UserAge> FromRequest<'r> for User<Authenticated, Age> {
 }
 
 #[rocket::async_trait]
-impl<'r, > FromRequest<'r> for User<AuthenticatedAdmin> {
+impl<'r> FromRequest<'r> for User<AuthenticatedAdmin> {
     type Error = InsignoError;
 
-    async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r rocket::Request<'_>) -> Outcome<Self, Self::Error> {
         let y: Outcome<User<Authenticated>, _> = User::from_request(request).await;
         match y {
             Outcome::Success(x) => {

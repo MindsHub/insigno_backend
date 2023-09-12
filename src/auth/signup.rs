@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    user::{User, UserDiesel, Authenticated},
+    user::{Authenticated, User, UserDiesel},
     validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword},
 };
 
@@ -101,7 +101,9 @@ pub async fn complete_registration(
             is_admin: false,
             points: 0.0,
             is_adult,
-        }.try_into()?;
+            last_revision: None,
+        }
+        .try_into()?;
         user.insert(connection).await?;
         Ok((ContentType::HTML, "registrazione completata".to_string()))
     } else {

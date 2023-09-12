@@ -8,12 +8,12 @@ use std::{
 use chrono::Local;
 
 use rand::{distributions::Alphanumeric, Rng};
+use rocket::response::Responder;
 use rocket::{
     http::Status,
     response::{self},
     Request,
 };
-use rocket::{request, response::Responder};
 
 pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
     loop {
@@ -70,9 +70,9 @@ impl InsignoError {
     }
 }
 
-impl<T> From<InsignoError> for request::Outcome<T, InsignoError> {
+impl<T> From<InsignoError> for rocket::request::Outcome<T, InsignoError> {
     fn from(val: InsignoError) -> Self {
-        request::Outcome::Failure((val.code, val))
+        rocket::outcome::Outcome::Failure((val.code.clone(), val))
     }
 }
 
