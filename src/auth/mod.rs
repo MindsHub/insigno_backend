@@ -61,9 +61,10 @@ pub async fn logout(
 It needs only an authenticated user dataguard, that already refreshes the token
  */
 #[post("/session")]
-fn refresh_session(_user: User<Authenticated>) -> Option<()> {
+fn refresh_session(user: Result<User<Authenticated>, InsignoError>) -> Result<(), InsignoError> {
+    let _user = user?;
     //<>
-    Some(())
+    Ok(())
 }
 
 /**

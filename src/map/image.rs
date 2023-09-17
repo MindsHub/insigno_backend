@@ -208,7 +208,7 @@ pub(crate) async fn get_to_review(
     user: Result<User<Authenticated, Adult>, InsignoError>,
 ) -> Result<Json<Vec<ImageToReport>>, InsignoError> {
     let user = user?;
-    
+
     let images = ImageToReport::get_to_report(&connection).await?;
     Ok(Json(images))
 }

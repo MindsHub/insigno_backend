@@ -81,6 +81,7 @@ mod schema_sql;
 #[cfg(test)]
 mod test;
 mod utils;
+mod verification;
 /**
  * Here is where we store all our configuration needed at runtime
  * it implements Deserialize for interfacing with figiment deserializer

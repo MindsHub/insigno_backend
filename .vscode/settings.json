@@ -7,7 +7,7 @@
     ],
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml",
-        "./fuzz/Cargo.toml",
-        "./tests/goose/Cargo.toml",
+        //"./fuzz/Cargo.toml",
+        //"./tests/goose/Cargo.toml",
     ]
 }
