@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS public.image_verifications
         ON DELETE cascade
 ); */
 table! {
-    image_verification(id){
+    image_verifications(id){
         id -> Nullable<BigInt>,
         verification_session -> Nullable<BigInt>,
         image_id -> BigInt,
@@ -61,7 +61,7 @@ table! {
 }
 
 #[derive(Insertable, Queryable, QueryableByName, AsChangeset, Serialize, Deserialize)]
-#[diesel(table_name = image_verification)]
+#[diesel(table_name = image_verifications)]
 pub struct ImageVerification {
     pub id: Option<i64>,
     pub verification_session: Option<i64>,

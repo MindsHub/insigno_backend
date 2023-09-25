@@ -66,7 +66,7 @@ CREATE OR REPLACE FUNCTION can_verify(user_id BIGINT) RETURNS BOOLEAN AS $$
 	END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE( id BIGINT, image_verification BIGINT, image_id BIGINT, verdict BOOLEAN) AS $$
+CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE( id BIGINT, verification_session BIGINT, image_id BIGINT, verdict BOOLEAN) AS $$
 	#variable_conflict use_column
 	DECLARE ret BIGINT;
 	BEGIN
@@ -82,7 +82,7 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE( id B
 		--create a new one
 		RETURN query
 			SELECT * FROM create_verify(user_id_inp);
-	ELSE 
+	ELSE
 	-- return the first
 		RETURN query
 			SELECT *
@@ -92,29 +92,29 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE( id B
 	END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE( id BIGINT, image_verification BIGINT, image_id BIGINT, verdict BOOLEAN) language plpgsql AS $$
+CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE( id BIGINT, verification_session BIGINT, image_id BIGINT, verdict BOOLEAN) language plpgsql AS $$
 	#variable_conflict use_column
 	DECLARE session_id BIGINT;
 	DECLARE to_choose BIGINT;
-	
+
 	BEGIN
 	INSERT INTO verification_sessions(user_id) VALUES (user_id_inp) RETURNING id INTO session_id;
-	
+
 	SELECT ceil(log(2, count(marker_images.id)+1))+5
-		FROM marker_images 
+		FROM marker_images
 		WHERE verdict_number<3
 		INTO to_choose;
 
 	INSERT INTO image_verifications(verification_session, image_id)
 		SELECT session_id, id
-			FROM marker_images 
+			FROM marker_images
 			--WHERE user_id_inp<>user_id
 			ORDER BY verdict_number ASC,
 			random()
 			LIMIT to_choose;
-	return query 	
+	return query
 		SELECT *
-			FROM image_verifications 
+			FROM image_verifications
 			WHERE verification_session=session_id;
 	END;
 $$;

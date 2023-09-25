@@ -20,6 +20,9 @@ done;
 if [[ $# != 1 ]]; then
     # terminate gracefully when the user uses Ctrl+C (unless an argument was passed)
     trap 'sudo docker stop postgres; sudo docker container rm -f postgres; exit' INT
+elif [[ $1 == "db" ]]; then
+    echo "Skipping tests and leaving database open"
+    exit 0
 elif [[ $1 == "once" ]]; then
     echo "Running tests only once and then leaving database open"
     cargo tarpaulin --target-dir=target/tarpaulin --skip-clean -- --test-threads=1
