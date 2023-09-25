@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
-use diesel::{select, RunQueryDsl};
-use rocket::fairing::AdHoc;
+use diesel::{select, sql_query, sql_types::BigInt, RunQueryDsl};
+use rocket::{fairing::AdHoc, serde::json::Json};
 
 use crate::{
     auth::user::{Adult, Authenticated, User},
@@ -8,7 +8,7 @@ use crate::{
     utils::InsignoError,
 };
 
-use self::sql::{time_to_verify, can_verify};
+use self::sql::{can_verify, time_to_verify, ImageVerification};
 
 mod sql;
 struct ImageVerifications;
@@ -24,12 +24,22 @@ impl ImageVerifications {
         user: &User<Authenticated, Adult>,
         db: &Db,
     ) -> Result<bool, diesel::result::Error> {
-        let user_id=user.id.unwrap();
+        let user_id = user.id.unwrap();
         db.run(move |conn| select(can_verify(user_id)).get_result(conn))
             .await
     }
 
-    pub async fn get_or_create(user_id: i64, db: &Db) {}
+    pub async fn get_or_create(
+        user_id: i64,
+        db: &Db,
+    ) -> Result<Vec<ImageVerification>, diesel::result::Error> {
+        db.run(move |conn| {
+            sql_query("SELECT * FROM get_to_verify($1)")
+                .bind::<BigInt, _>(user_id)
+                .get_results(conn)
+        })
+        .await
+    }
 }
 
 // time remaining on token refresh (and token last 1y) /session
@@ -40,15 +50,28 @@ impl ImageVerifications {
 pub async fn get_session(
     user: Result<User<Authenticated, Adult>, InsignoError>,
     db: Db,
-) -> Result<(), InsignoError> {
+) -> Result<Json<Vec<ImageVerification>>, InsignoError> {
     let user = user?;
-    let z = ImageVerifications::can_verify(&user, &db)
+    let z = ImageVerifications::get_or_create(user.id.unwrap(), &db)
         .await
-        .map_err(|x| InsignoError::new(500).debug(x.to_string()))?;
-    let z = Utc::now();
-    todo!()
+        .map_err(|x| {
+            match x {
+                diesel::result::Error::DatabaseError(x, y) =>{
+                    if format!("{y:?}")!="you cant verify right now"{
+                        InsignoError::new(403).both(format!("{y:?}"))
+                    }else{
+                        InsignoError::new(500).debug(format!("{x:?}"))
+                    }
+                },
+                _ => InsignoError::new(500).debug(x),
+            }
+            //InsignoError::new(500).debug(x)
+        })?;
+    Ok(Json(z))
 }
 
 pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("verification stage", |rocket| async { rocket })
+    AdHoc::on_ignite("verification stage", |rocket| async {
+        rocket.mount("/verify", routes![get_session])
+    })
 }

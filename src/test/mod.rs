@@ -26,7 +26,7 @@ pub fn test_reset_db() {
 
 #[cfg(test)]
 pub async fn test_signup(client: &Client) -> i64 {
-    let data = "name=IlMagicoTester&password=Testtes1!&email=test@test.com";
+    let data = "name=IlMagicoTester&password=Testtes1!&email=test@test.com&is_adult=true";
     let response = client
         .post("/signup")
         .header(ContentType::Form)

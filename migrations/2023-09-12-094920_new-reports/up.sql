@@ -10,6 +10,7 @@ ADD verdict_number BIGINT DEFAULT 0 NOT NULL;
 ALTER TABLE public.marker_images
 ADD avarage_verdict FLOAT DEFAULT 0.0 NOT NULL;
 
+
 CREATE TABLE IF NOT EXISTS public.verification_sessions
 (
     id BIGSERIAL,
@@ -66,31 +67,28 @@ CREATE OR REPLACE FUNCTION can_verify(user_id BIGINT) RETURNS BOOLEAN AS $$
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE( id BIGINT, image_verification BIGINT, image_id BIGINT, verdict BOOLEAN) AS $$
+	#variable_conflict use_column
 	DECLARE ret BIGINT;
 	BEGIN
 	IF NOT can_verify(user_id_inp) THEN
 		RAISE EXCEPTION 'you cant verify right now';
 	END IF;
-	SELECT count(id)
+	SELECT id
 	FROM public.verification_sessions
 	WHERE user_id = user_id_inp AND
-	completition_date IS NOT NULL
+	completition_date IS NULL
 	INTO ret;
-	if ret=0 THEN
+	if ret is NULL THEN
 		--create a new one
 		RETURN query
 			SELECT * FROM create_verify(user_id_inp);
 	ELSE 
-		IF ret=1 THEN
-			RETURN query
-				SELECT ()
-					FROM public.verification_sessions
-					WHERE user_id = user_id_inp AND
-					completition_date IS NOT NULL
-		END IF;
+	-- return the first
+		RETURN query
+			SELECT *
+				FROM image_verifications
+				WHERE verification_session=ret;
 	END IF;
-	
-	return ret;
 	END;
 $$ LANGUAGE plpgsql;
 
@@ -102,13 +100,15 @@ CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE( id B
 	BEGIN
 	INSERT INTO verification_sessions(user_id) VALUES (user_id_inp) RETURNING id INTO session_id;
 	
-	SELECT ceil(log(2, count(marker_images.id)))+5
+	SELECT ceil(log(2, count(marker_images.id)+1))+5
 		FROM marker_images 
 		WHERE verdict_number<3
 		INTO to_choose;
+
 	INSERT INTO image_verifications(verification_session, image_id)
-	SELECT session_id, id
+		SELECT session_id, id
 			FROM marker_images 
+			--WHERE user_id_inp<>user_id
 			ORDER BY verdict_number ASC,
 			random()
 			LIMIT to_choose;
@@ -117,10 +117,9 @@ CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE( id B
 			FROM image_verifications 
 			WHERE verification_session=session_id;
 	END;
-	
 $$;
 
 --SELECT * FROM add_marker(1,ST_Point( -71.104, 42.315) , 1);
 --INSERT INTO marker_images(path, refers_to, verdict_number) VALUES('', 1, 2);
 
---SELECT * FROM create_verify(1);
+--SELECT * FROM get_to_verify(1);

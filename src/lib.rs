@@ -229,6 +229,7 @@ pub fn rocket() -> _ {
         .attach(mail::stage())
         //Cors request handler
         .attach(cors::Cors)
+        .attach(verification::stage())
         .mount("/", cors::get_routes())
         //attach prometheus view
         .attach(prometheus.clone())

@@ -1,6 +1,6 @@
 use chrono::Utc;
 use diesel::sql_types::BigInt;
-
+use rocket::serde::{Deserialize, Serialize};
 /*
 CREATE TABLE IF NOT EXISTS public.verification_sessions
 (
@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.verification_sessions
 );*/
 sql_function!(fn time_to_verify(user_id: BigInt)-> Timestamptz);
 sql_function!(fn can_verify(user_id: BigInt)-> Bool);
+//sql_function!(fn get_to_verify(user_id: BigInt)-> Record<ImageVerification>);
 table! {
     verification_sessions(id){
         id -> Nullable<BigSerial>,
@@ -59,9 +60,9 @@ table! {
     }
 }
 
-#[derive(Insertable, Queryable, QueryableByName, AsChangeset)]
+#[derive(Insertable, Queryable, QueryableByName, AsChangeset, Serialize, Deserialize)]
 #[diesel(table_name = image_verification)]
-pub(crate) struct ImageVerification {
+pub struct ImageVerification {
     pub id: Option<i64>,
     pub verification_session: Option<i64>,
     pub image_id: i64,

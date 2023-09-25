@@ -11,11 +11,11 @@ use crate::{
 };
 
 use super::{
-    user::{Authenticated, User, UserDiesel},
+    user::{Adult, Authenticated, User, UserDiesel},
     validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword},
 };
 
-#[derive(FromForm)]
+#[derive(FromForm, Debug)]
 pub struct SignupInfo {
     pub name: String,
     pub email: String,
@@ -101,19 +101,35 @@ pub async fn complete_registration(
     connection: &Db,
 ) -> Result<(ContentType, String), InsignoError> {
     if let PendingAction::RegisterUser(name, email, password_hash, is_adult) = pend {
-        let mut user: User<Authenticated> = UserDiesel {
-            id: None,
-            name,
-            email,
-            password: password_hash,
-            //password_hash,
-            is_admin: false,
-            points: 0.0,
-            is_adult,
-            last_revision: None,
+        if is_adult {
+            let mut user: User<Authenticated, Adult> = UserDiesel {
+                id: None,
+                name,
+                email,
+                password: password_hash,
+                //password_hash,
+                is_admin: false,
+                points: 0.0,
+                is_adult,
+                last_revision: None,
+            }
+            .try_into()?;
+            user.insert(connection).await?;
+        } else {
+            let mut user: User<Authenticated, Adult> = UserDiesel {
+                id: None,
+                name,
+                email,
+                password: password_hash,
+                //password_hash,
+                is_admin: false,
+                points: 0.0,
+                is_adult: false,
+                last_revision: None,
+            }
+            .try_into()?;
+            user.insert(connection).await?;
         }
-        .try_into()?;
-        user.insert(connection).await?;
         Ok((ContentType::HTML, "registrazione completata".to_string()))
     } else {
         Err(InsignoError::new(500).debug("wrong call"))
