@@ -9,7 +9,7 @@ template_folder="./templates"
     user = ""
     password = ""
     server = ""
-    from_mail ="" 
+    from_mail ="Insigno <insigno@test.test>" 
 
 [default.scrypt]
     log_n = 11
