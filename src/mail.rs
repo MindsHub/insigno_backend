@@ -79,7 +79,7 @@ impl MailBuilder {
             AsyncSmtpTransport::<Tokio1Executor>::relay(&config.smtp.server)
                 .unwrap()
                 .credentials(creds)
-                .port(465)
+                .port(587)
                 .pool_config(mail_config)
                 .build();
 
