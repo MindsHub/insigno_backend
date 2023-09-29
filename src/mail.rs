@@ -27,6 +27,7 @@ pub struct SmtpConfig {
     server: String,
     user: String,
     password: String,
+    from_mail: String,
 }
 
 pub fn stage() -> AdHoc {
@@ -38,6 +39,7 @@ pub fn stage() -> AdHoc {
 }
 
 pub struct MailBuilder {
+    from_mail: String,
     registration_mail_content: String,
     registration_mail_content_plain: String,
 
@@ -102,6 +104,7 @@ impl MailBuilder {
         let change_password_mail_content =
             String::from_utf8(fs::read(tmp.join("mail_change_password.html")).await?)?;
         Ok(MailBuilder {
+            from_mail: config.smtp.from_mail.clone(),
             registration_mail_content,
             registration_mail_content_plain,
 
@@ -130,9 +133,9 @@ impl MailBuilder {
             .replace("{user}", user_name)
             .replace("{email}", email)
             .replace("{link}", link);
-
+        
         let message = Message::builder()
-            .from("Insigno <insigno@mindshub.it>".parse().unwrap())
+            .from(self.from_mail.parse().unwrap())
             .to(email.parse().unwrap())
             .subject("Registrazione account Insigno")
             .multipart(
@@ -177,7 +180,7 @@ impl MailBuilder {
             .replace("{link}", link);
 
         let message = Message::builder()
-            .from("Insigno <insigno@mindshub.it>".parse().unwrap())
+            .from(self.from_mail.parse().unwrap())
             .to(email.parse().unwrap())
             .subject("Cambio password account Insigno")
             .multipart(
