@@ -46,6 +46,20 @@ impl ImageVerifications {
 // dammi la sessione con la roba da verificare
 // punti guadagnati/sessione finita dopo verifica
 
+#[get("/get_next_verify_time")]
+pub async fn get_next_verify_time(
+    user: Result<User<Authenticated, Adult>, InsignoError>,
+    db: Db,
+) -> Result<Json<DateTime<Utc>>, InsignoError> {
+    let user = user?;
+    let z = ImageVerifications::time_to_verify(user.id.unwrap(), &db)
+        .await
+        .map_err(|x| {
+            InsignoError::new(500).debug(x)
+        })?;
+    Ok(Json(z))
+}
+
 #[get("/get_session")]
 pub async fn get_session(
     user: Result<User<Authenticated, Adult>, InsignoError>,
@@ -72,6 +86,6 @@ pub async fn get_session(
 
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("verification stage", |rocket| async {
-        rocket.mount("/verify", routes![get_session])
+        rocket.mount("/verify", routes![get_session, get_next_verify_time])
     })
 }
