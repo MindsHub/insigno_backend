@@ -28,6 +28,7 @@ pub struct SmtpConfig {
     user: String,
     password: String,
     from_mail: String,
+    port: u16,
 }
 
 pub fn stage() -> AdHoc {
@@ -75,11 +76,13 @@ impl MailBuilder {
             config.smtp.user.to_string(),
             config.smtp.password.to_string(),
         );
+        println!("username={}", config.smtp.user.to_string());
+        println!("password={}", config.smtp.password.to_string());
         let mailer: AsyncSmtpTransport<Tokio1Executor> =
-            AsyncSmtpTransport::<Tokio1Executor>::relay(&config.smtp.server)
+            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&config.smtp.server)
                 .unwrap()
                 .credentials(creds)
-                .port(587)
+                .port(config.smtp.port)
                 .pool_config(mail_config)
                 .build();
 
