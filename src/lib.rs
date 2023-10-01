@@ -82,6 +82,7 @@ mod schema_sql;
 mod test;
 mod utils;
 mod verification;
+mod scoreboard;
 /**
  * Here is where we store all our configuration needed at runtime
  * it implements Deserialize for interfacing with figiment deserializer
@@ -230,6 +231,7 @@ pub fn rocket() -> _ {
         //Cors request handler
         .attach(cors::Cors)
         .attach(verification::stage())
+        .attach(scoreboard::stage())
         .mount("/", cors::get_routes())
         //attach prometheus view
         .attach(prometheus.clone())

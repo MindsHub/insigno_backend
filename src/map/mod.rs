@@ -48,9 +48,9 @@ async fn get_near(
         .run(move |conn| {
             let query = sql_query(
                 "SELECT *
-                FROM markers 
-                WHERE ST_DWITHIN(point, $1, 0.135) 
-                AND (resolution_date IS NULL OR $2) 
+                FROM markers
+                WHERE ST_DWITHIN(point, $1, 0.135)
+                AND (resolution_date IS NULL OR $2)
                 AND (SELECT COUNT (*) FROM marker_reports WHERE markers.id = reported_marker)<3
                 AND (SELECT COUNT (*) FROM marker_images WHERE markers.id = marker_images.refers_to)>0",
             )
