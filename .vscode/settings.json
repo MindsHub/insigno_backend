@@ -1,6 +1,7 @@
 {
     "rust-analyzer.server.extraEnv": {
-        "RUSTUP_TOOLCHAIN": "stable"
+        "RUSTUP_TOOLCHAIN": "stable",
+        "CARGO_TARGET_DIR": "target/analyzer"
     },
     "rust-analyzer.diagnostics.disabled": [
         "unresolved-method"
@@ -9,5 +10,8 @@
         "./Cargo.toml",
         //"./fuzz/Cargo.toml",
         //"./tests/goose/Cargo.toml",
-    ]
+    ],
+    "rust-analyzer.check.extraArgs": [
+        "--target-dir=target/analyzer"
+    ],
 }
