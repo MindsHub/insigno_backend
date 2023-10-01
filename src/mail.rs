@@ -132,7 +132,7 @@ impl MailBuilder {
             .replace("{link}", link);
 
         let message = Message::builder()
-            .from("Insigno <insigno@mindshub.it>".parse().unwrap())
+            .from("Insigno <insigno@mindshub.ovh>".parse().unwrap())
             .to(email.parse().unwrap())
             .subject("Registrazione account Insigno")
             .multipart(
@@ -177,7 +177,7 @@ impl MailBuilder {
             .replace("{link}", link);
 
         let message = Message::builder()
-            .from("Insigno <insigno@mindshub.it>".parse().unwrap())
+            .from("Insigno <insigno@mindshub.ovh>".parse().unwrap())
             .to(email.parse().unwrap())
             .subject("Cambio password account Insigno")
             .multipart(
