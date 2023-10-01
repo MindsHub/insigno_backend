@@ -1,14 +1,16 @@
-use diesel::{sql_query, sql_types::Float8, QueryDsl, ExpressionMethods, RunQueryDsl};
+use diesel::{sql_query, sql_types::{Float8, BigInt, Text}, QueryDsl, ExpressionMethods, RunQueryDsl, NullableExpressionMethods};
 use postgis_diesel::{types::Point, sql_types::Geometry};
 use rocket::{fairing::AdHoc, serde::json::Json};
 use serde::Serialize;
 use crate::{utils::InsignoError, db::Db, auth::user::users};
 
-#[derive(Insertable, Queryable, QueryableByName, Serialize)]
-#[diesel(table_name = users)]
+#[derive(Queryable, QueryableByName, Serialize)]
 pub struct ScoreboardUser {
-    pub id: Option<i64>,
+    #[diesel(sql_type=BigInt)]
+    pub id: i64,
+    #[diesel(sql_type=Text)]
     pub name: String,
+    #[diesel(sql_type=Float8)]
     pub points: f64,
 }
 
@@ -20,7 +22,7 @@ pub async fn get_global_scoreboard(
         users::table
             .order(users::points.desc())
             .limit(100) // TODO implement loading more data
-            .select((users::id, users::name, users::points))
+            .select((users::id.assume_not_null(), users::name, users::points))
             .load::<ScoreboardUser>(conn)
     })
         .await
