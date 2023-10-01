@@ -17,6 +17,11 @@ cargo install cargo-tarpaulin
 cargo install diesel_cli --no-default-features --features "postgres"
 ```
 
+Per aggiungere una migrazione:
+```sh
+diesel migration generate MIGRATION_NAME
+```
+
 ### PostgreSQL
 
 Aprire shell di `psql`:
