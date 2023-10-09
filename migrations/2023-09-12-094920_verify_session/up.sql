@@ -3,9 +3,9 @@
 ALTER TABLE public.users
 ADD last_revision timestamp with time zone DEFAULT TIMESTAMP '2023-04-01 12:00:00+01' NOT NULL;
 ALTER TABLE public.marker_images
-ADD verdict_number BIGINT DEFAULT 0 NOT NULL;
+ADD verify_number BIGINT DEFAULT 0 NOT NULL;
 ALTER TABLE public.marker_images
-ADD avarage_verdict FLOAT DEFAULT 0.0 NOT NULL;
+ADD verify_average FLOAT DEFAULT 0.0 NOT NULL;
 
 
 CREATE TABLE IF NOT EXISTS public.verification_sessions
@@ -137,14 +137,14 @@ CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE(
 
 		SELECT ceil(log(2, count(marker_images.id)+1))+5
 			FROM marker_images
-			WHERE verdict_number<3
+			WHERE verify_number<3
 			INTO to_choose;
 
 		INSERT INTO image_verifications(verification_session, image_id, marker_id)
 			SELECT session_id, id, refers_to
 				FROM marker_images
 				--WHERE user_id_inp<>user_id
-				ORDER BY verdict_number ASC,
+				ORDER BY verify_number ASC,
 				random()
 				LIMIT to_choose;
 		RETURN QUERY
@@ -155,6 +155,6 @@ CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE(
 $$;
 
 --SELECT * FROM add_marker(1,ST_Point( -71.104, 42.315) , 1);
---INSERT INTO marker_images(path, refers_to, verdict_number) VALUES('', 1, 2);
+--INSERT INTO marker_images(path, refers_to, verify_number) VALUES('', 1, 2);
 
 --SELECT * FROM get_to_verify(1);

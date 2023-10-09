@@ -56,10 +56,10 @@ impl ImageVerification {
         user_id: i64,
         image_id: i64,
         verdict: bool
-    ) -> Result<bool, diesel::result::Error> {
+    ) -> Result<Option<f64>, diesel::result::Error> {
         db //
             .run(move |conn| select(verify_set_verdict(user_id, image_id, verdict))
-            .get_result::<bool>(conn))
+            .get_result::<Option<f64>>(conn))
             .await
     }
 }
@@ -101,12 +101,14 @@ pub struct SetVerdictData {
     verdict: bool,
 }
 
+// if `null` is returned, then the session has not completed,
+// otherwise the returned value is the number of points awarded to the user
 #[post("/set_verdict", data = "<data>")]
 pub async fn set_verdict(
     user: Result<User<Authenticated, YesReview>, InsignoError>,
     db: Db,
     data: Form<SetVerdictData>
-) -> Result<Json<bool>, InsignoError> {
+) -> Result<Json<Option<f64>>, InsignoError> {
     let user = user?;
     let z = ImageVerification::set_verdict(&db, user.id.unwrap(), data.image_id, data.verdict)
         .await
