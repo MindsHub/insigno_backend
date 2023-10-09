@@ -1,4 +1,4 @@
--- Table: public.marker
+-- Table: public.marker_reports
 
 CREATE TABLE IF NOT EXISTS public.marker_reports
 (
@@ -15,8 +15,4 @@ CREATE TABLE IF NOT EXISTS public.marker_reports
         ON UPDATE NO ACTION
         ON DELETE CASCADE
 )
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS public.marker_reports
-    OWNER to mindshub;
+ALTER TABLE IF EXISTS public.marker_reports OWNER TO mindshub;

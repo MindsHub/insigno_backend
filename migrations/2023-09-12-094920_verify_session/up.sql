@@ -2,9 +2,6 @@
 
 ALTER TABLE public.users
 ADD last_revision timestamp with time zone DEFAULT TIMESTAMP '2023-04-01 12:00:00+01' NOT NULL;
---DROP TABLE image_verifications;
---DROP TABLE verification_sessions;
-
 ALTER TABLE public.marker_images
 ADD verdict_number BIGINT DEFAULT 0 NOT NULL;
 ALTER TABLE public.marker_images
@@ -23,6 +20,7 @@ CREATE TABLE IF NOT EXISTS public.verification_sessions
         ON UPDATE cascade
         ON DELETE NO ACTION
 );
+ALTER TABLE IF EXISTS public.verification_sessions OWNER TO mindshub;
 
 CREATE TABLE IF NOT EXISTS public.image_verifications
 (
@@ -41,9 +39,7 @@ CREATE TABLE IF NOT EXISTS public.image_verifications
         ON UPDATE cascade
         ON DELETE cascade
 );
-
-ALTER TABLE IF EXISTS public.pending
-    OWNER to mindshub;
+ALTER TABLE IF EXISTS public.image_verifications OWNER TO mindshub;
 
 
 CREATE OR REPLACE FUNCTION time_to_verify(user_id BIGINT) RETURNS timestamp AS $$

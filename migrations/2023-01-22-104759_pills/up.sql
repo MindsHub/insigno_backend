@@ -6,7 +6,4 @@ CREATE TABLE IF NOT EXISTS public.pills (
   source TEXT NOT NULL,
   accepted BOOLEAN NOT NULL
 )
-
---text: String,
---  author: String,
---  source: String,
+ALTER TABLE IF EXISTS public.pills OWNER TO mindshub;

@@ -5,15 +5,11 @@ CREATE TABLE IF NOT EXISTS public.marker_types
     points DOUBLE PRECISION NOT NULL,
     CONSTRAINT markers_types_pkey PRIMARY KEY (id)
 )
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS public.marker_types
-    OWNER to mindshub;
+ALTER TABLE IF EXISTS public.marker_types OWNER TO mindshub;
 
 INSERT INTO public.marker_types (
 	id, name, points)
-	VALUES 
+	VALUES
   (1, 'unknown',    10.0),
   (2, 'plastic',    10.0),
   (3, 'paper',      10.0),
@@ -21,4 +17,3 @@ INSERT INTO public.marker_types (
   (5, 'glass',      10.0),
   (6, 'compost',    10.0),
   (7, 'electronics', 10.0);
-  

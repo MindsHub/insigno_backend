@@ -7,9 +7,7 @@ CREATE TABLE IF NOT EXISTS public.pending
     request_date timestamp with time zone DEFAULT now(),
     CONSTRAINT pending_id_pkey PRIMARY KEY (id)
 );
-
-ALTER TABLE IF EXISTS public.pending
-    OWNER to mindshub;
+ALTER TABLE IF EXISTS public.pending OWNER TO mindshub;
 
 CREATE OR REPLACE FUNCTION get_pending(token TEXT) RETURNS pending AS $$
 		DECLARE ret pending;

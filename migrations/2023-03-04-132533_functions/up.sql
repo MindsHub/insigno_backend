@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION _marker_update(marker_id BIGINT, user_id BIGINT) RETU
 			--RAISE NOTICE 'update row number %', ret;
 			RAISE EXCEPTION 'marker_risolto';
 		END IF;
-		
+
 		SELECT marker_types.points
 		INTO points
 		FROM markers, marker_types
@@ -33,7 +33,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION assign_point(inp_user_id BIGINT, pt FLOAT, res_date timestamp with time zone) RETURNS VOID AS $$
 		DECLARE ret BIGINT;
 	BEGIN
-		
+
 		UPDATE users
 		SET points=points+pt
 		WHERE id=inp_user_id;
@@ -43,14 +43,14 @@ CREATE OR REPLACE FUNCTION assign_point(inp_user_id BIGINT, pt FLOAT, res_date t
 		RAISE NOTICE 'update row number %', ret;
 			RAISE EXCEPTION 'user id not found';
 		END IF;
-		
+
 		--aggiornare tutti i gruppi
 
 		WITH RECURSIVE to_update AS(
 			-- non-recursive term
 			SELECT groups.id
 			FROM groups, users_groups_join
-			WHERE users_groups_join.group_id=groups.id AND users_groups_join.user_id=inp_user_id 
+			WHERE users_groups_join.group_id=groups.id AND users_groups_join.user_id=inp_user_id
 				AND groups.creation_date < res_date AND (groups.end_date IS NULL OR res_date< groups.end_date)
 		UNION
 			-- recursive term
@@ -78,7 +78,7 @@ CREATE OR REPLACE FUNCTION resolve_marker(marker_id BIGINT, user_id BIGINT) RETU
 		WHERE markers.id = marker_id
 		INTO res_date;
 
-		--update all the points 
+		--update all the points
 		PERFORM assign_point(user_id, points, res_date);
 		RETURN points;
 	END;
@@ -90,7 +90,7 @@ CREATE OR REPLACE FUNCTION add_marker(user_id BIGINT, point GEOMETRY, trash_type
 		PERFORM assign_point(user_id, 1.0, now());
 		INSERT INTO public.markers (
 		created_by, point, marker_types_id)
-		VALUES 
+		VALUES
 		(user_id, point, trash_type)
 		RETURNING id
 		INTO ret;

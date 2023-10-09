@@ -10,11 +10,4 @@ CREATE TABLE IF NOT EXISTS public.users
     CONSTRAINT users_pkey PRIMARY KEY (id),
     CONSTRAINT users_name_key UNIQUE (name)
 )
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS public.users
-    OWNER to mindshub;
-
-
-
+ALTER TABLE IF EXISTS public.users OWNER TO mindshub;

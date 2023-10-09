@@ -3,23 +3,15 @@ CREATE TABLE IF NOT EXISTS public.user_sessions
 (
     user_id BIGSERIAL NOT NULL,
     token character varying(254) COLLATE pg_catalog."default" NOT NULL,
-    refresh_date  timestamp with time zone NOT NULL, 
+    refresh_date  timestamp with time zone NOT NULL,
     CONSTRAINT users_id_pkey PRIMARY KEY (user_id),
     CONSTRAINT users_id_fkey FOREIGN KEY (user_id)
         REFERENCES public.users (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE cascade
 )
+ALTER TABLE IF EXISTS public.user_sessions OWNER TO mindshub;
 
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS public.users
-    OWNER to mindshub;
-
-
-DROP FUNCTION IF EXISTS is_session_valid;
-DROP FUNCTION IF EXISTS autenticate;
-DROP TYPE IF EXISTS user_ret;
 
 CREATE OR REPLACE FUNCTION is_session_valid(inp_date TIMESTAMP WITH TIME ZONE) RETURNS BOOL AS $$
 	BEGIN
@@ -40,18 +32,18 @@ CREATE OR REPLACE FUNCTION autenticate(id_inp BIGINT, tok TEXT) RETURNS users AS
 		IF(ret_row=0) THEN
 			RAISE EXCEPTION 'token_invalid';
 		END IF;
-		
+
 		-- refresh token
 		UPDATE user_sessions
 		SET refresh_date=now()
 		WHERE user_id=id_inp;
-		
+
 		SELECT *
 		FROM users
 		WHERE users.id=id_inp
 		INTO ret;
 		RETURN ret;
-		
+
 	END;
 $$ LANGUAGE plpgsql;
 --SELECT * FROM autenticate(1, 'test');

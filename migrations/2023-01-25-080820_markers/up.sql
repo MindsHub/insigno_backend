@@ -1,7 +1,5 @@
 -- Table: public.marker
 
--- DROP TABLE IF EXISTS public.marker;
-
 CREATE TABLE IF NOT EXISTS public.markers
 (
     id BIGSERIAL NOT NULL,
@@ -21,13 +19,9 @@ CREATE TABLE IF NOT EXISTS public.markers
         ON UPDATE cascade
         ON DELETE NO ACTION
 )
-
-TABLESPACE pg_default;
-
-ALTER TABLE IF EXISTS public.markers
-    OWNER to mindshub;
+ALTER TABLE IF EXISTS public.markers OWNER TO mindshub;
 
 --INSERT INTO public.markers(
 --	id, point, creation_date)
---	VALUES 
+--	VALUES
 --  (1, ST_GeomFromText('POINT(11.003296 45.755445)', 4326), '2014-06-04 12:00 EDT');
