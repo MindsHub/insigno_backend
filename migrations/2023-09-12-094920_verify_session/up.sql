@@ -86,7 +86,7 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE(
 					image_verifications.marker_id,
 					image_verifications.verdict,
 					markers.marker_types_id,
-					ARRAY_AGG(marker_images.id) AS all_marker_images
+					ARRAY_AGG(marker_images.id ORDER BY marker_images.id) AS all_marker_images
 				FROM create_verify(user_id_inp) AS image_verifications
 				JOIN markers ON markers.id = image_verifications.marker_id
 				JOIN marker_images ON marker_images.refers_to = markers.id
@@ -95,7 +95,8 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE(
 					image_verifications.image_id,
 					image_verifications.marker_id,
 					image_verifications.verdict,
-					markers.marker_types_id;
+					markers.marker_types_id
+				ORDER BY image_verifications.marker_id, image_verifications.image_id;
 		ELSE
 		-- return the first
 			RETURN QUERY
@@ -104,7 +105,7 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE(
 					image_verifications.marker_id,
 					image_verifications.verdict,
 					markers.marker_types_id,
-					ARRAY_AGG(marker_images.id) AS all_marker_images
+					ARRAY_AGG(marker_images.id ORDER BY marker_images.id) AS all_marker_images
 				FROM image_verifications
 				JOIN markers ON markers.id = image_verifications.marker_id
 				JOIN marker_images ON marker_images.refers_to = markers.id
@@ -114,7 +115,8 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE(
 					image_verifications.image_id,
 					image_verifications.marker_id,
 					image_verifications.verdict,
-					markers.marker_types_id;
+					markers.marker_types_id
+				ORDER BY image_verifications.marker_id, image_verifications.image_id;
 		END IF;
 	END;
 $$ LANGUAGE plpgsql;
