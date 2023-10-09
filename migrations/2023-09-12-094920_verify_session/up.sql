@@ -61,25 +61,27 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE( id B
 	#variable_conflict use_column
 	DECLARE ret BIGINT;
 	BEGIN
-	IF NOT can_verify(user_id_inp) THEN
-		RAISE EXCEPTION 'you cant verify right now';
-	END IF;
-	SELECT id
-	FROM public.verification_sessions
-	WHERE user_id = user_id_inp AND
-	completition_date IS NULL
-	INTO ret;
-	if ret is NULL THEN
-		--create a new one
-		RETURN query
-			SELECT * FROM create_verify(user_id_inp);
-	ELSE
-	-- return the first
-		RETURN query
-			SELECT *
-				FROM image_verifications
-				WHERE verification_session=ret;
-	END IF;
+		IF now() < time_to_verify(user_id_inp) THEN
+			RAISE EXCEPTION 'you cant verify right now';
+		END IF;
+
+		SELECT id
+		FROM public.verification_sessions
+		WHERE user_id = user_id_inp AND
+			completition_date IS NULL
+		INTO ret;
+
+		if ret is NULL THEN
+			--create a new one
+			RETURN query
+				SELECT * FROM create_verify(user_id_inp);
+		ELSE
+		-- return the first
+			RETURN query
+				SELECT *
+					FROM image_verifications
+					WHERE verification_session=ret;
+		END IF;
 	END;
 $$ LANGUAGE plpgsql;
 

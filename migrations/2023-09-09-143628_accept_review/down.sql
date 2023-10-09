@@ -1,3 +1,3 @@
 -- This file should undo anything in `up.sql`
 ALTER TABLE public.users
-REMOVE accepted_to_review;
+DROP IF EXISTS accepted_to_review;
