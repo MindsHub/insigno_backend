@@ -7,8 +7,8 @@ use std::process;
 
 use super::marker_image::MarkerImage;
 use super::marker_report::ImageToReport;
-use crate::auth::user::YesReview;
 use crate::auth::user::Authenticated;
+use crate::auth::user::YesReview;
 
 use crate::auth::user::User;
 use crate::diesel::ExpressionMethods;

@@ -1,5 +1,8 @@
+#!cfg(test)
+
 use std::process::Command;
 
+use diesel::{Connection, PgConnection};
 use rocket::{
     figment::providers::{Format, Toml},
     http::{ContentType, Status},
@@ -24,7 +27,6 @@ pub fn test_reset_db() {
     );
 }
 
-#[cfg(test)]
 pub async fn test_signup(client: &Client) -> i64 {
     let data = "name=IlMagicoTester&password=Testtes1!&email=test@test.com&accepted_to_review=true";
     let response = client
@@ -122,24 +124,15 @@ macro_rules! clean_db {
     }
 }*/
 
-#[cfg(test)]
-mod test {
-    use diesel::{Connection, PgConnection};
-    use rocket::{
-        figment::providers::{Format, Toml},
-        Config,
-    };
+//use crate::schema_sql::users;
+#[test]
+fn test1() {
+    let figment = Config::figment().merge(Toml::file("Insigno.toml").nested());
+    let value = figment.find_value("databases.db.url").unwrap();
+    let url = value.as_str().unwrap();
 
-    //use crate::schema_sql::users;
-    #[test]
-    fn test1() {
-        let figment = Config::figment().merge(Toml::file("Insigno.toml").nested());
-        let value = figment.find_value("databases.db.url").unwrap();
-        let url = value.as_str().unwrap();
-
-        let _conn = PgConnection::establish(url).unwrap();
-        //conn.transaction(f)
-        //let  y = users::all_columns.0;
-        //let y: i64 = y.assume_not_null().into();
-    }
+    let _conn = PgConnection::establish(url).unwrap();
+    //conn.transaction(f)
+    //let  y = users::all_columns.0;
+    //let y: i64 = y.assume_not_null().into();
 }

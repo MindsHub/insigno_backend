@@ -3,7 +3,7 @@ use diesel::{select, sql_query, sql_types::BigInt, RunQueryDsl};
 use rocket::{fairing::AdHoc, serde::json::Json};
 
 use crate::{
-    auth::user::{YesReview, Authenticated, User},
+    auth::user::{Authenticated, User, YesReview},
     db::Db,
     utils::InsignoError,
 };
@@ -17,7 +17,7 @@ impl ImageVerifications {
         user_id: i64,
         db: &Db,
     ) -> Result<DateTime<Utc>, diesel::result::Error> {
-        db
+        db //
             .run(move |conn| select(time_to_verify(user_id))
             .get_result::<DateTime<Utc>>(conn))
             .await
@@ -48,9 +48,7 @@ pub async fn get_next_verify_time(
     let user = user?;
     let z = ImageVerifications::time_to_verify(user.id.unwrap(), &db)
         .await
-        .map_err(|x| {
-            InsignoError::new(500).debug(x)
-        })?;
+        .map_err(|x| InsignoError::new(500).debug(x))?;
     Ok(Json(z))
 }
 
@@ -64,13 +62,13 @@ pub async fn get_session(
         .await
         .map_err(|x| {
             match x {
-                diesel::result::Error::DatabaseError(x, y) =>{
-                    if format!("{y:?}")!="you cant verify right now"{
+                diesel::result::Error::DatabaseError(x, y) => {
+                    if format!("{y:?}") != "you cant verify right now" {
                         InsignoError::new(403).both(format!("{y:?}"))
-                    }else{
+                    } else {
                         InsignoError::new(500).debug(format!("{x:?}"))
                     }
-                },
+                }
                 _ => InsignoError::new(500).debug(x),
             }
             //InsignoError::new(500).debug(x)

@@ -176,7 +176,7 @@ impl User<Unauthenticated> {
     }
     pub async fn get_by_id(db: &Db, id_user: i64) -> Result<Self, InsignoError> {
         UserDiesel::get_by_id(db, id_user)
-            .await?
+            .await? //
             .try_into()
     }
     pub async fn login(self, password: &str) -> Result<User<Authenticated>, InsignoError> {

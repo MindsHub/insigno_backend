@@ -78,11 +78,11 @@ mod pending;
 mod pills;
 mod schema_rs;
 mod schema_sql;
+mod scoreboard;
 #[cfg(test)]
 mod test;
 mod utils;
 mod verification;
-mod scoreboard;
 /**
  * Here is where we store all our configuration needed at runtime
  * it implements Deserialize for interfacing with figiment deserializer

@@ -118,7 +118,7 @@ mod test {
         let response = client
             .post("/pills/add")
             .header(ContentType::Form)
-            .body(input.clone())
+            .body(input)
             .dispatch();
         assert_eq!(response.await.status(), Status::Unauthorized);
 

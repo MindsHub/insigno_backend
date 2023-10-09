@@ -70,10 +70,11 @@ pub async fn signup(
     .map_err(|e| InsignoError::new(500).debug(e))??;
     mem::drop(permit);
     //if an account already exist
-    if User::get_by_email(&connection, create_info.email.clone()).await.is_ok() {
-        return Err(
-            InsignoError::new(400).both("this email is already associated with an account")
-        )
+    if User::get_by_email(&connection, create_info.email.clone())
+        .await
+        .is_ok()
+    {
+        return Err(InsignoError::new(400).both("this email is already associated with an account"));
     }
 
     let mut pend = Pending::new(PendingAction::RegisterUser(
