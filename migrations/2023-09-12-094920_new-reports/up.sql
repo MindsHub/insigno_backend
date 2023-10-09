@@ -57,15 +57,6 @@ CREATE OR REPLACE FUNCTION time_to_verify(user_id BIGINT) RETURNS timestamp AS $
 	END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION can_verify(user_id BIGINT) RETURNS BOOLEAN AS $$
-	DECLARE ret BOOLEAN ;
-	BEGIN
-        SELECT now()>time_to_verify(user_id)
-		    INTO ret;
-		RETURN ret;
-	END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE( id BIGINT, verification_session BIGINT, image_id BIGINT, verdict BOOLEAN) AS $$
 	#variable_conflict use_column
 	DECLARE ret BIGINT;

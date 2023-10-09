@@ -8,7 +8,7 @@ use crate::{
     utils::InsignoError,
 };
 
-use self::sql::{can_verify, time_to_verify, ImageVerification};
+use self::sql::{time_to_verify, ImageVerification};
 
 mod sql;
 struct ImageVerifications;
@@ -17,15 +17,9 @@ impl ImageVerifications {
         user_id: i64,
         db: &Db,
     ) -> Result<DateTime<Utc>, diesel::result::Error> {
-        db.run(move |conn| select(time_to_verify(user_id)).get_result::<DateTime<Utc>>(conn))
-            .await
-    }
-    pub async fn can_verify(
-        user: &User<Authenticated, YesReview>,
-        db: &Db,
-    ) -> Result<bool, diesel::result::Error> {
-        let user_id = user.id.unwrap();
-        db.run(move |conn| select(can_verify(user_id)).get_result(conn))
+        db
+            .run(move |conn| select(time_to_verify(user_id))
+            .get_result::<DateTime<Utc>>(conn))
             .await
     }
 

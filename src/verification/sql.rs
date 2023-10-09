@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS public.verification_sessions
         ON DELETE NO ACTION
 );*/
 sql_function!(fn time_to_verify(user_id: BigInt)-> Timestamptz);
-sql_function!(fn can_verify(user_id: BigInt)-> Bool);
 //sql_function!(fn get_to_verify(user_id: BigInt)-> Record<ImageVerification>);
 table! {
     verification_sessions(id){
