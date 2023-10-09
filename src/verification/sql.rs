@@ -1,17 +1,18 @@
 use chrono::Utc;
-use diesel::sql_types::BigInt;
+use diesel::sql_types::{BigInt, Bool};
 
 
 sql_function!(fn time_to_verify(user_id: BigInt) -> Timestamptz);
+sql_function!(fn verify_set_verdict(user_id: BigInt, image_id: BigInt, verdict: Bool) -> Bool);
 
-// there is no way to handle multiple values at the moment
+// there is no way to handle multiple return values at the moment
 // sql_function!(fn get_to_verify(user_id: BigInt) -> ());
 
 table! {
     verification_sessions(id){
         id -> Nullable<BigSerial>,
         user_id -> BigInt,
-        completition_date -> Nullable<Timestamptz>,
+        completion_date -> Nullable<Timestamptz>,
     }
 }
 
@@ -20,7 +21,7 @@ table! {
 pub(crate) struct VerificationSession {
     pub id: Option<i64>,
     pub user_id: i64,
-    pub completition_date: Option<chrono::DateTime<Utc>>,
+    pub completion_date: Option<chrono::DateTime<Utc>>,
 }
 
 

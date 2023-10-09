@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.verification_sessions
 (
     id BIGSERIAL,
 	user_id BIGINT NOT NULL,
-	completition_date timestamp with time zone,
+	completion_date timestamp with time zone,
 
     CONSTRAINT verification_sessions_id PRIMARY KEY (id),
 	CONSTRAINT user_id_fkey FOREIGN KEY (user_id)
@@ -69,18 +69,18 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE(
 	DECLARE ret BIGINT;
 	BEGIN
 		IF now() < time_to_verify(user_id_inp) THEN
-			RAISE EXCEPTION 'you cant verify right now';
+			RAISE EXCEPTION 'cant_verify_now';
 		END IF;
 
 		SELECT id
 		FROM public.verification_sessions
 		WHERE user_id = user_id_inp AND
-			completition_date IS NULL
+			completion_date IS NULL
 		INTO ret;
 
 		if ret is NULL THEN
 			--create a new one
-			RETURN query
+			RETURN QUERY
 				SELECT
 					image_verifications.image_id,
 					image_verifications.marker_id,
@@ -98,7 +98,7 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE(
 					markers.marker_types_id;
 		ELSE
 		-- return the first
-			RETURN query
+			RETURN QUERY
 				SELECT
 					image_verifications.image_id,
 					image_verifications.marker_id,
@@ -131,24 +131,24 @@ CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE(
 	DECLARE to_choose BIGINT;
 
 	BEGIN
-	INSERT INTO verification_sessions(user_id) VALUES (user_id_inp) RETURNING id INTO session_id;
+		INSERT INTO verification_sessions(user_id) VALUES (user_id_inp) RETURNING id INTO session_id;
 
-	SELECT ceil(log(2, count(marker_images.id)+1))+5
-		FROM marker_images
-		WHERE verdict_number<3
-		INTO to_choose;
-
-	INSERT INTO image_verifications(verification_session, image_id, marker_id)
-		SELECT session_id, id, refers_to
+		SELECT ceil(log(2, count(marker_images.id)+1))+5
 			FROM marker_images
-			--WHERE user_id_inp<>user_id
-			ORDER BY verdict_number ASC,
-			random()
-			LIMIT to_choose;
-	return query
-		SELECT *
-			FROM image_verifications
-			WHERE verification_session = session_id;
+			WHERE verdict_number<3
+			INTO to_choose;
+
+		INSERT INTO image_verifications(verification_session, image_id, marker_id)
+			SELECT session_id, id, refers_to
+				FROM marker_images
+				--WHERE user_id_inp<>user_id
+				ORDER BY verdict_number ASC,
+				random()
+				LIMIT to_choose;
+		RETURN QUERY
+			SELECT *
+				FROM image_verifications
+				WHERE verification_session = session_id;
 	END;
 $$;
 

@@ -217,13 +217,10 @@ async fn resolve_marker_from_id(
 ) -> Result<Json<MarkerUpdate>, Status> {
     let y: ResolveRet = connection
         .run(move |conn| {
-            sql_query(
-                "
-            SELECT * FROM resolve_marker($1, $2);",
-            )
-            .bind::<BigInt, _>(marker_id)
-            .bind::<BigInt, _>(user.get_id())
-            .get_result(conn)
+            sql_query("SELECT * FROM resolve_marker($1, $2)")
+                .bind::<BigInt, _>(marker_id)
+                .bind::<BigInt, _>(user.get_id())
+                .get_result(conn)
         })
         .await
         .map_err(|tmp| match tmp.to_string().as_str() {
