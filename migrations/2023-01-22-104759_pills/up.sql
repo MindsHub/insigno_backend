@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS public.pills (
   author TEXT NOT NULL,
   source TEXT NOT NULL,
   accepted BOOLEAN NOT NULL
-)
+);
 ALTER TABLE IF EXISTS public.pills OWNER TO mindshub;

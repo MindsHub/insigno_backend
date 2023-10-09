@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.user_sessions
         REFERENCES public.users (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE cascade
-)
+);
 ALTER TABLE IF EXISTS public.user_sessions OWNER TO mindshub;
 
 

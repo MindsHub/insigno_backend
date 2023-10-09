@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.markers
         REFERENCES public.users (id) MATCH SIMPLE
         ON UPDATE cascade
         ON DELETE NO ACTION
-)
+);
 ALTER TABLE IF EXISTS public.markers OWNER TO mindshub;
 
 --INSERT INTO public.markers(

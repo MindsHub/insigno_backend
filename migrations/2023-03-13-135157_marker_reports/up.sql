@@ -14,5 +14,5 @@ CREATE TABLE IF NOT EXISTS public.marker_reports
         REFERENCES public.markers (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
+);
 ALTER TABLE IF EXISTS public.marker_reports OWNER TO mindshub;

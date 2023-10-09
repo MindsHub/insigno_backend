@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS public.marker_types
     name TEXT COLLATE pg_catalog."default" NOT NULL,
     points DOUBLE PRECISION NOT NULL,
     CONSTRAINT markers_types_pkey PRIMARY KEY (id)
-)
+);
 ALTER TABLE IF EXISTS public.marker_types OWNER TO mindshub;
 
 INSERT INTO public.marker_types (

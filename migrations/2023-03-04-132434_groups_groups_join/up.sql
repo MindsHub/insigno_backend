@@ -13,5 +13,5 @@ CREATE TABLE IF NOT EXISTS public.groups_groups_join
         REFERENCES public.groups (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-)
+);
 ALTER TABLE IF EXISTS public.groups_groups_join OWNER TO mindshub;

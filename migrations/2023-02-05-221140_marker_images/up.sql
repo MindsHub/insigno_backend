@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS public.marker_images
         REFERENCES public.markers (id) MATCH SIMPLE
         ON UPDATE cascade
         ON DELETE cascade
-)
+);
 ALTER TABLE IF EXISTS public.marker_images OWNER TO mindshub;

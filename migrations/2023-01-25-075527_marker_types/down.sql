@@ -1,2 +1,2 @@
 -- This file should undo anything in `up.sql`
-DROP TABLE IF EXISTS markers_types;
+DROP TABLE IF EXISTS marker_types;

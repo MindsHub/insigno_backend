@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS public.users
     points DOUBLE PRECISION DEFAULT 0.0,
     CONSTRAINT users_pkey PRIMARY KEY (id),
     CONSTRAINT users_name_key UNIQUE (name)
-)
+);
 ALTER TABLE IF EXISTS public.users OWNER TO mindshub;
