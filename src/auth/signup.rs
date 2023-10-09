@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    user::{Adult, Authenticated, User, UserDiesel},
+    user::{User, UserDiesel},
     validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword},
 };
 
@@ -20,7 +20,6 @@ pub struct SignupInfo {
     pub name: String,
     pub email: String,
     pub password: String,
-    pub is_adult: bool,
 }
 // validation on this struct
 impl Email for SignupInfo {
@@ -71,20 +70,16 @@ pub async fn signup(
     .map_err(|e| InsignoError::new(500).debug(e))??;
     mem::drop(permit);
     //if an account already exist
-    match User::get_by_email(&connection, create_info.email.clone()).await {
-        Ok(_) => {
-            return Err(
-                InsignoError::new(400).both("this email is already associated with an account")
-            )
-        }
-        Err(_) => {}
+    if User::get_by_email(&connection, create_info.email.clone()).await.is_ok() {
+        return Err(
+            InsignoError::new(400).both("this email is already associated with an account")
+        )
     }
 
     let mut pend = Pending::new(PendingAction::RegisterUser(
         create_info.name.clone(),
         create_info.email.clone(),
         create_info.password.clone(),
-        create_info.is_adult.clone(),
     ));
     pend.insert(&connection).await?;
     let link = format!("https://insigno.mindshub.it/verify/{}", pend.token);
@@ -100,36 +95,19 @@ pub async fn complete_registration(
     pend: PendingAction,
     connection: &Db,
 ) -> Result<(ContentType, String), InsignoError> {
-    if let PendingAction::RegisterUser(name, email, password_hash, is_adult) = pend {
-        if is_adult {
-            let mut user: User<Authenticated, Adult> = UserDiesel {
-                id: None,
-                name,
-                email,
-                password: password_hash,
-                //password_hash,
-                is_admin: false,
-                points: 0.0,
-                is_adult,
-                last_revision: None,
-            }
-            .try_into()?;
-            user.insert(connection).await?;
-        } else {
-            let mut user: User<Authenticated, Adult> = UserDiesel {
-                id: None,
-                name,
-                email,
-                password: password_hash,
-                //password_hash,
-                is_admin: false,
-                points: 0.0,
-                is_adult: false,
-                last_revision: None,
-            }
-            .try_into()?;
-            user.insert(connection).await?;
-        }
+    if let PendingAction::RegisterUser(name, email, password_hash) = pend {
+        let user = UserDiesel {
+            id: None,
+            name,
+            email,
+            password: password_hash,
+            //password_hash,
+            is_admin: false,
+            points: 0.0,
+            accepted_to_review: None,
+            last_revision: None,
+        };
+        user.insert(connection).await?;
         Ok((ContentType::HTML, "registrazione completata".to_string()))
     } else {
         Err(InsignoError::new(500).debug("wrong call"))

@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    user::User,
+    user::{User, UserDiesel},
     validation::{Email, Password, SanitizeEmail, SanitizePassword},
 };
 
@@ -88,8 +88,8 @@ pub async fn complete_change_password(
     connection: &Db,
 ) -> Result<(ContentType, String), InsignoError> {
     if let PendingAction::ChangePassword(user_id, password_hash) = pend {
-        let mut user = User::get_by_id(connection, user_id).await?;
-        user.password_hash = password_hash;
+        let mut user = UserDiesel::get_by_id(connection, user_id).await?;
+        user.password = password_hash;
         user.update(connection).await?;
         Ok((
             ContentType::HTML,

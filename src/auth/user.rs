@@ -1,5 +1,4 @@
 use std::marker::PhantomData;
-use std::mem;
 
 use crate::auth::scrypt::scrypt_check;
 use crate::diesel::query_dsl::methods::FilterDsl;
@@ -25,32 +24,32 @@ table! {
         password -> Text,
         is_admin -> Bool,
         points -> Double,
-        is_adult -> Bool,
+        accepted_to_review -> Nullable<Bool>,
         last_revision-> Nullable<Timestamptz>,
     }
 }
 
 #[derive(Clone)]
-pub struct Adult;
+pub struct YesReview;
 #[derive(Clone)]
-pub struct Underage;
+pub struct NoReview;
 #[derive(Clone)]
-pub struct Anyage;
-pub trait UserAge: Clone + Send {
-    fn is_adult() -> bool;
+pub struct AnyReview;
+pub trait UserReview: Clone + Send {
+    fn accepted_to_review() -> bool;
 }
-impl UserAge for Underage {
-    fn is_adult() -> bool {
+impl UserReview for NoReview {
+    fn accepted_to_review() -> bool {
         false
     }
 }
-impl UserAge for Adult {
-    fn is_adult() -> bool {
+impl UserReview for YesReview {
+    fn accepted_to_review() -> bool {
         true
     }
 }
-impl UserAge for Anyage {
-    fn is_adult() -> bool {
+impl UserReview for AnyReview {
+    fn accepted_to_review() -> bool {
         false
     }
 }
@@ -78,12 +77,12 @@ pub(crate) struct UserDiesel {
     pub password: String,
     pub is_admin: bool,
     pub points: f64,
-    pub is_adult: bool,
+    pub accepted_to_review: Option<bool>,
     pub last_revision: Option<chrono::DateTime<Utc>>,
 }
 
 #[derive(Clone)]
-pub struct User<UserType, UserAge = Anyage> {
+pub struct User<UserType, UserAge = AnyReview> {
     pub id: Option<i64>,
     pub name: String,
     pub email: String,
@@ -96,10 +95,10 @@ pub struct User<UserType, UserAge = Anyage> {
     pub phantom_age: PhantomData<UserAge>,
 }
 
-impl<A: UserAge, T: UserType> TryFrom<UserDiesel> for User<T, A> {
+impl<A: UserReview, T: UserType> TryFrom<UserDiesel> for User<T, A> {
     type Error = InsignoError;
     fn try_from(value: UserDiesel) -> Result<User<T, A>, Self::Error> {
-        if !value.is_adult && A::is_adult() {
+        if value.accepted_to_review != Some(true) && A::accepted_to_review() {
             Err(InsignoError::new(403).both("you don't have the correct age to view this"))
             //when is not an adult, and it ask for an adult
         } else {
@@ -111,24 +110,10 @@ impl<A: UserAge, T: UserType> TryFrom<UserDiesel> for User<T, A> {
                 is_admin: value.is_admin,
                 points: value.points,
                 last_revision: value.last_revision,
-                //is_adult: value.is_adult,
+                //accepted_to_review: value.accepted_to_review,
                 phantom: PhantomData,
                 phantom_age: PhantomData,
             })
-        }
-    }
-}
-impl<T: UserType, A: UserAge> From<User<T, A>> for UserDiesel {
-    fn from(value: User<T, A>) -> Self {
-        Self {
-            id: value.id,
-            name: value.name,
-            email: value.email,
-            password: value.password_hash,
-            is_admin: value.is_admin,
-            points: value.points,
-            last_revision: value.last_revision,
-            is_adult: A::is_adult(),
         }
     }
 }
@@ -154,7 +139,7 @@ impl<T: UserType> User<T> {
     }
 }
 
-impl<Age: UserAge> User<Authenticated, Age> {
+impl<Age: UserReview> User<Authenticated, Age> {
     pub async fn set_token(&self, token_str: &str, db: &Db) -> Result<(), InsignoError> {
         let id = self.get_id();
         let token_str = token_str.to_string();
@@ -190,16 +175,9 @@ impl User<Unauthenticated> {
         Ok(user)
     }
     pub async fn get_by_id(db: &Db, id_user: i64) -> Result<Self, InsignoError> {
-        let user: Self = db
-            .run(move |conn| {
-                users::table
-                    .filter(users::id.eq(id_user))
-                    .get_result::<UserDiesel>(conn)
-            })
-            .await
-            .map_err(|e| InsignoError::new(404).debug(e))?
-            .try_into()?;
-        Ok(user)
+        UserDiesel::get_by_id(db, id_user)
+            .await?
+            .try_into()
     }
     pub async fn login(self, password: &str) -> Result<User<Authenticated>, InsignoError> {
         if !self.check_hash(password).await {
@@ -218,46 +196,54 @@ impl User<Unauthenticated> {
     }
 }
 
-impl<T: UserType, Age: UserAge> User<T, Age> {
-    pub fn get_id(&self) -> i64 {
-        self.id.unwrap()
-    }
-    pub async fn insert(&mut self, connection: &Db) -> Result<(), InsignoError> {
-        let me: UserDiesel = self.clone().into();
-        let mut me: Self = connection
-            .run(|conn| {
-                insert_into(users::dsl::users)
-                    .values::<UserDiesel>(me)
+impl UserDiesel {
+    pub async fn get_by_id(connection: &Db, id_user: i64) -> Result<Self, InsignoError> {
+        connection
+            .run(move |conn| {
+                users::table
+                    .filter(users::id.eq(id_user))
                     .get_result::<UserDiesel>(conn)
             })
             .await
+            .map_err(|e| InsignoError::new(404).debug(e))
+    }
+    pub async fn insert(self, connection: &Db) -> Result<(), InsignoError> {
+        connection
+            .run(|conn| {
+                insert_into(users::dsl::users)
+                    .values::<UserDiesel>(self)
+                    .execute(conn)
+            })
+            .await
+            .map(|_| ())
             .map_err(|e| {
                 InsignoError::new(422)
                     .client("impossibile creare l'account")
                     .debug(e)
-            })?
-            .try_into()?;
-        mem::swap(&mut me, self);
-        Ok(())
+            })
     }
-    pub async fn update(&mut self, connection: &Db) -> Result<(), InsignoError> {
-        let me: UserDiesel = self.clone().into();
-        let mut me: Self = connection
+
+    pub async fn update(self, connection: &Db) -> Result<(), InsignoError> {
+        connection
             .run(|conn| {
                 diesel::update(users::dsl::users)
-                    .filter(users::id.eq(me.id))
-                    .set(me)
-                    .get_result::<UserDiesel>(conn)
+                    .filter(users::id.eq(self.id))
+                    .set(self)
+                    .execute(conn)
             })
             .await
-            .map_err(|e| InsignoError::new(500).debug(e))?
-            .try_into()?;
-        mem::swap(&mut me, self);
-        Ok(())
+            .map(|_| ())
+            .map_err(|e| InsignoError::new(500).debug(e))
     }
 }
 
-impl<A: UserAge> Serialize for User<Authenticated, A> {
+impl<T: UserType, Age: UserReview> User<T, Age> {
+    pub fn get_id(&self) -> i64 {
+        self.id.unwrap()
+    }
+}
+
+impl<A: UserReview> Serialize for User<Authenticated, A> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -268,7 +254,7 @@ impl<A: UserAge> Serialize for User<Authenticated, A> {
         s.serialize_field("points", &self.points)?;
         s.serialize_field("is_admin", &self.is_admin)?;
         s.serialize_field("email", &self.email)?;
-        s.serialize_field("is_adult", &A::is_adult())?;
+        s.serialize_field("accepted_to_review", &A::accepted_to_review())?;
         s.serialize_field("last_revision", &self.last_revision)?;
         s.end()
     }
@@ -287,7 +273,7 @@ impl Serialize for User<Unauthenticated> {
 }
 
 #[rocket::async_trait]
-impl<'r, Age: UserAge> FromRequest<'r> for User<Authenticated, Age> {
+impl<'r, Age: UserReview> FromRequest<'r> for User<Authenticated, Age> {
     type Error = InsignoError;
     async fn from_request(request: &'r rocket::Request<'_>) -> Outcome<Self, Self::Error> {
         let connection = request.guard::<Db>().await.unwrap();

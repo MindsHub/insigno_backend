@@ -3,7 +3,7 @@ use diesel::{select, sql_query, sql_types::BigInt, RunQueryDsl};
 use rocket::{fairing::AdHoc, serde::json::Json};
 
 use crate::{
-    auth::user::{Adult, Authenticated, User},
+    auth::user::{YesReview, Authenticated, User},
     db::Db,
     utils::InsignoError,
 };
@@ -21,7 +21,7 @@ impl ImageVerifications {
             .await
     }
     pub async fn can_verify(
-        user: &User<Authenticated, Adult>,
+        user: &User<Authenticated, YesReview>,
         db: &Db,
     ) -> Result<bool, diesel::result::Error> {
         let user_id = user.id.unwrap();
@@ -48,7 +48,7 @@ impl ImageVerifications {
 
 #[get("/get_next_verify_time")]
 pub async fn get_next_verify_time(
-    user: Result<User<Authenticated, Adult>, InsignoError>,
+    user: Result<User<Authenticated, YesReview>, InsignoError>,
     db: Db,
 ) -> Result<Json<DateTime<Utc>>, InsignoError> {
     let user = user?;
@@ -62,7 +62,7 @@ pub async fn get_next_verify_time(
 
 #[get("/get_session")]
 pub async fn get_session(
-    user: Result<User<Authenticated, Adult>, InsignoError>,
+    user: Result<User<Authenticated, YesReview>, InsignoError>,
     db: Db,
 ) -> Result<Json<Vec<ImageVerification>>, InsignoError> {
     let user = user?;

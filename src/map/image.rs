@@ -7,7 +7,7 @@ use std::process;
 
 use super::marker_image::MarkerImage;
 use super::marker_report::ImageToReport;
-use crate::auth::user::Adult;
+use crate::auth::user::YesReview;
 use crate::auth::user::Authenticated;
 
 use crate::auth::user::User;
@@ -205,7 +205,7 @@ pub(crate) async fn get_image(
 #[get("/image/to_review")]
 pub(crate) async fn get_to_review(
     connection: Db,
-    user: Result<User<Authenticated, Adult>, InsignoError>,
+    user: Result<User<Authenticated, YesReview>, InsignoError>,
 ) -> Result<Json<Vec<ImageToReport>>, InsignoError> {
     let user = user?;
 
@@ -223,7 +223,7 @@ pub(crate) async fn review(
     image_id: i64,
     connection: Db,
     config: &State<InsignoConfig>,
-    user: Result<User<Authenticated, Adult>, InsignoError>,
+    user: Result<User<Authenticated, YesReview>, InsignoError>,
     verdict: Form<ReviewVerdict>,
 ) -> Result<(), InsignoError> {
     let user = user?;

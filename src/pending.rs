@@ -30,8 +30,8 @@ pub fn generate_token() -> String {
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum PendingAction {
-    /// name, email, password, is_adult
-    RegisterUser(String, String, String, bool),
+    /// name, email, password
+    RegisterUser(String, String, String),
     /// user_id, new_hash
     ChangePassword(i64, String),
 }
@@ -115,9 +115,9 @@ pub async fn verify(token: String, connection: Db) -> Result<(ContentType, Strin
     let pending = Pending::get_from_token(token, &connection).await?;
 
     match pending.action {
-        PendingAction::RegisterUser(name, email, password, is_adult) => {
+        PendingAction::RegisterUser(name, email, password) => {
             complete_registration(
-                PendingAction::RegisterUser(name, email, password, is_adult),
+                PendingAction::RegisterUser(name, email, password),
                 &connection,
             )
             .await

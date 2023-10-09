@@ -157,7 +157,7 @@ mod test {
         let message = response.into_string().await.unwrap();
         assert_eq!(
             message,
-            r#"{"id":1,"name":"IlMagicoTester","points":0.0,"is_admin":false,"email":"test@test.com","is_adult":false,"last_revision":"2023-04-01T12:00:00Z"}"#
+            r#"{"id":1,"name":"IlMagicoTester","points":0.0,"is_admin":false,"email":"test@test.com","accepted_to_review":false,"last_revision":"2023-04-01T12:00:00Z"}"#
         );
     }
 
