@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
-use diesel::{select, sql_query, sql_types::BigInt, RunQueryDsl};
+use diesel::{select, sql_query, sql_types::{BigInt, Array, Nullable, Bool}, RunQueryDsl};
 use rocket::{fairing::AdHoc, serde::json::Json};
+use serde::Serialize;
 
 use crate::{
     auth::user::{Authenticated, User, YesReview},
@@ -8,12 +9,27 @@ use crate::{
     utils::InsignoError,
 };
 
-use self::sql::{time_to_verify, ImageVerification};
+use self::sql::time_to_verify;
 
 mod sql;
-struct ImageVerifications;
-impl ImageVerifications {
-    pub async fn time_to_verify(
+
+
+#[derive(Clone, Debug, Serialize, QueryableByName)]
+pub struct ImageVerification {
+    #[diesel(sql_type = BigInt)]
+    image_id: i64,
+    #[diesel(sql_type = BigInt)]
+    marker_id: i64,
+    #[diesel(sql_type = Nullable<Bool>)]
+    verdict: Option<bool>,
+    #[diesel(sql_type = BigInt)]
+    marker_types_id: i64,
+    #[diesel(sql_type = Array<BigInt>)]
+    all_marker_images: Vec<i64>,
+}
+
+impl ImageVerification {
+    async fn time_to_verify(
         user_id: i64,
         db: &Db,
     ) -> Result<DateTime<Utc>, diesel::result::Error> {
@@ -23,10 +39,10 @@ impl ImageVerifications {
             .await
     }
 
-    pub async fn get_or_create(
+    async fn get_or_create(
         user_id: i64,
         db: &Db,
-    ) -> Result<Vec<ImageVerification>, diesel::result::Error> {
+    ) -> Result<Vec<Self>, diesel::result::Error> {
         db.run(move |conn| {
             sql_query("SELECT * FROM get_to_verify($1)")
                 .bind::<BigInt, _>(user_id)
@@ -46,7 +62,7 @@ pub async fn get_next_verify_time(
     db: Db,
 ) -> Result<Json<DateTime<Utc>>, InsignoError> {
     let user = user?;
-    let z = ImageVerifications::time_to_verify(user.id.unwrap(), &db)
+    let z = ImageVerification::time_to_verify(user.id.unwrap(), &db)
         .await
         .map_err(|x| InsignoError::new(500).debug(x))?;
     Ok(Json(z))
@@ -58,7 +74,7 @@ pub async fn get_session(
     db: Db,
 ) -> Result<Json<Vec<ImageVerification>>, InsignoError> {
     let user = user?;
-    let z = ImageVerifications::get_or_create(user.id.unwrap(), &db)
+    let z = ImageVerification::get_or_create(user.id.unwrap(), &db)
         .await
         .map_err(|x| {
             match x {

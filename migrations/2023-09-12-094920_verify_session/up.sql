@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS public.image_verifications
     id BIGSERIAL,
 	verification_session BIGINT,
 	image_id BIGINT NOT NULL,
+	marker_id BIGINT NOT NULL,
 	verdict BOOLEAN,
 
     CONSTRAINT image_verifications_id PRIMARY KEY (id),
@@ -36,6 +37,10 @@ CREATE TABLE IF NOT EXISTS public.image_verifications
         ON DELETE NO ACTION,
 	CONSTRAINT image_id_fkey FOREIGN KEY (image_id)
         REFERENCES public.marker_images (id) MATCH SIMPLE
+        ON UPDATE cascade
+        ON DELETE cascade,
+	CONSTRAINT marker_id_fkey FOREIGN KEY (marker_id)
+        REFERENCES public.markers (id) MATCH SIMPLE
         ON UPDATE cascade
         ON DELETE cascade
 );
@@ -53,7 +58,13 @@ CREATE OR REPLACE FUNCTION time_to_verify(user_id BIGINT) RETURNS timestamp AS $
 	END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE( id BIGINT, verification_session BIGINT, image_id BIGINT, verdict BOOLEAN) AS $$
+CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE(
+	image_id BIGINT,
+	marker_id BIGINT,
+	verdict BOOLEAN,
+	marker_types_id BIGINT,
+	all_marker_images BIGINT[]
+) AS $$
 	#variable_conflict use_column
 	DECLARE ret BIGINT;
 	BEGIN
@@ -70,18 +81,51 @@ CREATE OR REPLACE FUNCTION get_to_verify(user_id_inp BIGINT) RETURNS TABLE( id B
 		if ret is NULL THEN
 			--create a new one
 			RETURN query
-				SELECT * FROM create_verify(user_id_inp);
+				SELECT
+					image_verifications.image_id,
+					image_verifications.marker_id,
+					image_verifications.verdict,
+					markers.marker_types_id,
+					ARRAY_AGG(marker_images.id) AS all_marker_images
+				FROM create_verify(user_id_inp) AS image_verifications
+				JOIN markers ON markers.id = image_verifications.marker_id
+				JOIN marker_images ON marker_images.refers_to = markers.id
+				GROUP BY
+					image_verifications.id,
+					image_verifications.image_id,
+					image_verifications.marker_id,
+					image_verifications.verdict,
+					markers.marker_types_id;
 		ELSE
 		-- return the first
 			RETURN query
-				SELECT *
-					FROM image_verifications
-					WHERE verification_session=ret;
+				SELECT
+					image_verifications.image_id,
+					image_verifications.marker_id,
+					image_verifications.verdict,
+					markers.marker_types_id,
+					ARRAY_AGG(marker_images.id) AS all_marker_images
+				FROM image_verifications
+				JOIN markers ON markers.id = image_verifications.marker_id
+				JOIN marker_images ON marker_images.refers_to = markers.id
+				WHERE verification_session = ret
+				GROUP BY
+					image_verifications.id,
+					image_verifications.image_id,
+					image_verifications.marker_id,
+					image_verifications.verdict,
+					markers.marker_types_id;
 		END IF;
 	END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE( id BIGINT, verification_session BIGINT, image_id BIGINT, verdict BOOLEAN) language plpgsql AS $$
+CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE(
+	id BIGINT,
+	verification_session BIGINT,
+	image_id BIGINT,
+	marker_id BIGINT,
+	verdict BOOLEAN
+) language plpgsql AS $$
 	#variable_conflict use_column
 	DECLARE session_id BIGINT;
 	DECLARE to_choose BIGINT;
@@ -94,8 +138,8 @@ CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE( id B
 		WHERE verdict_number<3
 		INTO to_choose;
 
-	INSERT INTO image_verifications(verification_session, image_id)
-		SELECT session_id, id
+	INSERT INTO image_verifications(verification_session, image_id, marker_id)
+		SELECT session_id, id, refers_to
 			FROM marker_images
 			--WHERE user_id_inp<>user_id
 			ORDER BY verdict_number ASC,
@@ -104,7 +148,7 @@ CREATE OR REPLACE FUNCTION create_verify(user_id_inp BIGINT) RETURNS TABLE( id B
 	return query
 		SELECT *
 			FROM image_verifications
-			WHERE verification_session=session_id;
+			WHERE verification_session = session_id;
 	END;
 $$;
 
