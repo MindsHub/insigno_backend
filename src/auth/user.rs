@@ -99,7 +99,7 @@ impl<A: UserReview, T: UserType> TryFrom<UserDiesel> for User<T, A> {
     type Error = InsignoError;
     fn try_from(value: UserDiesel) -> Result<User<T, A>, Self::Error> {
         if value.accepted_to_review != Some(true) && A::accepted_to_review() {
-            Err(InsignoError::new(403).both("you don't have the correct age to view this"))
+            Err(InsignoError::new(403).both("you did not accept to review"))
             //when is not an adult, and it ask for an adult
         } else {
             Ok(Self {
