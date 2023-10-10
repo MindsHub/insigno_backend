@@ -1,3 +1,6 @@
+// the "None" inside "#[field(default = None)]" causes this warning
+#![allow(clippy::if_same_then_else)]
+
 pub mod sql;
 
 use chrono::{DateTime, Utc};
@@ -66,6 +69,7 @@ impl ImageVerification {
 #[allow(clippy::if_same_then_else)]
 #[derive(Deserialize, Serialize, FromForm)]
 pub struct SetAcceptedToReviewData {
+    // this makes the field reuquired, otherwise not specifying it is fine and ends up in the value "false"
     #[field(default = None)]
     accepted_to_review: bool,
 }
@@ -130,6 +134,7 @@ pub async fn get_session(
 #[derive(Deserialize, Serialize, FromForm)]
 pub struct SetVerdictData {
     image_id: i64,
+    // this makes the field reuquired, otherwise not specifying it is fine and ends up in the value "false"
     #[field(default = None)]
     verdict: bool,
 }
