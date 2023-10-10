@@ -92,8 +92,18 @@ pub struct User<UserType, UserAge = AnyReview> {
 impl<T: UserType, R: UserReview> TryFrom<UserDiesel> for User<T, R> {
     type Error = InsignoError;
     fn try_from(value: UserDiesel) -> Result<User<T, R>, Self::Error> {
-        if value.accepted_to_review != Some(true) && R::requires_accepted_to_review() {
-            Err(InsignoError::new(403).both("you did not accept to review"))
+        let accepted_to_review = value.accepted_to_review;
+        if accepted_to_review != Some(true) && R::requires_accepted_to_review() {
+            Err(InsignoError::new(403)
+                .debug(format!(
+                    "user did not accept to review: {accepted_to_review:?}"
+                ))
+                // DO NOT change these hardcoded strings, they are used in the client, too
+                .client(if accepted_to_review.is_none() {
+                    "accepted_to_review_pending"
+                } else {
+                    "accepted_to_review_refused"
+                }))
             //when is not an adult, and it ask for an adult
         } else {
             Ok(Self {
