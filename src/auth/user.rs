@@ -32,24 +32,17 @@ table! {
 #[derive(Clone)]
 pub struct YesReview;
 #[derive(Clone)]
-pub struct NoReview;
-#[derive(Clone)]
 pub struct AnyReview;
 pub trait UserReview: Clone + Send {
-    fn accepted_to_review() -> bool;
-}
-impl UserReview for NoReview {
-    fn accepted_to_review() -> bool {
-        false
-    }
+    fn requires_accepted_to_review() -> bool;
 }
 impl UserReview for YesReview {
-    fn accepted_to_review() -> bool {
+    fn requires_accepted_to_review() -> bool {
         true
     }
 }
 impl UserReview for AnyReview {
-    fn accepted_to_review() -> bool {
+    fn requires_accepted_to_review() -> bool {
         false
     }
 }
@@ -89,16 +82,17 @@ pub struct User<UserType, UserAge = AnyReview> {
     pub password_hash: String,
     pub is_admin: bool,
     pub points: f64,
+    pub accepted_to_review: Option<bool>,
     pub last_revision: Option<chrono::DateTime<Utc>>,
 
     pub phantom: PhantomData<UserType>,
     pub phantom_age: PhantomData<UserAge>,
 }
 
-impl<A: UserReview, T: UserType> TryFrom<UserDiesel> for User<T, A> {
+impl<T: UserType, R: UserReview> TryFrom<UserDiesel> for User<T, R> {
     type Error = InsignoError;
-    fn try_from(value: UserDiesel) -> Result<User<T, A>, Self::Error> {
-        if value.accepted_to_review != Some(true) && A::accepted_to_review() {
+    fn try_from(value: UserDiesel) -> Result<User<T, R>, Self::Error> {
+        if value.accepted_to_review != Some(true) && R::requires_accepted_to_review() {
             Err(InsignoError::new(403).both("you did not accept to review"))
             //when is not an adult, and it ask for an adult
         } else {
@@ -110,7 +104,7 @@ impl<A: UserReview, T: UserType> TryFrom<UserDiesel> for User<T, A> {
                 is_admin: value.is_admin,
                 points: value.points,
                 last_revision: value.last_revision,
-                //accepted_to_review: value.accepted_to_review,
+                accepted_to_review: value.accepted_to_review,
                 phantom: PhantomData,
                 phantom_age: PhantomData,
             })
@@ -133,6 +127,7 @@ impl<T: UserType> User<T> {
             is_admin: self.is_admin,
             points: self.points,
             last_revision: self.last_revision,
+            accepted_to_review: self.accepted_to_review,
             phantom: PhantomData,
             phantom_age: PhantomData,
         }
@@ -237,13 +232,13 @@ impl UserDiesel {
     }
 }
 
-impl<T: UserType, Age: UserReview> User<T, Age> {
+impl<T: UserType, R: UserReview> User<T, R> {
     pub fn get_id(&self) -> i64 {
         self.id.unwrap()
     }
 }
 
-impl<A: UserReview> Serialize for User<Authenticated, A> {
+impl<R: UserReview> Serialize for User<Authenticated, R> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -254,7 +249,7 @@ impl<A: UserReview> Serialize for User<Authenticated, A> {
         s.serialize_field("points", &self.points)?;
         s.serialize_field("is_admin", &self.is_admin)?;
         s.serialize_field("email", &self.email)?;
-        s.serialize_field("accepted_to_review", &A::accepted_to_review())?;
+        s.serialize_field("accepted_to_review", &self.accepted_to_review)?;
         s.serialize_field("last_revision", &self.last_revision)?;
         s.end()
     }
