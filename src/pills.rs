@@ -62,7 +62,7 @@ async fn add_pill(
     connection: Db,
     data: Form<AddPill>,
     user: Result<User<Authenticated>, InsignoError>,
-) -> Result<String, InsignoError> {
+) -> Result<(), InsignoError> {
     let user = user?;
     let pill = Pill {
         id: None,
@@ -71,15 +71,15 @@ async fn add_pill(
         source: data.source.clone(),
         accepted: false,
     };
+
     connection
         .run(move |conn| {
-            use pills::dsl::pills as pi;
-            insert_into(pi).values(&pill).execute(conn)
+            insert_into(pills::dsl::pills).values(pill).execute(conn)
         })
         .await
         .map_err(|e| InsignoError::new(500).debug(e))?;
 
-    Ok("Added".to_string())
+    Ok(())
 }
 
 pub fn get_routes() -> Vec<Route> {
