@@ -4,13 +4,13 @@ use chrono::{DateTime, Utc};
 use diesel::{
     select, sql_query,
     sql_types::{Array, BigInt, Bool, Nullable},
-    RunQueryDsl,
+    RunQueryDsl, ExpressionMethods,
 };
 use rocket::{fairing::AdHoc, form::Form, serde::json::Json};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::user::{Authenticated, User, YesReview},
+    auth::user::{Authenticated, User, YesReview, users},
     db::Db,
     utils::InsignoError,
 };
@@ -63,6 +63,37 @@ impl ImageVerification {
     }
 }
 
+#[allow(clippy::if_same_then_else)]
+#[derive(Deserialize, Serialize, FromForm)]
+pub struct SetAcceptedToReviewData {
+    #[field(default = None)]
+    accepted_to_review: bool,
+}
+
+#[post("/set_accepted_to_review", data = "<data>")]
+pub async fn set_accepted_to_review(
+    user: Result<User<Authenticated>, InsignoError>,
+    db: Db,
+    data: Form<SetAcceptedToReviewData>,
+) -> Result<(), InsignoError> {
+    println!("HERE!!! {:?}", data.accepted_to_review);
+    let user = user?;
+    let updated_user_count = db.run(move |conn| {
+        diesel::update(users::table)
+            .filter(users::id.eq(user.id))
+            .set(users::accepted_to_review.eq(data.accepted_to_review))
+            .execute(conn)
+    })
+    .await
+    .map_err(|e| InsignoError::new(500).debug(e))?;
+
+    if updated_user_count == 1 {
+        Ok(())
+    } else {
+        Err(InsignoError::new(500).debug(format!("Wrong updated user count: {updated_user_count:?}")))
+    }
+}
+
 // time remaining on token refresh (and token last 1y) /session
 // dammi la sessione con la roba da verificare
 // punti guadagnati/sessione finita dopo verifica
@@ -97,6 +128,7 @@ pub async fn get_session(
 #[derive(Deserialize, Serialize, FromForm)]
 pub struct SetVerdictData {
     image_id: i64,
+    #[field(default = None)]
     verdict: bool,
 }
 
@@ -124,7 +156,7 @@ pub fn stage() -> AdHoc {
     AdHoc::on_ignite("verification stage", |rocket| async {
         rocket.mount(
             "/verify",
-            routes![get_session, get_next_verify_time, set_verdict],
+            routes![get_session, get_next_verify_time, set_verdict, set_accepted_to_review],
         )
     })
 }
