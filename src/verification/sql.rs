@@ -1,7 +1,6 @@
 use chrono::Utc;
 use diesel::sql_types::{BigInt, Bool};
 
-
 sql_function!(fn time_to_verify(user_id: BigInt) -> Timestamptz);
 sql_function!(fn verify_set_verdict(user_id: BigInt, image_id: BigInt, verdict: Bool) -> Nullable<Double>);
 
@@ -23,7 +22,6 @@ pub(crate) struct VerificationSession {
     pub user_id: i64,
     pub completion_date: Option<chrono::DateTime<Utc>>,
 }
-
 
 table! {
     image_verifications(id){

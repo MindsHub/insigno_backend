@@ -1,9 +1,13 @@
 pub mod sql;
 
 use chrono::{DateTime, Utc};
-use diesel::{select, sql_query, sql_types::{BigInt, Array, Nullable, Bool}, RunQueryDsl};
-use rocket::{fairing::AdHoc, serde::json::Json, form::Form};
-use serde::{Serialize, Deserialize};
+use diesel::{
+    select, sql_query,
+    sql_types::{Array, BigInt, Bool, Nullable},
+    RunQueryDsl,
+};
+use rocket::{fairing::AdHoc, form::Form, serde::json::Json};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     auth::user::{Authenticated, User, YesReview},
@@ -12,7 +16,6 @@ use crate::{
 };
 
 use self::sql::{time_to_verify, verify_set_verdict};
-
 
 #[derive(Clone, Debug, Serialize, QueryableByName)]
 pub struct ImageVerification {
@@ -29,20 +32,14 @@ pub struct ImageVerification {
 }
 
 impl ImageVerification {
-    async fn time_to_verify(
-        db: &Db,
-        user_id: i64,
-    ) -> Result<DateTime<Utc>, diesel::result::Error> {
+    async fn time_to_verify(db: &Db, user_id: i64) -> Result<DateTime<Utc>, diesel::result::Error> {
         db //
             .run(move |conn| select(time_to_verify(user_id))
             .get_result::<DateTime<Utc>>(conn))
             .await
     }
 
-    async fn get_or_create(
-        db: &Db,
-        user_id: i64,
-    ) -> Result<Vec<Self>, diesel::result::Error> {
+    async fn get_or_create(db: &Db, user_id: i64) -> Result<Vec<Self>, diesel::result::Error> {
         db.run(move |conn| {
             sql_query("SELECT * FROM get_to_verify($1)")
                 .bind::<BigInt, _>(user_id)
@@ -55,11 +52,13 @@ impl ImageVerification {
         db: &Db,
         user_id: i64,
         image_id: i64,
-        verdict: bool
+        verdict: bool,
     ) -> Result<Option<f64>, diesel::result::Error> {
         db //
-            .run(move |conn| select(verify_set_verdict(user_id, image_id, verdict))
-            .get_result::<Option<f64>>(conn))
+            .run(move |conn| {
+                select(verify_set_verdict(user_id, image_id, verdict))
+                    .get_result::<Option<f64>>(conn)
+            })
             .await
     }
 }
@@ -107,14 +106,15 @@ pub struct SetVerdictData {
 pub async fn set_verdict(
     user: Result<User<Authenticated, YesReview>, InsignoError>,
     db: Db,
-    data: Form<SetVerdictData>
+    data: Form<SetVerdictData>,
 ) -> Result<Json<Option<f64>>, InsignoError> {
     let user = user?;
     let z = ImageVerification::set_verdict(&db, user.id.unwrap(), data.image_id, data.verdict)
         .await
         .map_err(|err| match err.to_string().as_str() {
             "cant_verify_now" => InsignoError::new(403).both("You can't verify right now"),
-            "session_not_found" => InsignoError::new(404).both("No active session with the image and the user provided"),
+            "session_not_found" => InsignoError::new(404)
+                .both("No active session with the image and the user provided"),
             error_string => InsignoError::new(500).debug(error_string),
         })?;
     Ok(Json(z))
@@ -122,6 +122,9 @@ pub async fn set_verdict(
 
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("verification stage", |rocket| async {
-        rocket.mount("/verify", routes![get_session, get_next_verify_time, set_verdict])
+        rocket.mount(
+            "/verify",
+            routes![get_session, get_next_verify_time, set_verdict],
+        )
     })
 }
