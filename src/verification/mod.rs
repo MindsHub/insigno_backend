@@ -66,7 +66,6 @@ impl ImageVerification {
     }
 }
 
-#[allow(clippy::if_same_then_else)]
 #[derive(Deserialize, Serialize, FromForm)]
 pub struct SetAcceptedToReviewData {
     // this makes the field reuquired, otherwise not specifying it is fine and ends up in the value "false"
