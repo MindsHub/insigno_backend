@@ -39,7 +39,6 @@ pub struct InsignoError {
     code: Status,
 }
 
-#[allow(dead_code)]
 impl InsignoError {
     pub fn client<T: ToString>(mut self, s: T) -> Self {
         self.client = Some(s.to_string());

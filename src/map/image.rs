@@ -201,14 +201,12 @@ pub(crate) async fn get_image(
         .map_err(|e| InsignoError::new(500).debug(e))
 }
 
-#[allow(unused_variables)]
 #[get("/image/to_review")]
 pub(crate) async fn get_to_review(
     connection: Db,
     user: Result<User<Authenticated, YesReview>, InsignoError>,
 ) -> Result<Json<Vec<ImageToReport>>, InsignoError> {
-    let user = user?;
-
+    let _user = user?;
     let images = ImageToReport::get_to_report(&connection).await?;
     Ok(Json(images))
 }

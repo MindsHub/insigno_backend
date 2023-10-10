@@ -4,13 +4,13 @@ use chrono::{DateTime, Utc};
 use diesel::{
     select, sql_query,
     sql_types::{Array, BigInt, Bool, Nullable},
-    RunQueryDsl, ExpressionMethods,
+    ExpressionMethods, RunQueryDsl,
 };
 use rocket::{fairing::AdHoc, form::Form, serde::json::Json};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::user::{Authenticated, User, YesReview, users},
+    auth::user::{users, Authenticated, User, YesReview},
     db::Db,
     utils::InsignoError,
 };
@@ -78,19 +78,21 @@ pub async fn set_accepted_to_review(
 ) -> Result<(), InsignoError> {
     println!("HERE!!! {:?}", data.accepted_to_review);
     let user = user?;
-    let updated_user_count = db.run(move |conn| {
-        diesel::update(users::table)
-            .filter(users::id.eq(user.id))
-            .set(users::accepted_to_review.eq(data.accepted_to_review))
-            .execute(conn)
-    })
-    .await
-    .map_err(|e| InsignoError::new(500).debug(e))?;
+    let updated_user_count = db
+        .run(move |conn| {
+            diesel::update(users::table)
+                .filter(users::id.eq(user.id))
+                .set(users::accepted_to_review.eq(data.accepted_to_review))
+                .execute(conn)
+        })
+        .await
+        .map_err(|e| InsignoError::new(500).debug(e))?;
 
     if updated_user_count == 1 {
         Ok(())
     } else {
-        Err(InsignoError::new(500).debug(format!("Wrong updated user count: {updated_user_count:?}")))
+        Err(InsignoError::new(500)
+            .debug(format!("Wrong updated user count: {updated_user_count:?}")))
     }
 }
 
@@ -156,7 +158,12 @@ pub fn stage() -> AdHoc {
     AdHoc::on_ignite("verification stage", |rocket| async {
         rocket.mount(
             "/verify",
-            routes![get_session, get_next_verify_time, set_verdict, set_accepted_to_review],
+            routes![
+                get_session,
+                get_next_verify_time,
+                set_verdict,
+                set_accepted_to_review,
+            ],
         )
     })
 }
