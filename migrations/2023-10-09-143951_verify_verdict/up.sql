@@ -40,7 +40,7 @@ CREATE OR REPLACE FUNCTION verify_set_verdict(
         WHERE marker_images.id = image_id_inp;
 
         -- check if the remaining images in the session are down to 0
-        SELECT 3.0 * COUNT(*),
+        SELECT 2.0 * COUNT(*),
             SUM(CASE WHEN image_verifications.verdict IS NULL THEN 1 ELSE 0 END)
         FROM image_verifications
         WHERE image_verifications.verification_session = session_id
