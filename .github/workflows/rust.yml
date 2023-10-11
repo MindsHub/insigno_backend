@@ -105,7 +105,7 @@ jobs:
         with:
           name: "documentation"
           path: "docs"
-        
+
 
   deploy:
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
@@ -131,16 +131,6 @@ jobs:
       id: deployment
       with:
         artifact_name: "documentation"
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{secrets.GITHUB_TOKEN}}
-        file: target/release/insigno
-        asset_name: insigno
-        tag: ${{github.ref}}
-        overwrite: true
-        body: "Release file"
-        release_name: ""
     - name: Kill Server
       uses: appleboy/ssh-action@v0.1.8
       with:
