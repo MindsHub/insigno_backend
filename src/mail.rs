@@ -27,6 +27,8 @@ pub struct SmtpConfig {
     server: String,
     user: String,
     password: String,
+    from_mail: String,
+    port: u16,
 }
 
 pub fn stage() -> AdHoc {
@@ -38,6 +40,7 @@ pub fn stage() -> AdHoc {
 }
 
 pub struct MailBuilder {
+    from_mail: String,
     registration_mail_content: String,
     registration_mail_content_plain: String,
 
@@ -73,11 +76,13 @@ impl MailBuilder {
             config.smtp.user.to_string(),
             config.smtp.password.to_string(),
         );
+        println!("username={}", config.smtp.user.to_string());
+        println!("password={}", config.smtp.password.to_string());
         let mailer: AsyncSmtpTransport<Tokio1Executor> =
-            AsyncSmtpTransport::<Tokio1Executor>::relay(&config.smtp.server)
+            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&config.smtp.server)
                 .unwrap()
                 .credentials(creds)
-                .port(465)
+                .port(config.smtp.port)
                 .pool_config(mail_config)
                 .build();
 
@@ -102,6 +107,7 @@ impl MailBuilder {
         let change_password_mail_content =
             String::from_utf8(fs::read(tmp.join("mail_change_password.html")).await?)?;
         Ok(MailBuilder {
+            from_mail: config.smtp.from_mail.clone(),
             registration_mail_content,
             registration_mail_content_plain,
 
@@ -132,7 +138,7 @@ impl MailBuilder {
             .replace("{link}", link);
 
         let message = Message::builder()
-            .from("Insigno <insigno@mindshub.ovh>".parse().unwrap())
+            .from(self.from_mail.parse().unwrap())
             .to(email.parse().unwrap())
             .subject("Registrazione account Insigno")
             .multipart(
@@ -177,7 +183,7 @@ impl MailBuilder {
             .replace("{link}", link);
 
         let message = Message::builder()
-            .from("Insigno <insigno@mindshub.ovh>".parse().unwrap())
+            .from(self.from_mail.parse().unwrap())
             .to(email.parse().unwrap())
             .subject("Cambio password account Insigno")
             .multipart(

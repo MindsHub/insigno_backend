@@ -9,6 +9,8 @@ template_folder="./templates"
     user = ""
     password = ""
     server = ""
+    from_mail ="Insigno <insigno@test.test>"
+    port = 587
 
 [default.scrypt]
     log_n = 11
