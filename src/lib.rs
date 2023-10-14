@@ -196,7 +196,7 @@ pub fn rocket() -> _ {
         .registry()
         .register(Box::new(ProcessCollector::for_self()))
         .unwrap();
-    /*figiment is our config manager. here we define defaults parameter and how overwrite them.
+    /*figment is our config manager. here we define defaults parameter and how overwrite them.
     in particular:
     - default values
     - values from Insigno.toml
