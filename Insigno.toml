@@ -2,8 +2,9 @@
 oldest_supported_version="0.0.2"
 
 # our custom config data
-media_folder= "./media"
-template_folder="./templates"
+media_folder = "./media"
+template_folder = "./templates"
+intro_images = []
 
 [default.smtp]
     user = ""

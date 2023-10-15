@@ -83,6 +83,7 @@ mod scoreboard;
 mod test;
 mod utils;
 mod verification;
+mod files;
 /**
  * Here is where we store all our configuration needed at runtime
  * it implements Deserialize for interfacing with figiment deserializer
@@ -91,6 +92,7 @@ mod verification;
 pub struct InsignoConfig {
     media_folder: String,
     template_folder: String,
+    intro_images: Vec<String>,
     oldest_supported_version: String,
     smtp: SmtpConfig,
     scrypt: InsignoScryptParams<'static>,
@@ -232,6 +234,7 @@ pub fn rocket() -> _ {
         .attach(cors::Cors)
         .attach(verification::stage())
         .attach(scoreboard::stage())
+        .attach(files::stage())
         .mount("/", cors::get_routes())
         //attach prometheus view
         .attach(prometheus.clone())
