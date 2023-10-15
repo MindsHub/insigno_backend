@@ -107,7 +107,6 @@ macro_rules! erase_tables {
                 $(
                     diesel::delete($crate::schema_sql::$table::dsl::$table).execute(conn).unwrap();
                 )*
-                println!("test");
             }).await
         }
     };

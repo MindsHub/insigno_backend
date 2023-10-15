@@ -76,8 +76,8 @@ impl MailBuilder {
             config.smtp.user.to_string(),
             config.smtp.password.to_string(),
         );
-        println!("username={}", config.smtp.user.to_string());
-        println!("password={}", config.smtp.password.to_string());
+        // println!("username={}", config.smtp.user.to_string());
+        // println!("password={}", config.smtp.password.to_string());
         let mailer: AsyncSmtpTransport<Tokio1Executor> =
             AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&config.smtp.server)
                 .unwrap()
