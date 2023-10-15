@@ -79,7 +79,6 @@ pub async fn set_accepted_to_review(
     db: Db,
     data: Form<SetAcceptedToReviewData>,
 ) -> Result<(), InsignoError> {
-    println!("HERE!!! {:?}", data.accepted_to_review);
     let user = user?;
     let updated_user_count = db
         .run(move |conn| {
