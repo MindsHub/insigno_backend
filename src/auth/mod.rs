@@ -28,6 +28,7 @@ pub mod scrypt;
 pub mod signup;
 pub mod user;
 pub mod validation;
+pub mod delete_account;
 
 /**
 # When a user want's to logout, it calls this function
@@ -108,6 +109,7 @@ pub fn get_routes() -> Vec<Route> {
         get_auth_user,
         get_user,
         change_password::change_password,
+        delete_account::delete_account,
     ]
 }
 #[cfg(test)]
