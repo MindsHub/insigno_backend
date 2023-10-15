@@ -1,5 +1,5 @@
 use crate::{auth::user::users, db::Db, utils::InsignoError};
-use chrono::{Utc, Timelike};
+use chrono::{Utc, Timelike, Duration};
 use diesel::{
     sql_query,
     sql_types::{BigInt, Float8, Text, Timestamptz},
@@ -58,7 +58,9 @@ pub async fn get_special_scoreboard(db: Db) -> Result<Json<SpecialScoreboard>, I
         .with_nanosecond(0).ok_or(InsignoError::new(500).debug("Could not set nanosecond on date"))?
         .with_second(0).ok_or(InsignoError::new(500).debug("Could not set second on date"))?
         .with_minute(0).ok_or(InsignoError::new(500).debug("Could not set minute on date"))?
-        .with_hour(0).ok_or(InsignoError::new(500).debug("Could not set hour on date"))?;
+        .with_hour(0).ok_or(InsignoError::new(500).debug("Could not set hour on date"))?
+        - Duration::hours(2); // midnight in the italian timezone
+    // println!("min_date {:?}", min_date);
 
     let users = db
         .run(move |conn| {
