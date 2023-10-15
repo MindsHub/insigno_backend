@@ -73,6 +73,7 @@ pub async fn get_special_scoreboard(db: Db) -> Result<Json<SpecialScoreboard>, I
                 SELECT created_by AS user_id, 1 AS points
                 FROM markers
                 WHERE ST_DWITHIN(point, $1, $2, FALSE)
+                    AND creation_date IS NOT NULL
                     AND creation_date >= $3
 
                 UNION ALL
