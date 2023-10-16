@@ -23,12 +23,12 @@ use crate::utils::InsignoError;
 use self::user::User;
 
 pub mod change_password;
+pub mod delete_account;
 pub mod login;
 pub mod scrypt;
 pub mod signup;
 pub mod user;
 pub mod validation;
-pub mod delete_account;
 
 /**
 # When a user want's to logout, it calls this function

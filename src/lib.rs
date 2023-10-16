@@ -71,6 +71,7 @@ extern crate diesel;
 pub mod auth;
 mod cors;
 mod db;
+mod files;
 #[allow(dead_code, unused)]
 mod mail;
 mod map;
@@ -83,7 +84,6 @@ mod scoreboard;
 mod test;
 mod utils;
 mod verification;
-mod files;
 /**
  * Here is where we store all our configuration needed at runtime
  * it implements Deserialize for interfacing with figiment deserializer

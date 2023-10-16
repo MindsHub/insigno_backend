@@ -3,13 +3,17 @@ use std::mem;
 use chrono::Utc;
 use diesel::{insert_into, sql_query, sql_types::Text};
 
-use rocket::{fairing::AdHoc, http::ContentType, serde::json::serde_json};
+use rocket::{fairing::AdHoc, http::ContentType, serde::json::serde_json, State};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::{change_password::complete_change_password, signup::complete_registration},
+    auth::{
+        change_password::complete_change_password, delete_account::complete_delete,
+        signup::complete_registration,
+    },
     db::Db,
     utils::InsignoError,
+    InsignoConfig,
 };
 use diesel::RunQueryDsl;
 
@@ -34,6 +38,8 @@ pub enum PendingAction {
     RegisterUser(String, String, String),
     /// user_id, new_hash
     ChangePassword(i64, String),
+    ///user_id
+    DeleteUser(i64),
 }
 impl From<String> for PendingAction {
     fn from(value: String) -> Self {
@@ -111,7 +117,11 @@ impl Pending {
 }
 
 #[get("/verify/<token>")]
-pub async fn verify(token: String, connection: Db) -> Result<(ContentType, String), InsignoError> {
+pub async fn verify(
+    token: String,
+    connection: Db,
+    config: &State<InsignoConfig>,
+) -> Result<(ContentType, String), InsignoError> {
     let pending = Pending::get_from_token(token, &connection).await?;
 
     match pending.action {
@@ -128,6 +138,9 @@ pub async fn verify(token: String, connection: Db) -> Result<(ContentType, Strin
                 &connection,
             )
             .await
+        }
+        PendingAction::DeleteUser(user_id) => {
+            complete_delete(PendingAction::DeleteUser(user_id), &connection, config).await
         }
     }
 }

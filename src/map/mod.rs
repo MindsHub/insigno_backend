@@ -38,24 +38,20 @@ async fn get_near(
     y: f64,
     srid: Option<u32>,
     include_resolved: Option<bool>,
+    user: Option<User<Authenticated>>,
 ) -> Result<Json<Vec<Marker>>, InsignoError> {
     let cur_point = Point {
         x,
         y,
         srid: Some(srid.unwrap_or(4326u32)),
     };
+    let user = user.and_then(|x| x.id);
     let res: Vec<Marker> = connection
         .run(move |conn| {
-            let query = sql_query(
-                "SELECT *
-                FROM markers
-                WHERE ST_DWITHIN(point, $1, 0.135)
-                AND (resolution_date IS NULL OR $2)
-                AND (SELECT COUNT (*) FROM marker_reports WHERE markers.id = reported_marker)<3
-                AND (SELECT COUNT (*) FROM marker_images WHERE markers.id = marker_images.refers_to)>0",
-            )
-            .bind::<Geometry, _>(cur_point)
-            .bind::<Bool, _>(include_resolved.unwrap_or(true));
+            let query = sql_query("SELECT * FROM get_near($1, $2, $3)")
+                .bind::<Geometry, _>(cur_point)
+                .bind::<Nullable<BigInt>, _>(user)
+                .bind::<Bool, _>(include_resolved.unwrap_or(true));
 
             query.get_results(conn)
         })

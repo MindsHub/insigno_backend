@@ -47,6 +47,9 @@ pub struct MailBuilder {
     change_password_mail_content: String,
     change_password_mail_content_plain: String,
 
+    delete_mail_content: String,
+    delete_mail_content_plain: String,
+
     logo_insigno: Body,
     logo_mindshub: Body,
     logo_ala: Body,
@@ -106,6 +109,12 @@ impl MailBuilder {
             String::from_utf8(fs::read(tmp.join("mail_change_password_plain.txt")).await?)?;
         let change_password_mail_content =
             String::from_utf8(fs::read(tmp.join("mail_change_password.html")).await?)?;
+
+        let delete_mail_content_plain =
+            String::from_utf8(fs::read(tmp.join("mail_account_delete_plain.txt")).await?)?;
+        let delete_mail_content =
+            String::from_utf8(fs::read(tmp.join("mail_account_delete.html")).await?)?;
+
         Ok(MailBuilder {
             from_mail: config.smtp.from_mail.clone(),
             registration_mail_content,
@@ -113,6 +122,10 @@ impl MailBuilder {
 
             change_password_mail_content,
             change_password_mail_content_plain,
+
+            delete_mail_content,
+            delete_mail_content_plain,
+
             logo_ala,
             logo_insigno,
             logo_mindshub,
@@ -186,6 +199,51 @@ impl MailBuilder {
             .from(self.from_mail.parse().unwrap())
             .to(email.parse().unwrap())
             .subject("Cambio password account Insigno")
+            .multipart(
+                MultiPart::alternative()
+                    .singlepart(SinglePart::plain(plain))
+                    .multipart(
+                        MultiPart::related()
+                            .singlepart(SinglePart::html(html))
+                            .singlepart(
+                                Attachment::new_inline(String::from("123"))
+                                    .body(self.logo_insigno.clone(), "image/png".parse().unwrap()),
+                            )
+                            .singlepart(
+                                Attachment::new_inline(String::from("124"))
+                                    .body(self.logo_mindshub.clone(), "image/png".parse().unwrap()),
+                            )
+                            .singlepart(
+                                Attachment::new_inline(String::from("125"))
+                                    .body(self.logo_ala.clone(), "image/png".parse().unwrap()),
+                            ),
+                    ),
+            )?;
+        self.send(message).await?;
+        Ok(())
+    }
+
+    pub async fn send_delete_account_mail(
+        &self,
+        email: &str,
+        user_name: &str,
+        link: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        let plain = self
+            .delete_mail_content_plain
+            .replace("{user}", user_name)
+            .replace("{email}", email)
+            .replace("{link}", link);
+        let html: String = self
+            .delete_mail_content
+            .replace("{user}", user_name)
+            .replace("{email}", email)
+            .replace("{link}", link);
+
+        let message = Message::builder()
+            .from(self.from_mail.parse().unwrap())
+            .to(email.parse().unwrap())
+            .subject("Cancellazione account Insigno")
             .multipart(
                 MultiPart::alternative()
                     .singlepart(SinglePart::plain(plain))
