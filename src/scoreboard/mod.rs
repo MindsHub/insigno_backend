@@ -1,5 +1,5 @@
 use crate::{auth::user::users, db::Db, utils::InsignoError};
-use chrono::{Utc, Timelike, Duration};
+use chrono::{Duration, Timelike, Utc};
 use diesel::{
     sql_query,
     sql_types::{BigInt, Float8, Text, Timestamptz},
@@ -34,7 +34,6 @@ pub async fn get_global_scoreboard(db: Db) -> Result<Json<Vec<ScoreboardUser>>, 
     Ok(Json(users))
 }
 
-
 #[derive(Serialize)]
 pub struct SpecialScoreboard {
     name: Option<String>,
@@ -55,12 +54,16 @@ pub async fn get_special_scoreboard(db: Db) -> Result<Json<SpecialScoreboard>, I
     };
     let radius = 31000.0; // 31km
     let min_date = Utc::now()
-        .with_nanosecond(0).ok_or(InsignoError::new(500).debug("Could not set nanosecond on date"))?
-        .with_second(0).ok_or(InsignoError::new(500).debug("Could not set second on date"))?
-        .with_minute(0).ok_or(InsignoError::new(500).debug("Could not set minute on date"))?
-        .with_hour(0).ok_or(InsignoError::new(500).debug("Could not set hour on date"))?
+        .with_nanosecond(0)
+        .ok_or(InsignoError::new(500).debug("Could not set nanosecond on date"))?
+        .with_second(0)
+        .ok_or(InsignoError::new(500).debug("Could not set second on date"))?
+        .with_minute(0)
+        .ok_or(InsignoError::new(500).debug("Could not set minute on date"))?
+        .with_hour(0)
+        .ok_or(InsignoError::new(500).debug("Could not set hour on date"))?
         - Duration::hours(2); // midnight in the italian timezone
-    // println!("min_date {:?}", min_date);
+                              // println!("min_date {:?}", min_date);
 
     let users = db
         .run(move |conn| {
@@ -99,7 +102,10 @@ pub async fn get_special_scoreboard(db: Db) -> Result<Json<SpecialScoreboard>, I
         .await
         .map_err(|x| InsignoError::new(500).debug(x))?;
 
-    Ok(Json(SpecialScoreboard { name: Some("Maker Faire Rome".to_string()), users }))
+    Ok(Json(SpecialScoreboard {
+        name: Some("Maker Faire Rome".to_string()),
+        users,
+    }))
 }
 
 #[get("/geographical?<x>&<y>&<srid>&<radius>")]
@@ -153,7 +159,11 @@ pub fn stage() -> AdHoc {
     AdHoc::on_ignite("verification stage", |rocket| async {
         rocket.mount(
             "/scoreboard",
-            routes![get_global_scoreboard, get_geographical_scoreboard, get_special_scoreboard],
+            routes![
+                get_global_scoreboard,
+                get_geographical_scoreboard,
+                get_special_scoreboard
+            ],
         )
     })
 }

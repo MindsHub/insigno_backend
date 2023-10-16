@@ -73,9 +73,7 @@ async fn add_pill(
     };
 
     connection
-        .run(move |conn| {
-            insert_into(pills::dsl::pills).values(pill).execute(conn)
-        })
+        .run(move |conn| insert_into(pills::dsl::pills).values(pill).execute(conn))
         .await
         .map_err(|e| InsignoError::new(500).debug(e))?;
 
