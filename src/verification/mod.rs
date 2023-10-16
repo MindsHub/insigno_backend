@@ -13,7 +13,7 @@ use rocket::{fairing::AdHoc, form::Form, serde::json::Json};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::user::{users, Authenticated, User, YesReview},
+    auth::user::{users, Authenticated, User, YesReview, AuthenticatedAdmin},
     db::Db,
     utils::InsignoError,
 };
@@ -75,7 +75,7 @@ pub struct SetAcceptedToReviewData {
 
 #[post("/set_accepted_to_review", data = "<data>")]
 pub async fn set_accepted_to_review(
-    user: Result<User<Authenticated>, InsignoError>,
+    user: Result<User<AuthenticatedAdmin>, InsignoError>,
     db: Db,
     data: Form<SetAcceptedToReviewData>,
 ) -> Result<(), InsignoError> {
