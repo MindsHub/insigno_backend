@@ -48,13 +48,11 @@ async fn get_near(
     let user = user.and_then(|x| x.id);
     let res: Vec<Marker> = connection
         .run(move |conn| {
-            let query = sql_query(
-                "SELECT * FROM get_near($1, $2, $3)",
-            )
-            .bind::<Geometry, _>(cur_point)
-            .bind::<Nullable<BigInt>, _>(user)
-            .bind::<Bool, _>(include_resolved.unwrap_or(true));
-            
+            let query = sql_query("SELECT * FROM get_near($1, $2, $3)")
+                .bind::<Geometry, _>(cur_point)
+                .bind::<Nullable<BigInt>, _>(user)
+                .bind::<Bool, _>(include_resolved.unwrap_or(true));
+
             query.get_results(conn)
         })
         .await
