@@ -48,8 +48,8 @@ pub async fn get_special_scoreboard(db: Db) -> Result<Json<SpecialScoreboard>, I
     //   Ok(Json(SpecialScoreboard { name: None, vec![] }))
 
     let cur_point = Point {
-        x: 41.806265,
-        y: 12.311324,
+        x: 12.311324,
+        y: 41.806265,
         srid: Some(4326u32),
     };
     let radius = 31000.0; // 31km
