@@ -64,12 +64,13 @@ fn convert_image(input: &Path, output: &Path) -> Result<(), InsignoError> {
     }
 }
 
-async fn save_image(connection: Db, name: String, id: i64) -> Result<(), InsignoError> {
+async fn save_image(connection: Db, name: String, id: i64, user: &User<Authenticated>) -> Result<(), InsignoError> {
     let img = MarkerImage {
         id: None,
         path: name,
         refers_to: id,
         approved: false,
+        created_by: user.get_id(),
     };
 
     connection
@@ -130,7 +131,8 @@ pub(crate) async fn add_image(
             markers::table
                 .filter(markers::id.eq(id))
                 .filter(markers::created_by.eq(user_id))
-                .load::<Marker>(conn)
+                .or_filter(markers::solved_by.eq(user_id))
+                .get_result::<Marker>(conn)
         })
         .await
         .map_err(|e| InsignoError::new(500).debug(e))?;
@@ -147,7 +149,7 @@ pub(crate) async fn add_image(
         .to_string();
 
     // try to save it in database
-    save_image(connection, name.clone(), id)
+    save_image(connection, name.clone(), id, &user)
         .map_err(|x| {
             let _ = fs::remove_file(new_pos); //sync version
             x
