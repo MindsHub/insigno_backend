@@ -13,6 +13,7 @@ table! {
         path -> Text,
         refers_to -> BigInt,
         approved -> Bool,
+        created_by -> BigInt,
     }
 }
 #[derive(Clone, Queryable, Insertable, Debug, QueryableByName)]
@@ -23,6 +24,7 @@ pub struct MarkerImage {
     pub path: String,
     pub refers_to: i64,
     pub approved: bool,
+    pub created_by: i64,
 }
 
 impl Serialize for MarkerImage {
