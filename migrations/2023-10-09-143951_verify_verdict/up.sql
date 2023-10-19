@@ -36,7 +36,7 @@ CREATE OR REPLACE FUNCTION verify_set_verdict(
         -- update the score of the marker image
         UPDATE marker_images
         SET verify_number = verify_number + 1,
-            verify_average = (verify_average * verify_number + CASE WHEN verdict_inp = TRUE THEN 1.0 ELSE 0.0 END)/verify_number
+            verify_average = (verify_average * verify_number + CASE WHEN verdict_inp = TRUE THEN 1.0 ELSE 0.0 END)/COALESCE(verify_number+1, 1)
         WHERE marker_images.id = image_id_inp;
 
         -- check if the remaining images in the session are down to 0

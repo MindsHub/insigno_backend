@@ -22,7 +22,7 @@ CREATE OR REPLACE FUNCTION get_near(
 		AND (SELECT COUNT (*) FROM marker_reports WHERE markers.id = reported_marker)<1
 		AND (
 			(SELECT COUNT (*) FROM marker_images WHERE markers.id = marker_images.refers_to AND (marker_images.verify_average>0.5 OR marker_images.approved) )>0
-			OR ((user_id_inp IS NOT NULL) OR markers.created_by =user_id_inp) 
+			OR ((user_id_inp IS NOT NULL) AND markers.created_by =user_id_inp) 
 			);
 	END;
 $$ LANGUAGE plpgsql;
