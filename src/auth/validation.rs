@@ -7,8 +7,11 @@ Here we use a rust coding pattern:
  */
 use std::{error::Error, mem};
 
+use crate::utils::InsignoError;
+
 use super::scrypt::scrypt_simple;
 use regex::Regex;
+use rocket::tokio::sync::{Semaphore, SemaphorePermit};
 use scrypt::Params;
 
 pub trait Email {
@@ -110,4 +113,21 @@ impl<T: Name> SanitizeName for T {
         }
         Ok(())
     }
+}
+
+
+impl Default for ScryptSemaphore{
+    fn default()->Self{
+        ScryptSemaphore { sem: Semaphore::new(3) }
+    }
+}
+pub struct ScryptSemaphore{
+    sem: Semaphore,
+}
+
+impl ScryptSemaphore{
+    pub async fn aquire(&self)->Result<SemaphorePermit, InsignoError>{
+        self.sem.acquire().await.map_err(|x| InsignoError::new(500).debug(x))
+    }
+
 }

@@ -16,6 +16,8 @@ use rocket::tokio::task::spawn_blocking;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 
+use super::validation::ScryptSemaphore;
+
 table! {
     users(id){
         id -> Nullable<BigInt>,
@@ -184,8 +186,14 @@ impl User<Unauthenticated> {
             .await? //
             .try_into()
     }
-    pub async fn login(self, password: &str) -> Result<User<Authenticated>, InsignoError> {
-        if !self.check_hash(password).await {
+    pub async fn login(self, password: &str, scrypt_sem: &ScryptSemaphore) -> Result<User<Authenticated>, InsignoError> {
+        
+        let y = scrypt_sem.aquire().await?;
+        let res=!self.check_hash(password).await;
+        drop(y);
+        
+        
+        if res{
             Err(InsignoError::new(403).client("email o password errati"))
         } else {
             let me = self.upgrade();
@@ -195,6 +203,7 @@ impl User<Unauthenticated> {
     pub async fn check_hash(&self, password: &str) -> bool {
         let me = self.clone();
         let password = password.to_string();
+        
         spawn_blocking(move || scrypt_check(&password, &me.password_hash).unwrap())
             .await
             .unwrap()
