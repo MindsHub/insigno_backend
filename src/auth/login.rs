@@ -1,14 +1,14 @@
 use rocket::{
     form::Form,
-    http::{Cookie, CookieJar},
-    serde::json::Json,
+    http::{Cookie, CookieJar, Status},
+    serde::json::Json, State,
 };
 
 use crate::{db::Db, pending::generate_token, utils::InsignoError};
 
 use super::{
     user::User,
-    validation::{Email, Password, SanitizeEmail, SanitizePassword},
+    validation::{Email, Password, SanitizeEmail, SanitizePassword, ScryptSemaphore},
 };
 
 #[derive(FromForm)]
@@ -41,13 +41,15 @@ pub async fn login(
     db: Db,
     mut login_info: Form<LoginInfo>,
     cookies: &CookieJar<'_>,
+    scrypt_sem: &State<ScryptSemaphore>,
 ) -> Result<Json<i64>, InsignoError> {
     login_info.sanitize()?;
     let user = User::get_by_email(&db, login_info.email.clone())
         .await
         .map_err(|_| InsignoError::new(401).both("not found"))?;
-    let user = user.login(&login_info.password).await?; //this is not hashed
-
+    let y = scrypt_sem.aquire().await?;
+    let user = user.login(&login_info.password, &scrypt_sem).await?; //this is not hashed
+    drop(y);
     let token_str = generate_token();
     let insigno_auth = format!("{} {token_str}", user.get_id());
 

@@ -45,6 +45,7 @@ use std::sync::Arc;
 use std::{collections::BTreeMap, fs};
 
 use auth::scrypt::InsignoScryptParams;
+use auth::validation::ScryptSemaphore;
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use mail::SmtpConfig;
 use prometheus::process_collector::ProcessCollector;
@@ -240,5 +241,6 @@ pub fn rocket() -> _ {
         .attach(prometheus.clone())
         .mount("/metrics", prometheus)
         .mount("/", routes![test_prova])
+        .manage(ScryptSemaphore::default())
     //.register("/", catchers![not_found])
 }

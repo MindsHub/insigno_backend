@@ -12,7 +12,7 @@ use crate::{
 
 use super::{
     user::{User, UserDiesel},
-    validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword},
+    validation::{Email, Name, Password, SanitizeEmail, SanitizeName, SanitizePassword, ScryptSemaphore},
 };
 
 #[derive(FromForm, Debug)]
@@ -56,10 +56,12 @@ pub async fn signup(
     mailer: &State<MailBuilder>,
     config: &State<InsignoConfig>,
     connection: Db,
+    scrypt_semaphore: &State<ScryptSemaphore>,
 ) -> Result<String, InsignoError> {
     create_info.sanitize()?;
     let permit = config.scrypt.clone().await;
     let params = permit.get_params();
+    let sem=scrypt_semaphore.aquire();
     let create_info = spawn_blocking(move || {
         create_info
             .hash_password(&params)
@@ -68,6 +70,7 @@ pub async fn signup(
     })
     .await
     .map_err(|e| InsignoError::new(500).debug(e))??;
+    drop(sem);
     mem::drop(permit);
     //if an account already exist
     if User::get_by_email(&connection, create_info.email.clone())
