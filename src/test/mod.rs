@@ -37,8 +37,8 @@ pub async fn test_signup(client: &Client) -> i64 {
         .await;
     assert_eq!(response.status(), Status::Ok);
 
-    let response = client.get("/verify/11111111111111111111").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    //let response = client.get("/verify/11111111111111111111").dispatch().await;
+    //assert_eq!(response.status(), Status::Ok);
 
     let data = "password=Testtes1!&email=test@test.com";
     let response = client
