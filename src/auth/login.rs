@@ -1,6 +1,6 @@
 use rocket::{
     form::Form,
-    http::{Cookie, CookieJar, Status},
+    http::{Cookie, CookieJar},
     serde::json::Json, State,
 };
 
