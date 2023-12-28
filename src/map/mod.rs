@@ -374,7 +374,7 @@ mod test {
 
         // try to get a malformed query
         let response = client.get("/map/get_near").dispatch();
-        assert_eq!(response.await.status(), Status::NotFound);
+        assert_eq!(response.await.status(), Status::UnprocessableEntity);
 
         //empty query
         let response = client.get("/map/get_near?x=0.0&y=0.0").dispatch().await;

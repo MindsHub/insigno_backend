@@ -89,8 +89,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: rustup toolchain install nightly --profile minimal
-      - run: rustup override set nightly
+      - run: rustup toolchain install stable --profile minimal
+      #- run: rustup override set nightly
 #      - name: Cache rust
 #        uses: Swatinem/rust-cache@v2.3.0
 #        with:
