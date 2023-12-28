@@ -14,11 +14,15 @@ CREATE OR REPLACE FUNCTION get_pending(token TEXT) RETURNS pending AS $$
 	BEGIN
 		DELETE
             FROM pending
-            WHERE request_date+'1h'<now();
+            WHERE pending.request_date+'1h'<now();
+
         SELECT *
         FROM pending
         WHERE pending.token=$1
         INTO ret;
+
+        DELETE FROM pending WHERE pending.token=$1;
+
         return ret;
 	END;
 $$ LANGUAGE plpgsql;

@@ -187,12 +187,12 @@ impl User<Unauthenticated> {
             .try_into()
     }
     pub async fn login(self, password: &str, scrypt_sem: &ScryptSemaphore) -> Result<User<Authenticated>, InsignoError> {
-        
+
         let y = scrypt_sem.aquire().await?;
         let res=!self.check_hash(password).await;
         drop(y);
-        
-        
+
+
         if res{
             Err(InsignoError::new(403).client("email o password errati"))
         } else {
@@ -203,7 +203,7 @@ impl User<Unauthenticated> {
     pub async fn check_hash(&self, password: &str) -> bool {
         let me = self.clone();
         let password = password.to_string();
-        
+
         spawn_blocking(move || scrypt_check(&password, &me.password_hash).unwrap())
             .await
             .unwrap()
@@ -352,8 +352,8 @@ impl<'r> FromRequest<'r> for User<AuthenticatedAdmin> {
                     InsignoError::new(401).both("Unauthorized").into()
                 }
             }
-            Outcome::Failure(x) => Outcome::Failure(x),
-            Outcome::Forward(_) => Outcome::Forward(()),
+            Outcome::Error(x) => Outcome::Error(x),
+            Outcome::Forward(x) => Outcome::Forward(x),
         }
     }
 }
