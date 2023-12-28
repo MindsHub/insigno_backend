@@ -44,7 +44,7 @@ pub async fn logout(
     db: Db,
 ) -> Result<(), InsignoError> {
     let user = user?;
-    cookies.remove_private(Cookie::named("insigno_auth"));
+    cookies.remove_private(Cookie::from("insigno_auth"));
     let id = user.get_id();
     if db
         .run(move |conn| diesel::delete(user_sessions.filter(user_id.eq(id))).execute(conn))

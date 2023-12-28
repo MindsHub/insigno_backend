@@ -71,7 +71,7 @@ impl InsignoError {
 
 impl<T> From<InsignoError> for rocket::request::Outcome<T, InsignoError> {
     fn from(val: InsignoError) -> Self {
-        rocket::outcome::Outcome::Failure((val.code, val))
+        rocket::outcome::Outcome::Error((val.code, val))
     }
 }
 
