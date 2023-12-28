@@ -110,6 +110,8 @@ pub fn get_routes() -> Vec<Route> {
         get_user,
         change_password::change_password,
         delete_account::delete_account,
+        delete_account::delete_account_web,
+        delete_account::delete_account_web_form,
     ]
 }
 #[cfg(test)]
