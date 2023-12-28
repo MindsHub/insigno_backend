@@ -99,7 +99,7 @@ impl Pending {
         Ok(())
     }
 
-    pub async fn get_from_token(token: String, connection: &Db) -> Result<Self, InsignoError> {
+    pub async fn get_from_token(token: &str, connection: &Db) -> Result<Self, InsignoError> {
         if !token.chars().all(|x| x.is_ascii_alphanumeric()) {
             return Err(InsignoError::new(422).both("token_invalido"));
         }
@@ -118,7 +118,7 @@ impl Pending {
 
 #[get("/verify/<token>")]
 pub async fn verify(
-    token: String,
+    token: &str,
     connection: Db,
     config: &State<InsignoConfig>,
 ) -> Result<(ContentType, String), InsignoError> {
