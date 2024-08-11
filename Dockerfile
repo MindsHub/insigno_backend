@@ -30,5 +30,5 @@ WORKDIR /insigno
 
 COPY --from=builder /app/target/release/insigno /insigno
 
-ENTRYPOINT ["/insigno(insigno)"]
+ENTRYPOINT ["/insigno/insigno"]
 
