@@ -227,10 +227,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  merge-docker:
+  docker-merge:
     runs-on: ubuntu-latest
     needs:
-      - build-docker
+      - docker-build
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
