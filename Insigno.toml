@@ -20,6 +20,6 @@ intro_images = []
     len = 30
 
 [default.databases.db]
-    url = "postgres://mindshub:test@postgres:5432/insignorocketdb"
+    url = "postgres://mindshub:test@localhost:5432/insignorocketdb"
     timeout = 5
     pool_size = 5
