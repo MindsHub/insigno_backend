@@ -29,6 +29,7 @@ FROM alpine:latest AS runtime
 
 WORKDIR /insigno
 
-COPY --from=builder /app/target/release/insigno /insigno
+COPY --from=builder /app/target/release/insigno /app
 
-ENTRYPOINT ["/insigno(insigno)"]
+ENTRYPOINT ["/app/insigno"]
+
