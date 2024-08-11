@@ -60,7 +60,7 @@ pub async fn get_special_scoreboard(db: Db) -> Result<Json<SpecialScoreboard>, I
         .map_err(|x| InsignoError::new(500).debug(x))?;
 
     Ok(Json(SpecialScoreboard {
-        name: Some("Maker Faire Rome".to_string()),
+        name: Some("Ala Giornata Ecologica".to_string()),
         users,
     }))
 }
