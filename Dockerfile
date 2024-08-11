@@ -26,9 +26,10 @@ RUN cargo build --release
 
 # We do not need the Rust toolchain to run the binary!
 FROM alpine:latest AS runtime
+
 WORKDIR /insigno
 
-COPY --from=builder /app/target/release/insigno /insigno
+COPY --from=builder /app/target/release/insigno /app
 
-ENTRYPOINT ["/insigno/insigno"]
+ENTRYPOINT ["/app/insigno"]
 
