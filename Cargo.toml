@@ -14,6 +14,8 @@ name="insignolib"
 path = "src/lib.rs"
 
 [dependencies]
+openssl-sys = { version = "*", features = ["vendored"] }
+diesel_migrations = {version="2.2.0"}
 diesel = {version="2.0.3", default-features = false, features = ["chrono", "postgres"] }
 postgis_diesel = {version="2.1.0", default-features = false}
 #postgis = "0.9.0"
@@ -38,3 +40,6 @@ regex = { features = ["std"], default-features = false, version = "1.9" }
 
 [dev-dependencies]
 form-data-builder = "1.0"
+
+[patch.crates-io]
+pq-src = { path = "../pq-sys/pq-src" }

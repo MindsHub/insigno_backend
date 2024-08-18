@@ -115,19 +115,22 @@ impl<T: Name> SanitizeName for T {
     }
 }
 
-
-impl Default for ScryptSemaphore{
-    fn default()->Self{
-        ScryptSemaphore { sem: Semaphore::new(3) }
+impl Default for ScryptSemaphore {
+    fn default() -> Self {
+        ScryptSemaphore {
+            sem: Semaphore::new(3),
+        }
     }
 }
-pub struct ScryptSemaphore{
+pub struct ScryptSemaphore {
     sem: Semaphore,
 }
 
-impl ScryptSemaphore{
-    pub async fn aquire(&self)->Result<SemaphorePermit, InsignoError>{
-        self.sem.acquire().await.map_err(|x| InsignoError::new(500).debug(x))
+impl ScryptSemaphore {
+    pub async fn aquire(&self) -> Result<SemaphorePermit, InsignoError> {
+        self.sem
+            .acquire()
+            .await
+            .map_err(|x| InsignoError::new(500).debug(x))
     }
-
 }

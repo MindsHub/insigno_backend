@@ -5,8 +5,6 @@ We want a customizzable user that support password-based authentication and mail
  */
 use diesel::query_dsl::methods::FilterDsl;
 
-use serde::Serialize;
-
 use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
 use rocket::Route;
@@ -66,16 +64,6 @@ fn refresh_session(user: Result<User<Authenticated>, InsignoError>) -> Result<()
     let _user = user?;
     //<>
     Ok(())
-}
-
-/**
-# PLEASE, REMOVE ME! (now i'm needed only for testing)
- */
-#[derive(Serialize)]
-struct AutenticatedUserTest {
-    id: i64,
-    name: String,
-    points: f64,
 }
 
 /**

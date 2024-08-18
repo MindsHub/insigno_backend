@@ -1,13 +1,14 @@
 use rocket::{
     form::Form,
     http::{Cookie, CookieJar},
-    serde::json::Json, State,
+    serde::json::Json,
+    State,
 };
 
 use crate::{db::Db, pending::generate_token, utils::InsignoError};
 
 use super::{
-    user::{User, Authenticated},
+    user::{Authenticated, User},
     validation::{Email, Password, SanitizeEmail, SanitizePassword, ScryptSemaphore},
 };
 
@@ -58,7 +59,10 @@ pub async fn login(
     scrypt_sem: &State<ScryptSemaphore>,
     connection: Db,
 ) -> Result<Json<i64>, InsignoError> {
-    let user = login_info.into_inner().into_authenticated_user(scrypt_sem, &connection).await?;
+    let user = login_info
+        .into_inner()
+        .into_authenticated_user(scrypt_sem, &connection)
+        .await?;
 
     let token_str = generate_token();
     let insigno_auth = format!("{} {token_str}", user.get_id());

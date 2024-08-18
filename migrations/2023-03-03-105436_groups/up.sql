@@ -9,4 +9,3 @@ CREATE TABLE IF NOT EXISTS public.groups
     end_date timestamp with time zone,
     CONSTRAINT groups_id_pkey PRIMARY KEY (id)
 );
-ALTER TABLE IF EXISTS public.groups OWNER TO mindshub;

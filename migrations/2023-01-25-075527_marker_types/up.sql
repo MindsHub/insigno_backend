@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS public.marker_types
     points DOUBLE PRECISION NOT NULL,
     CONSTRAINT markers_types_pkey PRIMARY KEY (id)
 );
-ALTER TABLE IF EXISTS public.marker_types OWNER TO mindshub;
 
 INSERT INTO public.marker_types (
 	id, name, points)

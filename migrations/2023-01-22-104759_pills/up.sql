@@ -6,4 +6,3 @@ CREATE TABLE IF NOT EXISTS public.pills (
   source TEXT NOT NULL,
   accepted BOOLEAN NOT NULL
 );
-ALTER TABLE IF EXISTS public.pills OWNER TO mindshub;

@@ -1,14 +1,18 @@
-use rocket::{http::ContentType, State, form::Form};
+use rocket::{form::Form, http::ContentType, State};
 
 use crate::{
-    auth::{user::{Authenticated, User}, validation::ScryptSemaphore},
+    auth::{
+        user::{Authenticated, User},
+        validation::ScryptSemaphore,
+    },
     db::Db,
+    mail::MailBuilder,
     pending::{generate_token, Pending, PendingAction},
     utils::InsignoError,
-    InsignoConfig, mail::MailBuilder,
+    InsignoConfig,
 };
 
-use super::{scrypt::scrypt_simple, user::UserDiesel, login::LoginInfo};
+use super::{login::LoginInfo, scrypt::scrypt_simple, user::UserDiesel};
 
 #[get("/delete_account_web")]
 pub fn delete_account_web_form() -> (ContentType, String) {
@@ -43,7 +47,10 @@ pub async fn delete_account_web(
     mailer: &State<MailBuilder>,
     connection: Db,
 ) -> Result<(ContentType, String), InsignoError> {
-    let user = login_info.into_inner().into_authenticated_user(scrypt_sem, &connection).await?;
+    let user = login_info
+        .into_inner()
+        .into_authenticated_user(scrypt_sem, &connection)
+        .await?;
     add_pending_delete(mailer, user, connection).await?;
     Ok((ContentType::HTML, "<h1>Controlla la mail, e guarda anche nello spam, per completare l'eliminazione dell'account!</h1>".to_string()))
 }

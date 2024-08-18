@@ -1,0 +1,42 @@
+### Rocket ###
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+.env
+#Rocket.toml
+
+# temporaneo
+pills.json
+log
+tree
+nohup*
+dump.sql
+test.sql
+
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+
+
+
+# End of https://www.toptal.com/developers/gitignore/api/django
+
+monitoring/
+
+#Insigno.toml
+docs
