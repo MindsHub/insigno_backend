@@ -24,31 +24,13 @@ ARG TARGETPLATFORM
 ARG TARGETARCH
 ARG RUSTUP_HOME=/root/.rustup
 WORKDIR /app
-#install rustup with default toolchain, and cargo-chef
+#install rustup and cargo
 COPY --from=lukemathwalker/cargo-chef /usr/local/cargo /root/.cargo
 COPY --from=lukemathwalker/cargo-chef /usr/local/rustup /root/.rustup
+#install cargo-chef
 RUN curl -OL https://github.com/LukeMathWalker/cargo-chef/releases/download/v0.1.67/cargo-chef-x86_64-unknown-linux-musl.tar.gz ; tar xf ./cargo-chef-x86_64-unknown-linux-musl.tar.gz ; mv ./cargo-chef /root/.cargo/bin/cargo-chef
-#COPY --from=lukemathwalker/cargo-chef /lib/x86_64-linux-gnu/libc* /lib/x86_64-linux-gnu/
-
-# Install musl-dev on Alpine to avoid error "ld: cannot find crti.o: No such file or directory"
-#RUN ((cat /etc/os-release | grep ID | grep alpine) && apk add --no-cache musl-dev || true) \
-#    && cargo install cargo-chef --locked --version $CHEF_TAG \
-#    && rm -rf $CARGO_HOME/registry/
-
-#RUN curl -L --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-#env commands don't work, we need to do it by ourself
 ENV PATH=$PATH:/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin:/root/.cargo/bin
 
-
-
-
-
-# install binstall not needed, because binstall cargo chef selects the wrong executable
-#RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-#RUN curl -O http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/glibc-doc_2.40-1ubuntu1_all.deb ; apt-get install -y ./glibc-doc_2.40-1ubuntu1_all.deb
-
-#install cargo chef
-#RUN cargo install cargo-chef
 # get the scrypt to translate the architectures
 RUN echo "case \"${TARGETPLATFORM}\" in \n\
     \"linux/amd64\") echo \"x86_64-unknown-linux-musl\"\n\
