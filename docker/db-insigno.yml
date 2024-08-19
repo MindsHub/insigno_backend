@@ -1,5 +1,5 @@
 services:
-  postgres:
+  postgresql:
     image: postgis/postgis
     restart: always
     ports:
@@ -11,8 +11,9 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - db-vol:/var/lib/postgresql/data
+      
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
+      test: ["CMD-SHELL", "pg_isready", "-d", "root"]
       interval: 30s
       timeout: 60s
       retries: 5
@@ -24,14 +25,15 @@ services:
       - type: bind
         source: ./Insigno.toml
         target: /insigno/Insigno.toml
-      - type: bind
-        source: ./templates
-        target: /templates
-      - media-vol:/media
+        # uncomment if you want to provide your template for the mail
+      #- type: bind
+      #  source: ./templates
+      #  target: /templates
+      - media-vol:/app/media
     ports:
-      - "8080:8080"
+      - "8000:8000"
     depends_on:
-      postgres:
+      postgresql:
         condition: service_healthy
 volumes:
   db-vol:

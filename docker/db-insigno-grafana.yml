@@ -1,0 +1,95 @@
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana-vol:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
+      - ./dashboards:/var/lib/grafana/dashboards
+    environment:
+      GF_SECURITY_ADMIN_MAIL: "insigno@mindshub.it"
+      GF_SECURITY_ADMIN_USER: "Mindshub"
+      GF_SECURITY_ADMIN_PASSWORD: "test"
+      GF_SERVER_DOMAIN: insigno.mindshub.it
+      GF_SERVER_ROOT_URL: localhost:3000
+      #on production use this
+      #GF_SERVER_ROOT_URL =https://insigno.mindshub.it/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: false
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    ports:
+      - '9090:9090'
+    volumes:
+      - prometheus-vol:/prometheus
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    restart: always
+    ports:
+      - 9100:9100
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+  
+  postgresql_exporter:
+    image: bitnami/postgres-exporter:latest
+    restart: always
+    ports:
+      - 9187:9187
+    environment:
+      - DATA_SOURCE_NAME=postgres://root:test@postgresql:5432/root?sslmode=disable
+  
+  postgresql:
+    image: postgis/postgis 
+    #use tobi312/rpi-postgresql-postgis:16-3.4-alpine-arm on raspberry
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=root
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - db-vol:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "root"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+
+  insigno:
+    image: mindshubalessio/insigno
+    restart: always
+    volumes:
+      - type: bind
+        source: ./Insigno.toml
+        target: /insigno/Insigno.toml
+        # uncomment if you want to provide your template for the mail
+      #- type: bind
+      #  source: ./templates
+      #  target: /templates
+      - media-vol:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+volumes:
+  db-vol:
+  media-vol:
+  prometheus-vol:
+  grafana-vol:
