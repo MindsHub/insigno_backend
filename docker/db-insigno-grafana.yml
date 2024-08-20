@@ -9,11 +9,15 @@ services:
       - grafana-vol:/var/lib/grafana
       - ./grafana-provisioning:/etc/grafana/provisioning
       - ./dashboards:/var/lib/grafana/dashboards
+      - ./dalvany-image-panel:/var/lib/grafana/plugins/dalvany-image-panel
+    #command: sh -c "grafana cli plugins install dalvany-image-panel"
     environment:
       GF_SECURITY_ADMIN_MAIL: "insigno@mindshub.it"
       GF_SECURITY_ADMIN_USER: "Mindshub"
       GF_SECURITY_ADMIN_PASSWORD: "test"
       GF_SERVER_DOMAIN: insigno.mindshub.it
+      datasource: prometheus_uid
+
       GF_SERVER_ROOT_URL: localhost:3000
       #on production use this
       #GF_SERVER_ROOT_URL =https://insigno.mindshub.it/grafana/

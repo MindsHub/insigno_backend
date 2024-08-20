@@ -7,6 +7,7 @@ FROM --platform=$BUILDPLATFORM ghcr.io/cross-rs/x86_64-unknown-linux-musl AS bui
 FROM --platform=$BUILDPLATFORM ghcr.io/cross-rs/arm-unknown-linux-musleabihf AS build-armv6
 FROM --platform=$BUILDPLATFORM ghcr.io/cross-rs/armv7-unknown-linux-musleabihf AS build-armv7
 FROM --platform=$BUILDPLATFORM ghcr.io/cross-rs/aarch64-unknown-linux-musl AS build-arm64
+FROM --platform=$BUILDPLATFORM rust AS rust
 #FROM --platform=$BUILDPLATFORM ghcr.io/cross-rs/aarch64-unknown-linux-musl AS build-386
 #FROM --platform=$BUILDPLATFORM ghcr.io/cross-rs/aarch64-unknown-linux-musl AS build-riscv64
 
@@ -25,8 +26,8 @@ ARG TARGETARCH
 ARG RUSTUP_HOME=/root/.rustup
 WORKDIR /app
 #install rustup and cargo
-COPY --from=lukemathwalker/cargo-chef /usr/local/cargo /root/.cargo
-COPY --from=lukemathwalker/cargo-chef /usr/local/rustup /root/.rustup
+COPY --from=rust /usr/local/cargo /root/.cargo
+COPY --from=rust /usr/local/rustup /root/.rustup
 #install cargo-chef
 RUN curl -OL https://github.com/LukeMathWalker/cargo-chef/releases/download/v0.1.67/cargo-chef-x86_64-unknown-linux-musl.tar.gz ; tar xf ./cargo-chef-x86_64-unknown-linux-musl.tar.gz ; mv ./cargo-chef /root/.cargo/bin/cargo-chef
 ENV PATH=$PATH:/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin:/root/.cargo/bin
@@ -70,6 +71,9 @@ RUN mv /app/target/$(sh ./get_target.sh)/release/insigno /insigno
 # We do not need the Rust toolchain to run the binary!
 FROM alpine:latest AS runtime
 WORKDIR /insigno
+ENV ROCKET_ADDRESS=0.0.0.0
+EXPOSE 8000
+COPY ./templates /app/templates
 COPY --from=builder /insigno /app/insigno
 ENTRYPOINT ["/app/insigno"]
 
