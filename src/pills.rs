@@ -22,7 +22,7 @@ struct Pill {
     accepted: bool,
 }
 
-sql_function!(fn random()-> Double); // "Represents the sql RANDOM() function"
+define_sql_function!(fn random()-> Double); // "Represents the sql RANDOM() function"
 
 #[get("/random")]
 async fn get_random_pill(connection: Db) -> Result<Option<Json<Pill>>, InsignoError> {

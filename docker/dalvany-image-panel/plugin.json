@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "panel",
+  "name": "Dynamic image panel",
+  "id": "dalvany-image-panel",
+  "info": {
+    "description": "Concatenate a metric to an URL in order to display an image",
+    "author": {
+      "name": "Dalvany",
+      "url": "https://github.com/Dalvany/dalvany-image-panel"
+    },
+    "keywords": [
+      "image",
+      "panel",
+      "dynamic"
+    ],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [
+      {
+        "name": "Project site",
+        "url": "https://github.com/Dalvany/dalvany-image-panel"
+      },
+      {
+        "name": "MIT",
+        "url": "https://github.com/Dalvany/dalvany-image-panel/blob/main/LICENSE"
+      }
+    ],
+    "screenshots": [
+      {
+        "name": "Multiple results",
+        "path": "img/screenshot01.png"
+      },
+      {
+        "name": "Single result with single fill enable",
+        "path": "img/screenshot02.png"
+      },
+      {
+        "name": "Single result with single fill disable",
+        "path": "img/screenshot03.png"
+      },
+      {
+        "name": "Overlay",
+        "path": "img/screenshot04.png"
+      },
+      {
+        "name": "Underline",
+        "path": "img/screenshot05.png"
+      }
+    ],
+    "version": "3.1.0",
+    "updated": "2024-04-16"
+  },
+  "dependencies": {
+    "grafanaDependency": ">=10.0.9",
+    "plugins": []
+  }
+}

@@ -186,14 +186,16 @@ impl User<Unauthenticated> {
             .await? //
             .try_into()
     }
-    pub async fn login(self, password: &str, scrypt_sem: &ScryptSemaphore) -> Result<User<Authenticated>, InsignoError> {
-
+    pub async fn login(
+        self,
+        password: &str,
+        scrypt_sem: &ScryptSemaphore,
+    ) -> Result<User<Authenticated>, InsignoError> {
         let y = scrypt_sem.aquire().await?;
-        let res=!self.check_hash(password).await;
+        let res = !self.check_hash(password).await;
         drop(y);
 
-
-        if res{
+        if res {
             Err(InsignoError::new(403).client("email o password errati"))
         } else {
             let me = self.upgrade();

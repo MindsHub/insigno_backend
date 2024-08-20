@@ -1,6 +1,6 @@
 use std::{error::Error, fmt::Display, iter::repeat, sync::Arc};
 
-use base64::{engine::general_purpose::{self, GeneralPurpose}, Engine};
+use base64::{engine::general_purpose, Engine};
 use constant_time_eq::constant_time_eq;
 use rand::{rngs::OsRng, RngCore};
 use rocket::tokio::sync::{Semaphore, SemaphorePermit};
@@ -70,7 +70,7 @@ pub fn scrypt_simple(password: &str, params: &Params) -> Result<String, Box<dyn 
         tmp[1] = params.r() as u8;
         tmp[2] = params.p() as u8;
 
-        result.push_str(&general_purpose::STANDARD.encode(&tmp));
+        result.push_str(&general_purpose::STANDARD.encode(tmp));
     } else {
         result.push_str("1$");
         let mut tmp = [0u8; 9];

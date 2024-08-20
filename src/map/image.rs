@@ -64,7 +64,12 @@ fn convert_image(input: &Path, output: &Path) -> Result<(), InsignoError> {
     }
 }
 
-async fn save_image(connection: Db, name: String, id: i64, user: &User<Authenticated>) -> Result<(), InsignoError> {
+async fn save_image(
+    connection: Db,
+    name: String,
+    id: i64,
+    user: &User<Authenticated>,
+) -> Result<(), InsignoError> {
     let img = MarkerImage {
         id: None,
         path: name,
@@ -112,7 +117,7 @@ pub(crate) async fn add_image(
         .files
         .get("image")
         .ok_or(InsignoError::new(500).debug("image field not found"))? //str_to_debug("image field not found"))?
-        .get(0)
+        .first()
         .ok_or(InsignoError::new(500).debug("err"))?; //str_to_debug("err"))?; //at drop it cleans the file
 
     let id = multipart_form_data
@@ -190,7 +195,7 @@ pub(crate) async fn get_image(
         })
         .await
         .map_err(|e| InsignoError::new(500).debug(e))?
-        .get(0)
+        .first()
         .ok_or(InsignoError::new(404).debug("image field not found"))?
         .clone();
     let mut path = PathBuf::new();

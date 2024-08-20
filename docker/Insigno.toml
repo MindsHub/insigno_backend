@@ -1,0 +1,26 @@
+[default]
+oldest_supported_version="0.0.2"
+
+# our custom config data
+media_folder = "/app/media"
+template_folder = "/app/templates"
+intro_images = []
+secret_key = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+             
+[default.smtp]
+    user = ""
+    password = ""
+    server = ""
+    from_mail ="Insigno <insigno@test.test>"
+    port = 587
+
+[default.scrypt]
+    log_n = 11
+    r = 8
+    p = 1
+    len = 30
+
+[default.databases.db]
+    url = "postgres://root:test@postgresql:5432/root"
+    timeout = 5
+    pool_size = 5

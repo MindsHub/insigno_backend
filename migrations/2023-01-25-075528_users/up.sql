@@ -10,4 +10,3 @@ CREATE TABLE IF NOT EXISTS public.users
     CONSTRAINT users_pkey PRIMARY KEY (id),
     CONSTRAINT users_name_key UNIQUE (name)
 );
-ALTER TABLE IF EXISTS public.users OWNER TO mindshub;

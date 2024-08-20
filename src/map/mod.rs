@@ -165,7 +165,7 @@ async fn get_marker_from_id(
         })
         .await
         .map_err(|x| InsignoError::new(404).debug(x))?
-        .get(0)
+        .first()
         .ok_or(InsignoError::new(404).both("marker not found"))?
         .clone();
     let creation_user = User::get_by_id(&connection, m.created_by).await?;

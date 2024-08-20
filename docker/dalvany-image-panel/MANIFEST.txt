@@ -1,0 +1,49 @@
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+{
+  "manifestVersion": "2.0.0",
+  "signatureType": "community",
+  "signedByOrg": "dalvany",
+  "signedByOrgName": "dalvany",
+  "plugin": "dalvany-image-panel",
+  "version": "3.1.0",
+  "time": 1713295476003,
+  "keyId": "7e4d0c6a708866e7",
+  "files": {
+    "LICENSE": "9c6251d731778db03cba79d3a61589507578baff49a4887f3473862afad0c2cb",
+    "README.md": "96bfc635816e6978cc4d67948aacceba271554db9e1281622f499a65f8843358",
+    "module.js": "591a4db8cef9d5af1da8f4582f0134cd095da200f2569e7bbde0ab704f0d211f",
+    "img/configuration_url.png": "73088f8b061d62a06351670ebb5410afd3dbd42012a97d646a9897669bbea739",
+    "img/screenshot03.png": "b04e4da219a7b91ba1d3c904a96321f4596c2fb5b9cce79d95a0033dcc9e9e3c",
+    "img/screenshot01.png": "39145a6543cd1beccb91d7502b8fab0e2d7c7ead3d1290535a79bddef5152a45",
+    "img/configuration_link.png": "b997c6513c2e7e17f7bb815c01e3f4f026e1d0e92e61339835ae05588827ed80",
+    "img/configuration_underline.png": "f1712420b3b7ab330c9aca3bc3b43570a115e7a172757582337a3a9e2b21f243",
+    "img/configuration_slideshow.png": "31e6360145a3b67b751087385269637addbe54397d82b9e555b3d7325b478de9",
+    "img/configuration_shared_crosshair.png": "41da44af9d891457ce30ee2dfd28e26effbae75cf080fe66445fbf6219f077dc",
+    "img/screenshot07.png": "1399920e77e051c04b3bc078727b4e509fef524d602a12239396d066ec872a89",
+    "img/screenshot04.png": "3c6013437a4c45605d6a0c02b5e0be97949aff82c091d3a357e692f8b3dc3aa9",
+    "img/configuration_image.png": "2a3089cd59ccc01865726a5af6f46bc5b2a056d72e48fef30aa87329c25645d1",
+    "img/screenshot02.png": "92bbac30ad21fed50bab32459e51007f1b52c890892c566ad83143629f433b54",
+    "img/logo.svg": "db811484b2b3e65df821e97a66e3520caaa4e9d62dbafb75348c7d70a2389a44",
+    "img/screenshot05.png": "127644f605cc925ed7c86de109fd7e0b0c9f82a601550cf6f30e6710e1c942da",
+    "img/configuration_tooltip.png": "b21423785b549e137690164be8eeeb0b20db521f7f525b1ad819f3460db9caf5",
+    "img/configuration_overlay.png": "fc242be71dd524871ecc2cbc04cfffcd314e6e3fbda75b4a1737d68c956d4593",
+    "img/screenshot06.png": "87a8116a7f75c0d03bc9680c3494eb195c76f66fde8b66f6ed44abde39276db4",
+    "plugin.json": "2fdde65bd22c970cf63ad1075e49a243a00e2f420f4af899c0b361c1880b2e9a",
+    "CHANGELOG.md": "970d16e47d2bfcf259c8862f0af5077f3c66d7081f3ff7c3541cd581fab325cc",
+    "module.js.map": "7a24bfddd0660297e13e02f749001ff28a64b3c0cab0c10158e0e61086fe58a5"
+  }
+}
+-----BEGIN PGP SIGNATURE-----
+Version: OpenPGP.js v4.10.11
+Comment: https://openpgpjs.org
+
+wrkEARMKAAYFAmYe0HQAIQkQfk0ManCIZucWIQTzOyW2kQdOhGNlcPN+TQxq
+cIhm58i4AgkAdIJtY35eq+ViBDq/Az62aeCWsck1ucCR1cyBnC1BtHbUBM7A
+D13PYexwI46eIiynJDgpahZUhd5a/FRVZjF3hNUCCQClRWpiBvsqg+DS2smv
+VhDjOKetuZ5uxL9fBsmZYur1mUhm1UgiqaVrlzpE9Kv9Ra6vzoHRSGypy+Th
+u/DdK3ao7g==
+=bwtK
+-----END PGP SIGNATURE-----

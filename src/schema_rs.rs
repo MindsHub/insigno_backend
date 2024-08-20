@@ -8,9 +8,9 @@ use serde::ser::SerializeStruct;
 
 use crate::schema_sql::*;
 
-sql_function!(fn st_transform(g: Geometry, srid: BigInt)-> Geometry);
-sql_function!(fn st_dwithin(g1: Geometry, g2: Geometry, dist: Double) ->  Bool); // "Represents the postgis_sql distance() function"
-sql_function!(fn resolve_marker(marker_id: BigInt, user_id: BigInt));
+define_sql_function!(fn st_transform(g: Geometry, srid: BigInt)-> Geometry);
+define_sql_function!(fn st_dwithin(g1: Geometry, g2: Geometry, dist: Double) ->  Bool); // "Represents the postgis_sql distance() function"
+define_sql_function!(fn resolve_marker(marker_id: BigInt, user_id: BigInt));
 
 #[derive(Serialize, Clone, Queryable, Debug)]
 #[diesel(table_name = marker_types)]

@@ -46,7 +46,6 @@ use std::{collections::BTreeMap, fs};
 
 use auth::scrypt::InsignoScryptParams;
 use auth::validation::ScryptSemaphore;
-use diesel::{Connection, PgConnection, RunQueryDsl};
 use mail::SmtpConfig;
 use prometheus::process_collector::ProcessCollector;
 use rocket::config::Config;
@@ -61,7 +60,7 @@ use rocket::{
     State,
 };
 use rocket_prometheus::PrometheusMetrics;
-use schema_sql::marker_types;
+
 use utils::InsignoError;
 
 #[macro_use]
@@ -71,7 +70,7 @@ extern crate diesel;
 
 pub mod auth;
 mod cors;
-mod db;
+pub mod db;
 mod files;
 #[allow(dead_code, unused)]
 mod mail;
@@ -105,29 +104,6 @@ pub struct InsignoConfig {
 pub struct TrashTypeMap {
     pub to_string: BTreeMap<i64, String>,
     pub to_i64: BTreeMap<String, i64>,
-}
-
-/**this function is needed for init our TrashTypeMap  */
-fn stage() -> AdHoc {
-    AdHoc::on_ignite("Insigno config", |rocket| async {
-        //generate trash_types_map
-        let config = rocket_sync_db_pools::Config::from("db", &rocket).unwrap();
-
-        let mut conn = PgConnection::establish(&config.url).unwrap();
-        let sorted = marker_types::table
-            .load::<(i64, String, f64)>(&mut conn)
-            .unwrap()
-            .into_iter()
-            .map(|(x, y, ..)| (x, y))
-            .collect::<BTreeMap<i64, String>>();
-        let inverted = sorted.clone().into_iter().map(|(x, y)| (y, x)).collect();
-        let trash_types_map = TrashTypeMap {
-            to_string: sorted,
-            to_i64: inverted,
-        };
-
-        rocket.manage(trash_types_map)
-    })
 }
 
 /**
@@ -164,24 +140,6 @@ async fn compatibile(
     }
 }
 
-/*#[catch(403)]
-fn not_found() -> &'static str {
-    "Nothing here, sorry!"
-}*/
-
-#[derive(Responder)]
-#[response(status = 418, content_type = "json")]
-struct Test(&'static str);
-
-/*
-impl<'r> Responder<'r, 'static> for Test {
-    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
-
-        use rocket::response::{status};
-        status::Conflict(Some("wtf".to_string()))
-        //status::Custom(rocket::http::Status::new(403),content::RawJson("{ \"hi\": \"world\" }")).respond_to(req)
-    }
-}*/
 #[get("/test")]
 fn test_prova() -> Result<(), InsignoError> {
     Err(InsignoError::new(401).both("wtf"))
@@ -213,8 +171,11 @@ pub fn rocket() -> _ {
     insigno_config.scrypt.sem = Some(Arc::new(Semaphore::new(3)));
     // we extract database config for appending to Rocket.toml config (it's needed for rocket_sync_db_pool)
     let databases = figment.find_value("databases").unwrap();
+    let secret_key = figment.find_value("secret_key").ok();
     // virtualy add DatabaseConfig to Roket.toml
-    let rocket_figment = Config::figment().merge(Serialized::defaults(databases).key("databases"));
+    let rocket_figment = Config::figment()
+        .merge(Serialized::defaults(databases).key("databases"))
+        .merge(Serialized::defaults(secret_key).key("secret_key"));
     rocket::custom(rocket_figment)
         .attach(db::stage())
         .mount("/pills", pills::get_routes())
@@ -229,7 +190,6 @@ pub fn rocket() -> _ {
             rocket
         }))
         .attach(pending::stage())
-        .attach(stage())
         .attach(mail::stage())
         //Cors request handler
         .attach(cors::Cors)

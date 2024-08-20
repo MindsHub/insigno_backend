@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS public.user_sessions
         ON UPDATE NO ACTION
         ON DELETE cascade
 );
-ALTER TABLE IF EXISTS public.user_sessions OWNER TO mindshub;
 
 
 CREATE OR REPLACE FUNCTION is_session_valid(inp_date TIMESTAMP WITH TIME ZONE) RETURNS BOOL AS $$

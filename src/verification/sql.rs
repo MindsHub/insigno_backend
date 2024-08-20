@@ -1,8 +1,8 @@
 use chrono::Utc;
 use diesel::sql_types::{BigInt, Bool};
 
-sql_function!(fn time_to_verify(user_id: BigInt) -> Timestamptz);
-sql_function!(fn verify_set_verdict(user_id: BigInt, image_id: BigInt, verdict: Bool) -> Nullable<Double>);
+define_sql_function!(fn time_to_verify(user_id: BigInt) -> Timestamptz);
+define_sql_function!(fn verify_set_verdict(user_id: BigInt, image_id: BigInt, verdict: Bool) -> Nullable<Double>);
 
 // there is no way to handle multiple return values at the moment
 // sql_function!(fn get_to_verify(user_id: BigInt) -> ());

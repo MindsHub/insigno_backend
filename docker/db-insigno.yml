@@ -1,0 +1,40 @@
+services:
+  postgresql:
+    image: postgis/postgis
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_DB=root
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - db-vol:/var/lib/postgresql/data
+      
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "root"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+
+  insigno:
+    image: mindshubalessio/insigno
+    volumes:
+      - type: bind
+        source: ./Insigno.toml
+        target: /insigno/Insigno.toml
+        # uncomment if you want to provide your template for the mail
+      #- type: bind
+      #  source: ./templates
+      #  target: /templates
+      - media-vol:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+volumes:
+  db-vol:
+  media-vol:
