@@ -70,10 +70,11 @@ RUN mv /app/target/$(sh ./get_target.sh)/release/insigno /insigno
 
 # We do not need the Rust toolchain to run the binary!
 FROM alpine:latest AS runtime
-WORKDIR /insigno
+WORKDIR /app
 ENV ROCKET_ADDRESS=0.0.0.0
 EXPOSE 8000
 COPY ./templates /app/templates
+COPY ./static /app/static
 COPY --from=builder /insigno /app/insigno
 ENTRYPOINT ["/app/insigno"]
 

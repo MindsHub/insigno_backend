@@ -81,7 +81,7 @@ services:
     volumes:
       - type: bind
         source: ./Insigno.toml
-        target: /insigno/Insigno.toml
+        target: /app/Insigno.toml
         # uncomment if you want to provide your template for the mail
       #- type: bind
       #  source: ./templates
