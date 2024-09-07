@@ -4,7 +4,7 @@ oldest_supported_version="0.0.2"
 # our custom config data
 media_folder = "/app/media"
 template_folder = "/app/templates"
-intro_images = []
+intro_images = ["0.jpg", "1.jpg", "2.gif", "3.jpg", "4.gif", "5.jpg", "6.jpg"]
 secret_key = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
              
 [default.smtp]
