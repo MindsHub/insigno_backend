@@ -11,6 +11,7 @@ datasources:
       httpMethod: POST
       manageAlerts: true
       prometheusType: Prometheus
+      timeInterval: 1m
       #prometheusVersion: 2.44.0
       #cacheLevel: 'High'
       #disableRecordingRules: false
