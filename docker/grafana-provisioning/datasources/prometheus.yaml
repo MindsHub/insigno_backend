@@ -5,12 +5,13 @@ datasources:
     type: prometheus
     access: proxy
     # Access mode - proxy (server in the UI) or direct (browser in the UI).
-    url: http://prometheus:9090
+    url: http://prometheus:9090/prometheus
     uid: "prometheus_uid"
     jsonData:
       httpMethod: POST
       manageAlerts: true
       prometheusType: Prometheus
+      timeInterval: 1m
       #prometheusVersion: 2.44.0
       #cacheLevel: 'High'
       #disableRecordingRules: false

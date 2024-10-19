@@ -1,0 +1,11 @@
+
+{$COMP_PROTOCOL}://{$COMP_HOST} {
+    
+    reverse_proxy /grafana* grafana:3000
+    
+    reverse_proxy /grafana/api/live* grafana:3000/api/live
+    
+    reverse_proxy insigno:8000
+    
+    
+}
