@@ -13,8 +13,10 @@ backup docker_db-vol
 backup docker_grafana-vol
 backup docker_media-vol
 backup docker_prometheus-vol
+backup docker_caddy-data-vol
 
-restore docker_db-vol
-restore docker_grafana-vol
-restore docker_media-vol
-restore docker_prometheus-vol
+#restore docker_db-vol
+#restore docker_grafana-vol
+#restore docker_media-vol
+#restore docker_caddy-data-vol
+#restore docker_caddy-data-vol

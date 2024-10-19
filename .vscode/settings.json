@@ -14,4 +14,7 @@
     "rust-analyzer.check.extraArgs": [
         "--target-dir=target/analyzer"
     ],
+    "files.associations": {
+        "caddyfile": "cpp"
+    },
 }
