@@ -47,16 +47,15 @@ services:
     image: bitnami/postgres-exporter:latest
     restart: always
     environment:
-      - DATA_SOURCE_NAME=postgres://mindshub:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB}?sslmode=disable
+      - DATA_SOURCE_NAME=postgres://root:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB}?sslmode=disable
   
   postgresql:
-    container_name: postgresql
     image: postgis/postgis 
     #use tobi312/rpi-postgresql-postgis:16-3.4-alpine-arm on raspberry
     restart: always
 
     environment:
-      - POSTGRES_USER=mindshub
+      - POSTGRES_USER=root
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - PGDATA=/var/lib/postgresql/data/pgdata

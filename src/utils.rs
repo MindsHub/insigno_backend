@@ -46,12 +46,11 @@ impl InsignoError {
     }
     pub fn debug<T: ToString>(mut self, s: T) -> Self {
         let s = s.to_string();
-        //TODO remove me
-        //#[cfg(test)]
-        //{
+        #[cfg(test)]
+        {
             let bt = Backtrace::force_capture();
             println!("{s}\n{bt}");
-        //}
+        }
         self.debug = Some(s);
         self
     }
