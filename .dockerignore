@@ -1,10 +1,10 @@
 ### Rocket ###
-debug/
-target/
-Cargo.lock
+**/debug/
+**/target/
+**/Cargo.lock
 **/*.rs.bk
 *.pdb
-.env
+**/.env
 #Rocket.toml
 
 # temporaneo
@@ -36,7 +36,8 @@ cover/
 
 # End of https://www.toptal.com/developers/gitignore/api/django
 
-monitoring/
+**/monitoring/
 
 #Insigno.toml
-docs
+**/docs
+**/backup

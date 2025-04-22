@@ -176,6 +176,7 @@ pub fn rocket() -> _ {
     let rocket_figment = Config::figment()
         .merge(Serialized::defaults(databases).key("databases"))
         .merge(Serialized::defaults(secret_key).key("secret_key"));
+    println!("rocket figment: {:?}", rocket_figment);
     rocket::custom(rocket_figment)
         .attach(db::stage())
         .mount("/pills", pills::get_routes())

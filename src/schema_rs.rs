@@ -2,6 +2,8 @@ use chrono::Utc;
 
 use diesel::sql_types::*;
 use postgis_diesel::sql_types::Geometry;
+use diesel::expression::TypedExpressionType;
+
 use postgis_diesel::types::Point;
 use rocket::serde::Serialize;
 use serde::ser::SerializeStruct;

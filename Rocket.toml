@@ -4,16 +4,4 @@ data-form= "64MB"
 file = "64MB"
 
 # default parameter. add only necessary ones
-[default] 
-#address = "127.0.0.1"
-#port = 8000
-#workers = 16
-#max_blocking = 512
-#keep_alive = 5
-#ident = "Rocket"
-#log_level = "normal"
-#temp_dir = "/tmp"
-#cli_colors = true
-
-#in release mode it must be specified
-#secret_key = ""
+[default]

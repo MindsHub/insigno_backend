@@ -44,12 +44,12 @@ fn convert_image(input: &Path, output: &Path) -> Result<(), InsignoError> {
                 "-i",
                 input
                     .to_str()
-                    .ok_or(InsignoError::new(500).debug("invalid path"))?,
+                    .ok_or(InsignoError::new(500).debug("invalid path 1"))?,
                 "-vf",
                 "scale=w=2500:h=2500:force_original_aspect_ratio=decrease",
                 output
                     .to_str()
-                    .ok_or(InsignoError::new(500).debug("invalid path"))?,
+                    .ok_or(InsignoError::new(500).debug("invalid path 2"))?,
             ])
             .output()
             .map_err(|e| InsignoError::new(500).debug(e))?;
@@ -113,23 +113,17 @@ pub(crate) async fn add_image(
         .map_err(|e| InsignoError::new(500).debug(e))?;
 
     // cast data to normal values
-    let photo_path = multipart_form_data
-        .files
-        .get("image")
-        .ok_or(InsignoError::new(500).debug("image field not found"))? //str_to_debug("image field not found"))?
-        .first()
-        .ok_or(InsignoError::new(500).debug("err"))?; //str_to_debug("err"))?; //at drop it cleans the file
-
+    let photo_path = multipart_form_data.files.get("image").ok_or(InsignoError::new(500).debug("missing image"))?.get(0).ok_or(InsignoError::new(500).debug("missing image"))?.path.clone();
+    let user_id = user.get_id();
     let id = multipart_form_data
         .texts
         .get("refers_to_id")
-        .ok_or(InsignoError::new(500).debug("image field not found"))?[0]
+        .ok_or(InsignoError::new(500).debug("missing id"))?
+        .get(0)
+        .ok_or(InsignoError::new(500).debug("missing id"))?
         .text
         .parse::<i64>()
         .map_err(|e| InsignoError::new(500).debug(e))?;
-
-    let user_id = user.get_id();
-
     // check if user own the marker
     connection
         .run(move |conn| {
@@ -144,7 +138,7 @@ pub(crate) async fn add_image(
 
     //generate unique name and convert
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
-    convert_image(&photo_path.path, &new_pos)?;
+    convert_image(&photo_path, &new_pos)?;
 
     let name = new_pos
         .strip_prefix(&config.media_folder)
@@ -243,7 +237,7 @@ pub(crate) async fn review(
         }
         "delete_report" => {
             let image = MarkerImage::delete(&connection, image_id, config).await?;
-            MarkerReport::report(&connection, user.get_id(), image.id.unwrap()).await?;
+            MarkerReport::report(&connection, user.get_id(), image.created_by).await?;
         }
         "skip" => {}
         _ => {

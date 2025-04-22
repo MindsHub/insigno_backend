@@ -14,12 +14,12 @@ name="insignolib"
 path = "src/lib.rs"
 
 [dependencies]
-openssl-sys = { version = "*", features = ["vendored"] }
+
 diesel_migrations = {version="2.2.0"}
-diesel = {version="2.0.3", default-features = false, features = ["chrono", "postgres"] }
-postgis_diesel = {version="2.1.0", default-features = false}
+diesel = {version="2.2.9", default-features = false, features = ["chrono", "postgres"] }
+postgis_diesel = {version="2.5.0", default-features = false, features=["diesel"]}
 #postgis = "0.9.0"
-rocket = { version = "0.5.0", features = ["json", "secrets"], default-features = false } #"tls",
+rocket = { version = "0.5.1", features = ["json", "secrets"], default-features = false } #"tls",
 rocket_sync_db_pools = { version = "0.1.0", default-features = false, features = ["diesel_postgres_pool"] }
 rocket-multipart-form-data = "0.10.5"
 
@@ -34,12 +34,15 @@ constant_time_eq = "0.3"
 lettre = {version="0.11.2", default-features = false, features= ["tokio1-rustls-tls", "pool", "builder", "smtp-transport"] }
 rocket_prometheus = "0.10.0"
 prometheus= {version="0.13.3", default-features = false, features= ["process"]}
-pq-sys={version="0.6", features = ["bundled"]}
+regex = { features = ["std"], default-features = false, version = "1.11" }
 
-regex = { features = ["std"], default-features = false, version = "1.9" }
+pq-sys={version="0.7.1", features = ["bundled"]}
+openssl = { version = "0.10", features = ["vendored"] }
+openssl-sys = { version = "0.9.103", features = ["vendored"] }
+
 
 [dev-dependencies]
 form-data-builder = "1.0"
 
-[patch.crates-io]
-pq-src = { path = "../pq-sys/pq-src" }
+#[patch.crates-io]
+#pq-src = { path = "../pq-sys/pq-src" }
