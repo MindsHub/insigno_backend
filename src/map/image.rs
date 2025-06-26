@@ -20,12 +20,11 @@ use diesel::QueryDsl;
 use rocket::data::Limits;
 use rocket::form::Form;
 use rocket::fs::NamedFile;
+use rocket::fs::TempFile;
 use rocket::futures::TryFutureExt;
 
 use rocket::serde::json::Json;
-use rocket::Data;
 use rocket::{http::ContentType, State};
-use rocket_multipart_form_data::*;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -89,52 +88,32 @@ async fn save_image(
     Ok(())
 }
 
+
+#[derive(FromForm)]
+pub struct AddImageForm<'a> {
+    refers_to_id: i64,
+    image: TempFile<'a>,
+}
+
 #[post("/image/add", data = "<data>")]
 pub(crate) async fn add_image(
-    content_type: &ContentType,
-    data: Data<'_>,
+    data: Form<AddImageForm<'_>>,
     user: Result<User<Authenticated>, InsignoError>,
     connection: Db,
     config: &State<InsignoConfig>,
-    limits: &Limits,
 ) -> Result<(), InsignoError> {
     let user = user?;
-    // parse multipart data
-    let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
-        MultipartFormDataField::file("image")
-            .size_limit(limits.get("data-form").unwrap().as_u64())
-            .content_type_by_string(Some(mime::IMAGE_STAR))
-            .map_err(|e| InsignoError::new(500).debug(e))?,
-        MultipartFormDataField::text("refers_to_id"),
-    ]);
-    options.max_data_bytes = limits.get("data-form").unwrap().as_u64();
-    let multipart_form_data = MultipartFormData::parse(content_type, data, options)
-        .await
-        .map_err(|e| InsignoError::new(500).debug(e))?;
 
     // cast data to normal values
-    let photo_path = multipart_form_data
-        .files
-        .get("image")
-        .ok_or(InsignoError::new(500).debug("image field not found"))? //str_to_debug("image field not found"))?
-        .first()
-        .ok_or(InsignoError::new(500).debug("err"))?; //str_to_debug("err"))?; //at drop it cleans the file
-
-    let id = multipart_form_data
-        .texts
-        .get("refers_to_id")
-        .ok_or(InsignoError::new(500).debug("image field not found"))?[0]
-        .text
-        .parse::<i64>()
-        .map_err(|e| InsignoError::new(500).debug(e))?;
-
+    let photo_path = data.image.path().ok_or_else(|| InsignoError::new(500).debug("Image did not have a path"))?;
+    let marker_id = data.refers_to_id;
     let user_id = user.get_id();
 
     // check if user own the marker
     connection
         .run(move |conn| {
             markers::table
-                .filter(markers::id.eq(id))
+                .filter(markers::id.eq(marker_id))
                 .filter(markers::created_by.eq(user_id))
                 .or_filter(markers::solved_by.eq(user_id))
                 .get_result::<Marker>(conn)
@@ -144,7 +123,7 @@ pub(crate) async fn add_image(
 
     //generate unique name and convert
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
-    convert_image(&photo_path.path, &new_pos)?;
+    convert_image(photo_path, &new_pos)?;
 
     let name = new_pos
         .strip_prefix(&config.media_folder)
@@ -154,7 +133,7 @@ pub(crate) async fn add_image(
         .to_string();
 
     // try to save it in database
-    save_image(connection, name.clone(), id, &user)
+    save_image(connection, name.clone(), marker_id, &user)
         .map_err(|x| {
             let _ = fs::remove_file(new_pos); //sync version
             x
