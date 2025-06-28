@@ -105,24 +105,10 @@ pub(crate) async fn add_image(
     let user = user?;
 
     // cast data to normal values
-<<<<<<< HEAD
-    let photo_path = multipart_form_data.files.get("image").ok_or(InsignoError::new(500).debug("missing image"))?.get(0).ok_or(InsignoError::new(500).debug("missing image"))?.path.clone();
-    let user_id = user.get_id();
-    let id = multipart_form_data
-        .texts
-        .get("refers_to_id")
-        .ok_or(InsignoError::new(500).debug("missing id"))?
-        .get(0)
-        .ok_or(InsignoError::new(500).debug("missing id"))?
-        .text
-        .parse::<i64>()
-        .map_err(|e| InsignoError::new(500).debug(e))?;
-=======
     let photo_path = data.image.path().ok_or_else(|| InsignoError::new(500).debug("Image did not have a path"))?;
     let marker_id = data.refers_to_id;
     let user_id = user.get_id();
 
->>>>>>> main
     // check if user own the marker
     connection
         .run(move |conn| {
@@ -137,11 +123,7 @@ pub(crate) async fn add_image(
 
     //generate unique name and convert
     let new_pos = unique_path(Path::new(&config.media_folder), Path::new("jpg"));
-<<<<<<< HEAD
-    convert_image(&photo_path, &new_pos)?;
-=======
     convert_image(photo_path, &new_pos)?;
->>>>>>> main
 
     let name = new_pos
         .strip_prefix(&config.media_folder)
