@@ -1,8 +1,8 @@
-use std::{error::Error, fmt::Display, iter::repeat, sync::Arc};
+use std::{error::Error, fmt::Display, iter::repeat_n, sync::Arc};
 
 use base64::{engine::general_purpose, Engine};
 use constant_time_eq::constant_time_eq;
-use rand::{rngs::OsRng, RngCore};
+use rand::{rng, RngCore};
 use rocket::tokio::sync::{Semaphore, SemaphorePermit};
 pub use scrypt::{scrypt, Params};
 use serde::{Deserialize, Serialize};
@@ -56,7 +56,8 @@ impl InsignoScryptParams<'_> {
 pub fn scrypt_simple(password: &str, params: &Params) -> Result<String, Box<dyn Error>> {
     // 128-bit salt
     let mut salt: Vec<u8> = [0u8; 16].to_vec();
-    OsRng.fill_bytes(&mut salt);
+    let mut rng = rng();
+    rng.fill_bytes(&mut salt);
     // 256-bit derived key
     let mut dk = [0u8; 32];
 
@@ -201,7 +202,7 @@ pub fn scrypt_check(password: &str, hashed_value: &str) -> Result<bool, ScryptEr
         return Err(err);
     }
 
-    let mut output: Vec<u8> = repeat(0).take(hash.len()).collect();
+    let mut output: Vec<u8> = repeat_n(0, hash.len()).collect();
     let password = password.to_string();
 
     scrypt(password.as_bytes(), &salt, &params, &mut output).map_err(|_| err)?;

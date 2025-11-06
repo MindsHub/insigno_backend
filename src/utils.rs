@@ -7,7 +7,7 @@ use std::{
 
 use chrono::Local;
 
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distr::Alphanumeric, Rng};
 use rocket::response::Responder;
 use rocket::{
     http::Status,
@@ -17,7 +17,7 @@ use rocket::{
 
 pub fn unique_path(prefix: &Path, extension: &Path) -> PathBuf {
     loop {
-        let random_str: String = rand::thread_rng()
+        let random_str: String = rand::rng()
             .sample_iter(&Alphanumeric)
             .take(10)
             .map(char::from)

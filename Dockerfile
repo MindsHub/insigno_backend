@@ -76,9 +76,9 @@ EXPOSE 8000
 COPY ./templates /app/templates
 COPY ./static /app/static
 COPY ./Rocket.toml /app/Rocket.toml
-RUN apk update
-RUN apk upgrade
-RUN apk add --no-cache ffmpeg
+#RUN apk update
+#RUN apk upgrade
+#RUN apk add --no-cache ffmpeg
 COPY --from=builder /insigno /app/insigno
 ENTRYPOINT ["/app/insigno"]
 

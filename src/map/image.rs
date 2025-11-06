@@ -3,7 +3,6 @@
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process;
 
 use super::marker_image::MarkerImage;
 use super::marker_report::ImageToReport;
@@ -17,14 +16,14 @@ use crate::map::marker_image::marker_images;
 use diesel::insert_into;
 use diesel::QueryDsl;
 
-use rocket::data::Limits;
+use image::codecs::jpeg::JpegEncoder;
 use rocket::form::Form;
 use rocket::fs::NamedFile;
 use rocket::fs::TempFile;
 use rocket::futures::TryFutureExt;
 
 use rocket::serde::json::Json;
-use rocket::{http::ContentType, State};
+use rocket::State;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -33,34 +32,60 @@ use crate::schema_rs::*;
 use crate::schema_sql::*;
 use crate::utils::*;
 use crate::InsignoConfig;
+use image::{ImageEncoder, ImageReader};
 use std::str;
 
 use super::marker_report::MarkerReport;
+use fast_image_resize::images::Image;
+use fast_image_resize::{IntoImageView, Resizer};
+
 fn convert_image(input: &Path, output: &Path) -> Result<(), InsignoError> {
-    if input.exists() {
-        let raw_out = process::Command::new("ffmpeg")
-            .args([
-                "-i",
-                input
-                    .to_str()
-                    .ok_or(InsignoError::new(500).debug("invalid path 1"))?,
-                "-vf",
-                "scale=w=2500:h=2500:force_original_aspect_ratio=decrease",
-                output
-                    .to_str()
-                    .ok_or(InsignoError::new(500).debug("invalid path 2"))?,
-            ])
-            .output()
-            .map_err(|e| InsignoError::new(500).debug(e))?;
-        if !raw_out.status.success() {
-            return Err(
-                InsignoError::new(500).debug(str::from_utf8(&raw_out.stderr).unwrap()), //str::from_utf8(&raw_out.stderr).unwrap(),
-            )?;
-        }
-        Ok(())
-    } else {
-        Err(InsignoError::new(500).debug("input path does not exits"))?
+    if !input.exists() {
+        return Err(InsignoError::new(500).both("input path does not exist"));
     }
+
+    // Read source image from file with detected format
+    let file = fs::File::open(input).map_err(|e| InsignoError::new(500).both(e))?;
+    let reader = std::io::BufReader::new(file);
+    let src_image = ImageReader::new(reader)
+        .with_guessed_format()
+        .map_err(|e| InsignoError::new(500).both(e))?.decode().map_err(|e| InsignoError::new(500).both(e))?;
+
+    // Create container for data of destination image
+    
+    let mut dst_width = src_image.width();
+    let mut dst_height = src_image.height();
+    let max_size = dst_height.max(dst_width);
+    if max_size>=2500{
+        dst_width = (dst_width*2500)/max_size;
+        dst_height = (dst_height*2500)/max_size;
+    }
+    
+    let mut dst_image = Image::new(
+        dst_width,
+        dst_height,
+        src_image
+            .pixel_type()
+            .ok_or(InsignoError::new(500).both("failed to get pixel type"))?,
+    );
+
+    // Create Resizer instance and resize source image
+    // into buffer of destination image
+    let mut resizer = Resizer::new();
+    resizer
+        .resize(&src_image, &mut dst_image, None)
+        .map_err(|e| InsignoError::new(500).both(e))?;
+
+    let mut file_out = fs::File::create(output).map_err(|e| InsignoError::new(500).both(e))?;
+    JpegEncoder::new(&mut file_out)
+        .write_image(
+            dst_image.buffer(),
+            dst_width,
+            dst_height,
+            src_image.color().into(),
+        )
+        .map_err(|e| InsignoError::new(500).both(e))?;
+    Ok(())
 }
 
 async fn save_image(
@@ -88,7 +113,6 @@ async fn save_image(
     Ok(())
 }
 
-
 #[derive(FromForm)]
 pub struct AddImageForm<'a> {
     refers_to_id: i64,
@@ -105,7 +129,10 @@ pub(crate) async fn add_image(
     let user = user?;
 
     // cast data to normal values
-    let photo_path = data.image.path().ok_or_else(|| InsignoError::new(500).debug("Image did not have a path"))?;
+    let photo_path = data
+        .image
+        .path()
+        .ok_or_else(|| InsignoError::new(500).debug("Image did not have a path"))?;
     let marker_id = data.refers_to_id;
     let user_id = user.get_id();
 

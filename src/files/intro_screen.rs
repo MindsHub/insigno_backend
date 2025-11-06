@@ -8,13 +8,13 @@ use crate::{utils::InsignoError, InsignoConfig};
 pub fn get_intro_image_links(
     config: &State<InsignoConfig>,
 ) -> Result<Json<Vec<String>>, InsignoError> {
-    return Ok(Json(
+    Ok(Json(
         config
             .intro_images
             .iter()
             .map(|filename| format!("/resource/intro/{filename}"))
             .collect(),
-    ));
+    ))
 }
 
 // note: this is temporary and will be replaced with a more general way to serve static files
