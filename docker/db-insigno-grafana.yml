@@ -108,12 +108,14 @@ services:
     restart: always
     volumes:
       - osmcache-vol:/cache
-      - ./mapproxy:/mapproxy
+      - ./mapproxy/mapproxy.yaml:/cache/mapproxy.yaml
+      - ./mapproxy/seed.yaml:/cache/seed.yaml
     environment:
       - MAPPROXY_DATA_DIR=/cache
       - PROCESSES=1
       - CHEAPER=0
       - THREADS=1
+      - RECREATE_DATADIR=false
     mem_limit: 256m
     cpus: 0.5
 
