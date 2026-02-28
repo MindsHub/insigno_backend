@@ -29,13 +29,12 @@ datasources:
     type: postgres
     url: postgresql:5432
     user: ${POSTGRES_USER}
-    database: ${POSTGRES_DB}
-    uid: postgres_uid
+    
     secureJsonData:
       password: ${POSTGRES_PASSWORD}
     jsonData:
       #postgres://root:test@postgresql:5432/root?sslmode=disable
-      
+      database: ${POSTGRES_DB}
       sslmode: 'disable' # disable/require/verify-ca/verify-full
       maxOpenConns: 10 # Grafana v5.4+
       maxIdleConns: 10 # Grafana v5.4+
