@@ -17,6 +17,9 @@ services:
       datasource: prometheus_uid
       GF_SERVER_ROOT_URL: "${COMP_PROTOCOL}://${COMP_HOST}/grafana/"
       GF_SERVER_SERVE_FROM_SUB_PATH: true
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
   prometheus:
     image: prom/prometheus:latest
@@ -47,7 +50,7 @@ services:
     image: bitnami/postgres-exporter:latest
     restart: always
     environment:
-      - DATA_SOURCE_NAME=postgres://mindshub:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB}?sslmode=disable
+      - DATA_SOURCE_NAME=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB}?sslmode=disable
 
   postgresql:
     container_name: postgresql
@@ -63,12 +66,13 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - db-vol:/var/lib/postgresql/data
-#    healthcheck:
-#      test: ["CMD-SHELL", "pg_isready", "-d", "insignorocketdb", "-U", "mimndshub"]
-#      interval: 30s
-#      timeout: 60s
-#      retries: 5
-#      start_period: 80s
+      - /tmp/databasebackup:/backup
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "insignorocketdb", "-U", "mimndshub"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
 
   insigno:
     image: mindshubalessio/insigno:latest
@@ -84,9 +88,9 @@ services:
       #  source: ./templates
       #  target: /templates
       - media-vol:/app/media
-#    depends_on:
-#      postgresql:
-#        condition: service_healthy
+    depends_on:
+      postgresql:
+        condition: service_healthy
   caddy:
     image: caddy:latest
     restart: always
@@ -108,7 +112,7 @@ services:
     environment:
       - MAPPROXY_DATA_DIR=/cache
       - PROCESSES=1
-      - CHEAPER=1
+      - CHEAPER=0
       - THREADS=1
     mem_limit: 256m
     cpus: 0.5

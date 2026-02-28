@@ -28,11 +28,11 @@ datasources:
   - name: Postgres
     type: postgres
     url: postgresql:5432
-    user: root
-    database: root
+    user: ${POSTGRES_USER}
+    database: ${POSTGRES_DB}
     uid: postgres_uid
     secureJsonData:
-      password: 'test'
+      password: ${POSTGRES_PASSWORD}
     jsonData:
       #postgres://root:test@postgresql:5432/root?sslmode=disable
       
