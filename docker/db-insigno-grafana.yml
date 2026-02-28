@@ -95,7 +95,19 @@ services:
     environment:
       COMP_HOST: ${COMP_HOST}
       COMP_PROTOCOL: ${COMP_PROTOCOL}
-    
+  osmcache:
+    image: kartoza/mapproxy:latest
+    restart: always
+    volumes:
+      - osmcache-vol:/cache
+      - ./mapproxy:/mapproxy
+    environment:
+      - MAPPROXY_DATA_DIR=/cache
+      - PROCESSES=1
+      - CHEAPER=1
+      - THREADS=1
+    mem_limit: 256m
+    cpus: 0.5
 
 volumes:
   db-vol:
@@ -104,6 +116,12 @@ volumes:
     external: true
   prometheus-vol:
     external: true
+  osmcache-vol:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "size=500m"
   grafana-vol:
     external: true
   caddy-data:

@@ -4,6 +4,11 @@
     
     reverse_proxy /grafana/api/live* grafana:3000/api/live
     
+    handle_path /osm* {
+        reverse_proxy osmcache:8080
+    }
+
     reverse_proxy insigno:8000
+
        
 }

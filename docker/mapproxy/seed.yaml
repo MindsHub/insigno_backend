@@ -1,0 +1,31 @@
+# MapProxy seed configuration
+# Use: docker exec -it osmcache mapproxy-seed -f /mapproxy/mapproxy.yaml -s /mapproxy/seed.yaml
+
+seeds:
+  osm_seed:
+    caches: [osm_cache]
+    grids: [osm_grid]
+    # Only seed lower zoom levels to save space
+    levels:
+      from: 0
+      to: 10
+    refresh_before:
+      days: 30
+    # Optional: limit to specific area (example: Europe)
+    # coverages: [europe]
+
+# Optional coverage definitions for targeted seeding
+coverages:
+  europe:
+    bbox: [-10, 35, 40, 70]
+    srs: 'EPSG:4326'
+  italy:
+    bbox: [6.6, 35.5, 18.5, 47.1]
+    srs: 'EPSG:4326'
+
+cleanups:
+  osm_cleanup:
+    caches: [osm_cache]
+    # Remove tiles older than 60 days
+    remove_before:
+      days: 60

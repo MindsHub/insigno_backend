@@ -1,0 +1,76 @@
+# MapProxy configuration for caching OpenStreetMap tiles
+# Optimized for minimal resource usage
+
+services:
+  demo:
+  tms:
+    use_grid_names: true
+  wmts:
+  wms:
+    md:
+      title: OSM Tile Cache
+      abstract: Cached OpenStreetMap tiles
+
+layers:
+  - name: osm
+    title: OpenStreetMap
+    sources: [osm_cache]
+
+caches:
+  osm_cache:
+    grids: [osm_grid]
+    sources: [osm_source]
+    cache:
+      type: file
+      directory_layout: tms
+      directory: /cache/osm
+    # Minimize memory usage with smaller tile buffer
+    meta_size: [2, 2]
+    meta_buffer: 0
+    # Cache tiles for 30 days
+    expire_tiles: 2592000
+    # Store empty tiles to avoid re-requesting them
+    cache_empty_tiles: true
+
+sources:
+  osm_source:
+    type: tile
+    url: https://tile.openstreetmap.org/%(z)s/%(x)s/%(y)s.png
+    grid: osm_grid
+    # Respect OSM tile usage policy - limit concurrent connections
+    concurrent_requests: 2
+    # Required user agent for OSM policy compliance
+    http:
+      headers:
+        User-Agent: 'MapProxy/insigno-cache (https://insigno.mindshub.it)'
+        Referer: 'https://insigno.mindshub.it'
+    # Coverage - worldwide
+    coverage:
+      bbox: [-180, -85.0511, 180, 85.0511]
+      srs: 'EPSG:4326'
+
+grids:
+  osm_grid:
+    base: GLOBAL_WEBMERCATOR
+    srs: 'EPSG:3857'
+    origin: nw
+    # Limit zoom levels to reduce storage (0-18 is standard for OSM)
+    num_levels: 19
+
+globals:
+  cache:
+    # Use minimal memory for tile storage
+    base_dir: /cache
+    lock_dir: /cache/locks
+    tile_lock_dir: /cache/tile_locks
+  http:
+    # Minimal timeout for resource efficiency
+    client_timeout: 60
+  # Minimal image processing settings
+  image:
+    resampling_method: bilinear
+    # Use PNG format with compression
+    formats:
+      image/png:
+        mode: P
+        colors: 256
