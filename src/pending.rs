@@ -19,8 +19,8 @@ use diesel::RunQueryDsl;
 
 #[cfg(not(test))]
 pub fn generate_token() -> String {
-    use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
-    OsRng
+    use rand::{distr::Alphanumeric, rng, Rng};
+    rng()
         .sample_iter(&Alphanumeric)
         .take(20)
         .map(char::from)

@@ -127,7 +127,7 @@ pub struct ScryptSemaphore {
 }
 
 impl ScryptSemaphore {
-    pub async fn aquire(&self) -> Result<SemaphorePermit, InsignoError> {
+    pub async fn aquire<'a>(&'a self) -> Result<SemaphorePermit<'a>, InsignoError> {
         self.sem
             .acquire()
             .await

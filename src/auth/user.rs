@@ -123,10 +123,8 @@ impl<T: UserType, R: UserReview> TryFrom<UserDiesel> for User<T, R> {
         }
     }
 }
-
-/** generic user interface for db (not authenticated)*/
 //pub struct Rocket<P: Phase>(pub(crate) P::State);
-
+/** generic user interface for db (not authenticated)*/
 impl<T: UserType> User<T> {
     //*this must remain private */
     // we just ignore age, because even with an update it is the same
