@@ -12,7 +12,7 @@ services:
     environment:
       GF_SECURITY_ADMIN_MAIL: "insigno@mindshub.it"
       GF_SECURITY_ADMIN_USER: "Mindshub"
-      GF_SECURITY_ADMIN_PASSWORD: "test"
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
       GF_SERVER_DOMAIN: insigno.mindshub.it
       datasource: prometheus_uid
       GF_SERVER_ROOT_URL: "${COMP_PROTOCOL}://${COMP_HOST}/grafana/"
@@ -36,41 +36,45 @@ services:
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
-      #- /:/rootfs:ro
+      - /:/rootfs:ro
     command:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-  
+
   postgresql_exporter:
     image: bitnami/postgres-exporter:latest
     restart: always
     environment:
-      - DATA_SOURCE_NAME=postgres://root:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB}?sslmode=disable
-  
+      - DATA_SOURCE_NAME=postgres://mindshub:${POSTGRES_PASSWORD}@postgresql:5432/${POSTGRES_DB}?sslmode=disable
+
   postgresql:
-    image: postgis/postgis 
+    container_name: postgresql
+    image: postgis/postgis
     #use tobi312/rpi-postgresql-postgis:16-3.4-alpine-arm on raspberry
     restart: always
-
+    ports:
+      - "5432:5432"
     environment:
-      - POSTGRES_USER=root
+      - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - db-vol:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-d", "root"]
-      interval: 30s
-      timeout: 60s
-      retries: 5
-      start_period: 80s
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready", "-d", "insignorocketdb", "-U", "mimndshub"]
+#      interval: 30s
+#      timeout: 60s
+#      retries: 5
+#      start_period: 80s
 
   insigno:
-    image: mindshubalessio/insigno
+    image: mindshubalessio/insigno:latest
     restart: always
+    environment:
+      ROCKET_LOG_LEVEL: "debug"
     volumes:
       - type: bind
         source: ./Insigno.toml
@@ -80,9 +84,9 @@ services:
       #  source: ./templates
       #  target: /templates
       - media-vol:/app/media
-    depends_on:
-      postgresql:
-        condition: service_healthy
+#    depends_on:
+#      postgresql:
+#        condition: service_healthy
   caddy:
     image: caddy:latest
     restart: always
@@ -111,18 +115,13 @@ services:
 
 volumes:
   db-vol:
-    external: true
   media-vol:
-    external: true
   prometheus-vol:
-    external: true
+  grafana-vol:
+  caddy-data:
   osmcache-vol:
     driver: local
     driver_opts:
       type: tmpfs
       device: tmpfs
       o: "size=500m"
-  grafana-vol:
-    external: true
-  caddy-data:
-    external: true
