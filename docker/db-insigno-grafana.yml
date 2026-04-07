@@ -92,7 +92,10 @@ services:
       postgresql:
         condition: service_healthy
   caddy:
-    image: caddy:latest
+    build: 
+      context: .
+      dockerfile: Dockerfile.caddy
+    #image: caddy:latest
     restart: always
     ports:
     - "80:80"

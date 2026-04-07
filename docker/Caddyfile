@@ -8,7 +8,12 @@
         reverse_proxy osmcache:8080
     }
 
+    rate_limit {
+        zone dynamic {
+            key    {remote_host}
+            events 10
+            window 2s
+        }
+    }
     reverse_proxy insigno:8000
-
-       
 }
