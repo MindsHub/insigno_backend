@@ -1,19 +1,27 @@
 {$COMP_PROTOCOL}://{$COMP_HOST} {
-    
-    reverse_proxy /grafana* grafana:3000
-    
-    reverse_proxy /grafana/api/live* grafana:3000/api/live
-    
-    handle_path /osm* {
-        reverse_proxy osmcache:8080
-    }
+    route {
+        handle /grafana/api/live* {
+            reverse_proxy grafana:3000
+        }
 
-    rate_limit {
-        zone dynamic {
-            key    {remote_host}
-            events 10
-            window 2s
+        handle /grafana* {
+            reverse_proxy grafana:3000
+        }
+
+        handle_path /osm* {
+            reverse_proxy osmcache:8080
+        }
+
+        handle {
+            rate_limit {
+                zone dynamic {
+                    key    {remote_host}
+                    events 10
+                    window 2s
+                }
+            }
+
+            reverse_proxy insigno:8000
         }
     }
-    reverse_proxy insigno:8000
 }
