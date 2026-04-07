@@ -19,7 +19,7 @@ use diesel::RunQueryDsl;
 
 #[cfg(not(test))]
 pub fn generate_token() -> String {
-    use rand::{distr::Alphanumeric, rng, Rng};
+    use rand::{distr::Alphanumeric, rng, RngExt};
     rng()
         .sample_iter(&Alphanumeric)
         .take(20)

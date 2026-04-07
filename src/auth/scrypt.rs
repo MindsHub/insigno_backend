@@ -2,7 +2,7 @@ use std::{error::Error, fmt::Display, iter::repeat_n, sync::Arc};
 
 use base64::{engine::general_purpose, Engine};
 use constant_time_eq::constant_time_eq;
-use rand::{rng, RngCore};
+use rand::{rng, Rng};
 use rocket::tokio::sync::{Semaphore, SemaphorePermit};
 pub use scrypt::{scrypt, Params};
 use serde::{Deserialize, Serialize};
